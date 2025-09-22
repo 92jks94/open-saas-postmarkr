@@ -43,6 +43,7 @@ app OpenSaaS {
           name: "Postmarkr",
           email: "nathan@postmarkr.com"
         },
+       //**** Nathan - commented out email verification for dev - FIX before production ****
         emailVerification: {
           clientRoute: EmailVerificationRoute,
           getEmailContentFn: import { getVerificationEmailContent } from "@src/auth/email-and-pass/emails",

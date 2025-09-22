@@ -15,8 +15,10 @@ cd e2e-tests && npm install
 
 Start your Wasp DB and leave it running:
 ```shell
-cd ../app && wasp db start
+cd .. && wasp db start
 ```
+
+**Note:** If you get "Port already in use" error, PostgreSQL is already running and you can skip this step.
 
 ### Skipping Email Verification in e2e Tests
 
@@ -28,8 +30,10 @@ Open another terminal and start the Wasp app with the environment variable set t
 > **However, during e2e tests, this manual step will cause the tests to hang and fail** because the link is never clicked. To prevent this, set the following environment variable when starting your app:
 
 ```bash
-cd app && SKIP_EMAIL_VERIFICATION_IN_DEV=true wasp start
+cd .. && SKIP_EMAIL_VERIFICATION_IN_DEV=true wasp start
 ```
+
+**Note:** Make sure you're in the `app` directory (where `main.wasp` is located) when running this command.
 
 #### What this step will do:
 - **Automated Testing:** Skipping email verification ensures e2e tests run uninterrupted.
