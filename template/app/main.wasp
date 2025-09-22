@@ -238,6 +238,11 @@ query getDownloadFileSignedURL {
   fn: import { getDownloadFileSignedURL } from "@src/file-upload/operations",
   entities: [User, File]
 }
+
+action deleteFile {
+  fn: import { deleteFile } from "@src/file-upload/operations",
+  entities: [User, File]
+}
 //#endregion
 
 //#region Analytics

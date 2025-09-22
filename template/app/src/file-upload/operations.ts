@@ -3,11 +3,12 @@ import { HttpError } from 'wasp/server';
 import { type File } from 'wasp/entities';
 import {
   type CreateFile,
+  type DeleteFile,
   type GetAllFilesByUser,
   type GetDownloadFileSignedURL,
 } from 'wasp/server/operations';
 
-import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3 } from './s3Utils';
+import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3, deleteFileFromS3 } from './s3Utils';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
 
@@ -79,4 +80,40 @@ export const getDownloadFileSignedURL: GetDownloadFileSignedURL<
 > = async (rawArgs, _context) => {
   const { key } = ensureArgsSchemaOrThrowHttpError(getDownloadFileSignedURLInputSchema, rawArgs);
   return await getDownloadFileSignedURLFromS3({ key });
+};
+
+const deleteFileInputSchema = z.object({
+  fileId: z.string().nonempty(),
+});
+
+type DeleteFileInput = z.infer<typeof deleteFileInputSchema>;
+
+export const deleteFile: DeleteFile<
+  DeleteFileInput,
+  File
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { fileId } = ensureArgsSchemaOrThrowHttpError(deleteFileInputSchema, rawArgs);
+
+  const file = await context.entities.File.delete({
+    where: {
+      id: fileId,
+      user: {
+        id: context.user.id,
+      },
+    },
+  });
+
+  // Delete the file from S3 after successful database deletion
+  try {
+    await deleteFileFromS3({ key: file.key });
+  } catch (error) {
+    console.error('Failed to delete file from S3:', error);
+    // Don't throw here - database deletion already succeeded
+  }
+
+  return file;
 };

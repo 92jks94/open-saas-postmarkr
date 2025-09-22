@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getAllFilesByUser, getDownloadFileSignedURL, useQuery } from 'wasp/client/operations';
+import { getAllFilesByUser, getDownloadFileSignedURL, deleteFile, useQuery } from 'wasp/client/operations';
 import type { File } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -97,6 +97,19 @@ export default function FileUploadPage() {
     }
   };
 
+  const handleDelete = async (fileId: string) => {
+    try {
+      await deleteFile({ fileId });
+      allUserFiles.refetch();
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      setUploadError({
+        message: error instanceof Error ? error.message : 'Failed to delete file. Please try again.',
+        code: 'UPLOAD_FAILED',
+      });
+    }
+  };
+
   return (
     <div className='py-10 lg:mt-10'>
       <div className='mx-auto max-w-7xl px-6 lg:px-8'>
@@ -159,14 +172,23 @@ export default function FileUploadPage() {
                         )}
                       >
                         <p className='text-foreground font-medium'>{file.name}</p>
-                        <Button
-                          onClick={() => setFileKeyForS3(file.key)}
-                          disabled={file.key === fileKeyForS3 && isDownloadUrlLoading}
-                          variant='outline'
-                          size='sm'
-                        >
-                          {file.key === fileKeyForS3 && isDownloadUrlLoading ? 'Loading...' : 'Download'}
-                        </Button>
+                        <div className='flex gap-2'>
+                          <Button
+                            onClick={() => setFileKeyForS3(file.key)}
+                            disabled={file.key === fileKeyForS3 && isDownloadUrlLoading}
+                            variant='outline'
+                            size='sm'
+                          >
+                            {file.key === fileKeyForS3 && isDownloadUrlLoading ? 'Loading...' : 'Download'}
+                          </Button>
+                          <Button
+                            onClick={() => handleDelete(file.id)}
+                            variant='destructive'
+                            size='sm'
+                          >
+                            Delete
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}
