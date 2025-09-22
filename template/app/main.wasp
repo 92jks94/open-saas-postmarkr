@@ -39,7 +39,7 @@ app OpenSaaS {
       email: {
         fromField: {
           name: "Open SaaS App",
-          email: "me@example.com"
+          email: "nathan@postmarkr.com"
         },
         emailVerification: {
           clientRoute: EmailVerificationRoute,

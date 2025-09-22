@@ -2,9 +2,7 @@ import { type DailyStats } from 'wasp/entities';
 import { type DailyStatsJob } from 'wasp/server/jobs';
 import Stripe from 'stripe';
 import { stripe } from '../payment/stripe/stripeClient';
-import { listOrders } from '@lemonsqueezy/lemonsqueezy.js';
-import { getDailyPageViews, getSources } from './providers/plausibleAnalyticsUtils';
-// import { getDailyPageViews, getSources } from './providers/googleAnalyticsUtils';
+import { getDailyPageViews, getSources } from './providers/googleAnalyticsUtils';
 import { paymentProcessor } from '../payment/paymentProcessor';
 import { SubscriptionStatus } from '../payment/plans';
 
@@ -165,36 +163,8 @@ async function fetchTotalStripeRevenue() {
 }
 
 async function fetchTotalLemonSqueezyRevenue() {
-  try {
-    let totalRevenue = 0;
-    let hasNextPage = true;
-    let currentPage = 1;
-
-    while (hasNextPage) {
-      const { data: response } = await listOrders({
-        filter: {
-          storeId: process.env.LEMONSQUEEZY_STORE_ID,
-        },
-        page: {
-          number: currentPage,
-          size: 100,
-        },
-      });
-
-      if (response?.data) {
-        for (const order of response.data) {
-          totalRevenue += order.attributes.total;
-        }
-      }
-
-      hasNextPage = !response?.meta?.page.lastPage;
-      currentPage++;
-    }
-
-    // Revenue is in cents so we convert to dollars (or your main currency unit)
-    return totalRevenue / 100;
-  } catch (error) {
-    console.error('Error fetching Lemon Squeezy revenue:', error);
-    throw error;
-  }
+  // TODO: Implement LemonSqueezy revenue fetching
+  // For now, return 0 as a placeholder
+  return 0;
 }
+
