@@ -3,27 +3,25 @@ app OpenSaaS {
     version: "^0.18.0"
   },
 
-  title: "Postmarkr - Simple Mail Service",
+  title: "My Open SaaS App",
 
   head: [
     "<link rel='icon' href='/favicon.ico' />",
     "<meta charset='utf-8' />",
-    "<meta name='description' content='Postmarkr - Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
-    "<meta name='author' content='Postmarkr' />",
-    "<meta name='keywords' content='mail service, remote work, startup, small business, document delivery, business mail, package tracking, certified mail, business documents, contract delivery, startup mail, remote worker, business correspondence, mail tracking, document management' />",
+    "<meta name='description' content='Your apps main description and features.' />",
+    "<meta name='author' content='Your (App) Name' />",
+    "<meta name='keywords' content='saas, solution, product, app, service' />",
     
     "<meta property='og:type' content='website' />",
-    "<meta property='og:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",
-    "<meta property='og:site_name' content='Postmarkr' />",
-    "<meta property='og:url' content='https://postmarkr.com' />",
-    "<meta property='og:description' content='Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
-    "<meta property='og:image' content='https://postmarkr.com/public-banner.webp' />",
-    "<meta name='twitter:image' content='https://postmarkr.com/public-banner.webp' />",
+    "<meta property='og:title' content='Your Open SaaS App' />",
+    "<meta property='og:site_name' content='Your Open SaaS App' />",
+    "<meta property='og:url' content='https://your-saas-app.com' />",
+    "<meta property='og:description' content='Your apps main description and features.' />",
+    "<meta property='og:image' content='https://your-saas-app.com/public-banner.webp' />",
+    "<meta name='twitter:image' content='https://your-saas-app.com/public-banner.webp' />",
     "<meta name='twitter:image:width' content='800' />",
     "<meta name='twitter:image:height' content='400' />",
     "<meta name='twitter:card' content='summary_large_image' />",
-    "<meta name='twitter:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",
-    "<meta name='twitter:description' content='Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
     // TODO: You can put your Plausible analytics scripts below (https://docs.opensaas.sh/guides/analytics/):
     // NOTE: Plausible does not use Cookies, so you can simply add the scripts here.
     // Google, on the other hand, does, so you must instead add the script dynamically
@@ -40,8 +38,8 @@ app OpenSaaS {
       //   (RequestPasswordReset(Route|Page), PasswordReset(Route|Page), EmailVerification(Route|Page))
       email: {
         fromField: {
-          name: "Postmarkr",
-          email: "nathan@postmarkr.com"
+          name: "Open SaaS App",
+          email: "me@example.com"
         },
         emailVerification: {
           clientRoute: EmailVerificationRoute,
@@ -91,9 +89,9 @@ app OpenSaaS {
     //   Once you are ready for production, switch to e.g. "SendGrid" or "Mailgun" providers. Check out https://docs.opensaas.sh/guides/email-sending/ .
     provider: Dummy,
     defaultFrom: {
-      name: "Postmarkr",
+      name: "Open SaaS App",
       // When using a real provider, e.g. SendGrid, you must use the same email address that you configured your account to send out emails with!
-      email: "nathan@postmarkr.com"
+      email: "me@example.com"
     },
   },
 }
