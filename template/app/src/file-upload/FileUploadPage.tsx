@@ -22,10 +22,10 @@ export default function FileUploadPage() {
   const [uploadError, setUploadError] = useState<FileUploadError | null>(null);
 
   const allUserFiles = useQuery(getAllFilesByUser, undefined, {
-    // We disable automatic refetching because otherwise files would be refetched after `createFile` is called and the S3 URL is returned,
-    // which happens before the file is actually fully uploaded. Instead, we manually (re)fetch on mount and after the upload is complete.
-    enabled: false,
+    // Enable automatic refetching - manual refetches will still work
+  // and won't conflict with automatic ones
   });
+
   const { isLoading: isDownloadUrlLoading, refetch: refetchDownloadUrl } = useQuery(
     getDownloadFileSignedURL,
     { key: fileKeyForS3 },

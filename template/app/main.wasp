@@ -253,6 +253,39 @@ job processPDFMetadata {
 }
 //#endregion
 
+//#region Address Management
+route AddressManagementRoute { path: "/addresses", to: AddressManagementPage }
+page AddressManagementPage {
+  authRequired: true,
+  component: import AddressManagementPage from "@src/address-management/AddressManagementPage"
+}
+
+action createMailAddress {
+  fn: import { createMailAddress } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+
+query getMailAddressesByUser {
+  fn: import { getMailAddressesByUser } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+
+action updateMailAddress {
+  fn: import { updateMailAddress } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+
+action deleteMailAddress {
+  fn: import { deleteMailAddress } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+
+action setDefaultAddress {
+  fn: import { setDefaultAddress } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+//#endregion
+
 //#region Analytics
 query getDailyStats {
   fn: import { getDailyStats } from "@src/analytics/operations",
