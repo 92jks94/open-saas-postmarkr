@@ -221,7 +221,7 @@ model MailPiece {
   // Payment information
   paymentIntentId   String?  // Stripe payment intent ID
   paymentStatus     String   @default("pending") // 'pending', 'paid', 'failed', 'refunded'
-  cost              Float?   // Cost in cents
+  cost              Float?   // Final cost in USD
   
   // Mail piece status
   status            String   @default("draft") // 'draft', 'pending_payment', 'paid', 'submitted', 'in_transit', 'delivered', 'returned', 'failed'

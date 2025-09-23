@@ -68,6 +68,7 @@ POST https://api.lob.com/v1/postcards
 // or
 POST https://api.lob.com/v1/letters
 ```
+**Note**: The pricing integration is now implemented! See `docs/LOB_PRICING_INTEGRATION.md` for details.
 
 ### 3. Mail Creation
 ```javascript

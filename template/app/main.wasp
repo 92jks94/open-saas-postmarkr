@@ -392,6 +392,31 @@ action updateMailPieceStatus {
   entities: [MailPiece, MailPieceStatusHistory]
 }
 
+action createMailPaymentIntent {
+  fn: import { createMailPaymentIntent } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, MailPieceStatusHistory]
+}
+
+action confirmMailPayment {
+  fn: import { confirmMailPayment } from "@src/mail/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
+}
+
+action refundMailPayment {
+  fn: import { refundMailPayment } from "@src/mail/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
+}
+
+action submitMailPieceToLob {
+  fn: import { submitMailPieceToLob } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, File, MailPieceStatusHistory]
+}
+
+action syncMailPieceStatus {
+  fn: import { syncMailPieceStatus } from "@src/mail/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
+}
+
 api lobWebhook {
   fn: import { handleLobWebhook } from "@src/server/lob/webhook",
   httpRoute: (POST, "/webhooks/lob")
