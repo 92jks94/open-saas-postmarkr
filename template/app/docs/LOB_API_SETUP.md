@@ -4,10 +4,11 @@
 
 ### Primary Lob Configuration
 ```bash
-# Your Lob API key (required)
-LOB_API_KEY="test_your_lob_api_key_here"
+# Your Lob API keys (required)
+LOB_TEST_KEY="test_your_lob_test_api_key_here"
+LOB_PROD_KEY="live_your_lob_production_api_key_here"
 
-# Environment setting (test or live)
+# Environment setting (test, live, or prod)
 LOB_ENVIRONMENT="test"
 ```
 
@@ -25,16 +26,17 @@ LOB_ENVIRONMENT="test"
 4. For production, you'll need a **Live API Key** (starts with `live_`)
 
 ### Step 3: Add to Environment
-Add the API key to your `.env.server` file:
+Add the API keys to your `.env.server` file:
 ```bash
-LOB_API_KEY="test_1234567890abcdef..."
+LOB_TEST_KEY="test_1234567890abcdef..."
+LOB_PROD_KEY="live_1234567890abcdef..."
 LOB_ENVIRONMENT="test"
 ```
 
 ## 🧪 **Lob API Test vs Live Environment**
 
 ### Test Environment (Development)
-- **API Key**: Starts with `test_`
+- **API Key**: Uses `LOB_TEST_KEY` (starts with `test_`)
 - **Purpose**: Development and testing
 - **Cost**: Free
 - **Limitations**: 
@@ -43,7 +45,7 @@ LOB_ENVIRONMENT="test"
   - Test addresses only
 
 ### Live Environment (Production)
-- **API Key**: Starts with `live_`
+- **API Key**: Uses `LOB_PROD_KEY` (starts with `live_`)
 - **Purpose**: Production mail sending
 - **Cost**: Pay per mail piece sent
 - **Limitations**: 

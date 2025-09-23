@@ -11,7 +11,11 @@ export async function validateAddress(addressData: {
   state: string;
   zip_code: string;
   country: string;
-}) {
+}): Promise<{
+  isValid: boolean;
+  verifiedAddress: any;
+  error: string | null;
+}> {
   try {
     const verification = await lob.usVerifications.verify({
       address_line1: addressData.address_line1,

@@ -130,7 +130,7 @@ Enable users to seamlessly create, send, and track physical mail pieces with pro
 
 #### **Lob API Integration Details**
 - **Client Architecture**: Create `src/server/lob/client.ts` following `src/server/stripe/client.ts` pattern
-- **Environment Variables**: Add `LOB_API_KEY` to `.env.server`
+- **Environment Variables**: Add `LOB_TEST_KEY` and `LOB_PROD_KEY` to `.env.server`
 - **Service Layer**: Create `src/server/lob/services.ts` with:
   - `validateAddress()` - Address validation using Lob API
   - `calculateCost()` - Cost calculation for mail specifications
