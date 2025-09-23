@@ -27,6 +27,7 @@ model User {
   tasks                     Task[]
   files                     File[]
   mailAddresses             MailAddress[]
+  mailPieces                MailPiece[]
 }
 
 model GptResponse {
@@ -76,6 +77,9 @@ model File {
   pdfMetadata               Json?           // Store complex PDF metadata as JSON
   lastProcessedAt           DateTime?       // Timestamp when metadata was last processed
   
+  // Relationships
+  mailPieces            MailPiece[]
+
   // Indexes for performance
   @@index([userId, isMailFile])
   @@index([validationStatus])
@@ -165,7 +169,8 @@ model MailAddress {
   lastUsedAt        DateTime? // Last time this address was used
 
   // Relationships
-  // mailJobs          MailJob[] // Addresses used in mail jobs (future - will be added when MailJob model is created)
+  senderMailPieces     MailPiece[] @relation("MailPieceSender")
+  recipientMailPieces  MailPiece[] @relation("MailPieceRecipient")
 
   // Indexes for performance
   @@index([userId, addressType])
@@ -182,4 +187,78 @@ model State {
   
   @@unique([code, country])
   @@index([country])
+}
+
+model MailPiece {
+  id                String   @id @default(uuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // User relationship
+  user              User     @relation(fields: [userId], references: [id])
+  userId            String
+
+  // Mail specifications
+  mailType          String   // 'postcard', 'letter', 'check', 'self_mailer', 'catalog', 'booklet'
+  mailClass         String   // 'usps_first_class', 'usps_standard', 'usps_express', 'usps_priority'
+  mailSize          String   // '4x6', '6x9', '6x11', '6x18', '9x12', '12x15', '12x18'
+  
+  // Address relationships
+  senderAddress     MailAddress @relation("MailPieceSender", fields: [senderAddressId], references: [id])
+  senderAddressId   String
+  recipientAddress  MailAddress @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])
+  recipientAddressId String
+
+  // File relationship
+  file              File?    @relation(fields: [fileId], references: [id])
+  fileId            String?
+
+  // Lob integration
+  lobId             String?  // Lob's internal mail piece ID
+  lobStatus         String?  // Current status from Lob API
+  lobTrackingNumber String?  // Tracking number from Lob
+  
+  // Payment information
+  paymentIntentId   String?  // Stripe payment intent ID
+  paymentStatus     String   @default("pending") // 'pending', 'paid', 'failed', 'refunded'
+  cost              Float?   // Cost in cents
+  
+  // Mail piece status
+  status            String   @default("draft") // 'draft', 'pending_payment', 'paid', 'submitted', 'in_transit', 'delivered', 'returned', 'failed'
+  
+  // Additional metadata
+  description       String?  // User description of the mail piece
+  metadata          Json?    // Additional Lob-specific metadata
+  
+  // Status history relationship
+  statusHistory     MailPieceStatusHistory[]
+
+  // Indexes for performance
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([lobId])
+  @@index([paymentIntentId])
+  @@index([status])
+}
+
+model MailPieceStatusHistory {
+  id                String   @id @default(uuid())
+  createdAt         DateTime @default(now())
+
+  // Mail piece relationship
+  mailPiece         MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
+  mailPieceId       String
+
+  // Status information
+  status            String   // Status at this point in time
+  previousStatus    String?  // Previous status for context
+  description       String?  // Description of the status change
+  source            String   @default("system") // 'system', 'user', 'lob', 'webhook'
+  
+  // Lob-specific data
+  lobData           Json?    // Additional data from Lob API
+  
+  // Indexes for performance
+  @@index([mailPieceId, createdAt])
+  @@index([status])
 }
