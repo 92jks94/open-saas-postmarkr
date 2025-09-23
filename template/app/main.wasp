@@ -343,6 +343,46 @@ page NotFoundPage {
 }
 //#endregion
 
+//#region Mail Creation Workflow
+route MailCreationRoute { path: "/mail/create", to: MailCreationPage }
+page MailCreationPage {
+  authRequired: true,
+  component: import MailCreationPage from "@src/mail/MailCreationPage"
+}
+
+route MailHistoryRoute { path: "/mail/history", to: MailHistoryPage }
+page MailHistoryPage {
+  authRequired: true,
+  component: import MailHistoryPage from "@src/mail/MailHistoryPage"
+}
+
+route MailDetailsRoute { path: "/mail/:id", to: MailDetailsPage }
+page MailDetailsPage {
+  authRequired: true,
+  component: import MailDetailsPage from "@src/mail/MailDetailsPage"
+}
+
+query getMailPieces {
+  fn: import { getMailPieces } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, File]
+}
+
+action createMailPiece {
+  fn: import { createMailPiece } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, File]
+}
+
+action updateMailPieceStatus {
+  fn: import { updateMailPieceStatus } from "@src/mail/operations",
+  entities: [MailPiece]
+}
+
+api lobWebhook {
+  fn: import { handleLobWebhook } from "@src/server/lob/webhook",
+  httpRoute: (POST, "/webhooks/lob")
+}
+//#endregion
+
 //#region Contact Form Messages
 // TODO: 
 // add functionality to allow users to send messages to admin
