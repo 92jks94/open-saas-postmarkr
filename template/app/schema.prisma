@@ -54,6 +54,7 @@ model Task {
 model File {
   id                        String          @id @default(uuid())
   createdAt                 DateTime        @default(now())
+  updatedAt                 DateTime        @updatedAt
 
   user                      User            @relation(fields: [userId], references: [id])
   userId                    String
@@ -62,6 +63,21 @@ model File {
   type                      String
   key                       String
   uploadUrl                 String
+  
+  // File size for validation
+  size                      Int?
+  
+  // Mail-specific metadata (optional - only for mail files)
+  isMailFile                Boolean         @default(false)
+  validationStatus          String?         // 'pending', 'valid', 'invalid', 'processing'
+  validationError           String?
+  pageCount                 Int?
+  pdfMetadata               Json?           // Store complex PDF metadata as JSON
+  lastProcessedAt           DateTime?       // Timestamp when metadata was last processed
+  
+  // Indexes for performance
+  @@index([userId, isMailFile])
+  @@index([validationStatus])
 }
 
 model DailyStats {

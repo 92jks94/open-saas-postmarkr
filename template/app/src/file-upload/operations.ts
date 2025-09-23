@@ -7,10 +7,12 @@ import {
   type GetAllFilesByUser,
   type GetDownloadFileSignedURL,
 } from 'wasp/server/operations';
-
 import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3, deleteFileFromS3 } from './s3Utils';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
+import { extractPDFMetadataFromBuffer, isPDFBuffer, type PDFMetadata } from './pdfMetadata';
+import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
 
 const createFileInputSchema = z.object({
   fileType: z.enum(ALLOWED_FILE_TYPES),
@@ -38,7 +40,7 @@ export const createFile: CreateFile<
     userId: context.user.id,
   });
 
-  await context.entities.File.create({
+  const file = await context.entities.File.create({
     data: {
       name: fileName,
       key,
@@ -47,6 +49,12 @@ export const createFile: CreateFile<
       user: { connect: { id: context.user.id } },
     },
   });
+
+  // Trigger PDF metadata processing for PDF files
+  if (fileType === 'application/pdf') {
+    // Submit the PDF metadata processing job to run in background
+    await processPDFMetadataJob.submit({ fileId: file.id });
+  }
 
   return {
     s3UploadUrl,
@@ -111,9 +119,99 @@ export const deleteFile: DeleteFile<
   try {
     await deleteFileFromS3({ key: file.key });
   } catch (error) {
-    console.error('Failed to delete file from S3:', error);
-    // Don't throw here - database deletion already succeeded
+    // Log error but don't throw - database deletion already succeeded
+    // In production, this should use a proper logging service
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to delete file from S3:', error);
+    }
   }
 
   return file;
+};
+
+
+// Background Job for PDF Metadata Processing
+export const processPDFMetadata = async (args: { fileId: string }, context: any) => {
+  const { fileId } = args;
+  try {
+    // Get the file from database
+    const file = await context.entities.File.findFirst({
+      where: { 
+        id: fileId,
+        type: 'application/pdf'
+      }
+    });
+
+    if (!file) {
+      return;
+    }
+
+    // Skip if already processed successfully (caching)
+    if (file.validationStatus === 'valid' && file.pdfMetadata) {
+      return;
+    }
+
+    // Skip if currently processing to avoid duplicate processing
+    if (file.validationStatus === 'processing') {
+      return;
+    }
+
+    // Mark as processing to prevent duplicate jobs
+    await context.entities.File.update({
+      where: { id: fileId },
+      data: { validationStatus: 'processing' }
+    });
+
+    // Download PDF from S3
+    const s3Client = new S3Client({
+      region: process.env.AWS_S3_REGION,
+      credentials: {
+        accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
+        secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
+      },
+    });
+
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_FILES_BUCKET!,
+      Key: file.key,
+    });
+
+    const response = await s3Client.send(getObjectCommand);
+    const pdfBuffer = Buffer.from(await response.Body!.transformToByteArray());
+
+    // Validate PDF format
+    if (!isPDFBuffer(pdfBuffer)) {
+      throw new Error('Invalid PDF file format');
+    }
+
+    // Extract metadata using existing function
+    const metadata = await extractPDFMetadataFromBuffer(pdfBuffer);
+
+    // Update file with metadata and processing timestamp
+    await context.entities.File.update({
+      where: { id: fileId },
+      data: {
+        pageCount: metadata.pageCount,
+        pdfMetadata: metadata,
+        validationStatus: 'valid',
+        lastProcessedAt: new Date()
+      }
+    });
+
+    // Successfully processed
+  } catch (error) {
+    // Log error in development only
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Error processing PDF metadata for file ${fileId}:`, error);
+    }
+    
+    // Update file with error status
+    await context.entities.File.update({
+      where: { id: fileId },
+      data: {
+        validationStatus: 'invalid',
+        validationError: error instanceof Error ? error.message : 'Unknown processing error'
+      }
+    });
+  }
 };

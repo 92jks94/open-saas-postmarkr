@@ -5,6 +5,7 @@
     "@aws-sdk/client-s3": "^3.523.0",
     "@aws-sdk/s3-presigned-post": "^3.750.0",
     "@aws-sdk/s3-request-presigner": "^3.523.0",
+    "pdf-lib": "^1.17.1",
     "@google-analytics/data": "4.1.0",
     "@headlessui/react": "1.7.13",
     "@hookform/resolvers": "^5.1.1",

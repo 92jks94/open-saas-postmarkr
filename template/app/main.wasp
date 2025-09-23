@@ -243,6 +243,14 @@ action deleteFile {
   fn: import { deleteFile } from "@src/file-upload/operations",
   entities: [User, File]
 }
+
+job processPDFMetadata {
+  executor: PgBoss,
+  perform: {
+    fn: import { processPDFMetadata } from "@src/file-upload/operations"
+  },
+  entities: [File]
+}
 //#endregion
 
 //#region Analytics

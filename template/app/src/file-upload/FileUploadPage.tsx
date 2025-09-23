@@ -171,7 +171,27 @@ export default function FileUploadPage() {
                           }
                         )}
                       >
-                        <p className='text-foreground font-medium'>{file.name}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className='text-foreground font-medium'>{file.name}</p>
+                          {/* PDF Metadata Badges */}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {file.pageCount && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {file.pageCount} pages
+                              </span>
+                            )}
+                            {file.pdfMetadata && typeof file.pdfMetadata === 'object' && 'dimensions' in file.pdfMetadata && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                {Math.round((file.pdfMetadata as any).dimensions.width)}×{Math.round((file.pdfMetadata as any).dimensions.height)}
+                              </span>
+                            )}
+                            {file.pdfMetadata && typeof file.pdfMetadata === 'object' && 'metadata' in file.pdfMetadata && (file.pdfMetadata as any).metadata?.modificationDate && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                Modified: {new Date((file.pdfMetadata as any).metadata.modificationDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                         <div className='flex gap-2'>
                           <Button
                             onClick={() => setFileKeyForS3(file.key)}
