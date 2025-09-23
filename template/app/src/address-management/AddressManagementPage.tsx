@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getMailAddressesByUser, deleteMailAddress, createMailAddress, useQuery } from 'wasp/client/operations';
+import { getMailAddressesByUser, deleteMailAddress, createMailAddress, updateMailAddress, useQuery } from 'wasp/client/operations';
 import type { MailAddress } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -16,6 +16,10 @@ export default function AddressManagementPage() {
   const [addressError, setAddressError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  
+  // Edit state management
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<Record<string, string>>({});
 
   // Copy exact useQuery pattern from FileUploadPage
   const allUserAddresses = useQuery(getMailAddressesByUser, undefined, {
@@ -70,6 +74,41 @@ export default function AddressManagementPage() {
         error instanceof Error ? error.message : 'Failed to delete address. Please try again.'
       );
     }
+  };
+
+  // Edit handlers
+  const handleEditClick = (address: MailAddress) => {
+    setEditingId(address.id);
+    setEditFormData({
+      contactName: address.contactName,
+      companyName: address.companyName || '',
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2 || '',
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country,
+      label: address.label || '',
+      addressType: address.addressType,
+    });
+  };
+
+  const handleEditSave = async (addressId: string) => {
+    try {
+      await updateMailAddress({ id: addressId, data: editFormData });
+      setEditingId(null);
+      allUserAddresses.refetch();
+    } catch (error) {
+      console.error('Edit failed:', error);
+      setAddressError(
+        error instanceof Error ? error.message : 'Failed to update address. Please try again.'
+      );
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingId(null);
+    setEditFormData({});
   };
 
   // Address creation handler
@@ -411,67 +450,212 @@ export default function AddressManagementPage() {
                 <div className='grid gap-4'>
                   {allUserAddresses.data.map((address: MailAddress) => (
                     <Card key={address.id} className='p-6 hover:shadow-md transition-shadow'>
-                      <div className='flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4'>
-                        <div className="flex-1 min-w-0 space-y-3">
-                          {/* Header with name and badges */}
-                          <div className='flex items-center gap-3 flex-wrap'>
-                            <h4 className='text-lg font-semibold text-foreground'>{address.contactName}</h4>
-                            {address.isDefault && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                Default Address
-                              </span>
-                            )}
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                              {address.addressType.charAt(0).toUpperCase() + address.addressType.slice(1)}
-                            </span>
+                      {editingId === address.id ? (
+                        // Edit mode
+                        <div className='space-y-4'>
+                          <div className='text-center'>
+                            <h3 className='text-lg font-semibold text-foreground mb-2'>Edit Address</h3>
                           </div>
                           
-                          {/* Company name */}
-                          {address.companyName && (
-                            <p className='text-muted-foreground font-medium'>{address.companyName}</p>
-                          )}
-                          
-                          {/* Address details */}
-                          <div className='space-y-1'>
-                            <p className='text-foreground'>
-                              {address.addressLine1}
-                              {address.addressLine2 && `, ${address.addressLine2}`}
-                            </p>
-                            <p className='text-foreground'>
-                              {address.city}, {address.state} {address.postalCode}, {address.country}
-                            </p>
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-contactName-${address.id}`} className='text-sm font-medium'>Contact Name *</Label>
+                              <Input
+                                id={`edit-contactName-${address.id}`}
+                                value={editFormData.contactName}
+                                onChange={(e) => setEditFormData(prev => ({...prev, contactName: e.target.value}))}
+                                className='h-10'
+                              />
+                            </div>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-companyName-${address.id}`} className='text-sm font-medium'>Company Name</Label>
+                              <Input
+                                id={`edit-companyName-${address.id}`}
+                                value={editFormData.companyName}
+                                onChange={(e) => setEditFormData(prev => ({...prev, companyName: e.target.value}))}
+                                className='h-10'
+                              />
+                            </div>
                           </div>
                           
-                          {/* Additional info */}
-                          <div className='flex gap-2 flex-wrap'>
-                            {address.label && (
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
-                                📍 {address.label}
-                              </span>
-                            )}
-                            {address.usageCount > 0 && (
-                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                📊 Used {address.usageCount} times
-                              </span>
-                            )}
+                          <div className='space-y-2'>
+                            <Label htmlFor={`edit-addressLine1-${address.id}`} className='text-sm font-medium'>Address Line 1 *</Label>
+                            <Input
+                              id={`edit-addressLine1-${address.id}`}
+                              value={editFormData.addressLine1}
+                              onChange={(e) => setEditFormData(prev => ({...prev, addressLine1: e.target.value}))}
+                              className='h-10'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor={`edit-addressLine2-${address.id}`} className='text-sm font-medium'>Address Line 2</Label>
+                            <Input
+                              id={`edit-addressLine2-${address.id}`}
+                              value={editFormData.addressLine2}
+                              onChange={(e) => setEditFormData(prev => ({...prev, addressLine2: e.target.value}))}
+                              className='h-10'
+                            />
+                          </div>
+                          
+                          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-city-${address.id}`} className='text-sm font-medium'>City *</Label>
+                              <Input
+                                id={`edit-city-${address.id}`}
+                                value={editFormData.city}
+                                onChange={(e) => setEditFormData(prev => ({...prev, city: e.target.value}))}
+                                className='h-10'
+                              />
+                            </div>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-state-${address.id}`} className='text-sm font-medium'>State *</Label>
+                              <Input
+                                id={`edit-state-${address.id}`}
+                                value={editFormData.state}
+                                onChange={(e) => setEditFormData(prev => ({...prev, state: e.target.value}))}
+                                className='h-10'
+                              />
+                            </div>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-postalCode-${address.id}`} className='text-sm font-medium'>Postal Code *</Label>
+                              <Input
+                                id={`edit-postalCode-${address.id}`}
+                                value={editFormData.postalCode}
+                                onChange={(e) => setEditFormData(prev => ({...prev, postalCode: e.target.value}))}
+                                className='h-10'
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-country-${address.id}`} className='text-sm font-medium'>Country *</Label>
+                              <Select
+                                value={editFormData.country}
+                                onValueChange={(value) => setEditFormData(prev => ({...prev, country: value}))}
+                              >
+                                <SelectTrigger className='h-10'>
+                                  <SelectValue placeholder="Select country" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {SUPPORTED_COUNTRIES.map((country) => (
+                                    <SelectItem key={country} value={country}>
+                                      {country}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className='space-y-2'>
+                              <Label htmlFor={`edit-addressType-${address.id}`} className='text-sm font-medium'>Address Type *</Label>
+                              <Select
+                                value={editFormData.addressType}
+                                onValueChange={(value) => setEditFormData(prev => ({...prev, addressType: value}))}
+                              >
+                                <SelectTrigger className='h-10'>
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ADDRESS_TYPES.map((type) => (
+                                    <SelectItem key={type} value={type}>
+                                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor={`edit-label-${address.id}`} className='text-sm font-medium'>Label</Label>
+                            <Input
+                              id={`edit-label-${address.id}`}
+                              value={editFormData.label}
+                              onChange={(e) => setEditFormData(prev => ({...prev, label: e.target.value}))}
+                              placeholder="e.g., Home, Office, Client ABC"
+                              className='h-10'
+                            />
+                          </div>
+                          
+                          <div className='flex gap-2 justify-end'>
+                            <Button onClick={handleEditCancel} variant='outline' size='sm'>
+                              Cancel
+                            </Button>
+                            <Button onClick={() => handleEditSave(address.id)} size='sm'>
+                              Save Changes
+                            </Button>
                           </div>
                         </div>
-                        
-                        {/* Action buttons */}
-                        <div className='flex gap-2 shrink-0'>
-                          <Button variant='outline' size='sm' className='h-9'>
-                            Edit
-                          </Button>
-                          <Button
-                            onClick={() => handleDelete(address.id)}
-                            variant='destructive'
-                            size='sm'
-                            className='h-9'
-                          >
-                            Delete
-                          </Button>
+                      ) : (
+                        // Display mode
+                        <div className='flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4'>
+                          <div className="flex-1 min-w-0 space-y-3">
+                            {/* Header with name and badges */}
+                            <div className='flex items-center gap-3 flex-wrap'>
+                              <h4 className='text-lg font-semibold text-foreground'>{address.contactName}</h4>
+                              {address.isDefault && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                  Default Address
+                                </span>
+                              )}
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                {address.addressType.charAt(0).toUpperCase() + address.addressType.slice(1)}
+                              </span>
+                            </div>
+                            
+                            {/* Company name */}
+                            {address.companyName && (
+                              <p className='text-muted-foreground font-medium'>{address.companyName}</p>
+                            )}
+                            
+                            {/* Address details */}
+                            <div className='space-y-1'>
+                              <p className='text-foreground'>
+                                {address.addressLine1}
+                                {address.addressLine2 && `, ${address.addressLine2}`}
+                              </p>
+                              <p className='text-foreground'>
+                                {address.city}, {address.state} {address.postalCode}, {address.country}
+                              </p>
+                            </div>
+                            
+                            {/* Additional info */}
+                            <div className='flex gap-2 flex-wrap'>
+                              {address.label && (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                                  📍 {address.label}
+                                </span>
+                              )}
+                              {address.usageCount > 0 && (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                  📊 Used {address.usageCount} times
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Action buttons */}
+                          <div className='flex gap-2 shrink-0'>
+                            <Button 
+                              variant='outline' 
+                              size='sm' 
+                              className='h-9'
+                              onClick={() => handleEditClick(address)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              onClick={() => handleDelete(address.id)}
+                              variant='destructive'
+                              size='sm'
+                              className='h-9'
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </Card>
                   ))}
                 </div>
