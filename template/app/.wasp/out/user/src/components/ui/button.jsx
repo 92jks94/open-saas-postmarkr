@@ -1,7 +1,22 @@
+// ============================================================================
+// UI COMPONENTS - BUTTON
+// ============================================================================
+// This file contains the Button component built on top of Radix UI and shadcn/ui.
+// It provides a consistent button interface with multiple variants and sizes.
+//
+// Features:
+// - Multiple visual variants (default, destructive, outline, secondary, ghost, link)
+// - Multiple sizes (default, sm, lg, icon)
+// - Accessibility support via Radix UI
+// - Tailwind CSS styling with class variance authority
+// - Polymorphic component support (asChild prop)
 import { Slot } from '@radix-ui/react-slot';
 import { cva } from 'class-variance-authority';
 import * as React from 'react';
 import { cn } from '../../lib/utils';
+// ============================================================================
+// BUTTON VARIANTS AND STYLING
+// ============================================================================
 const buttonVariants = cva('inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0', {
     variants: {
         variant: {

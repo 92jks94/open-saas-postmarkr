@@ -16,10 +16,12 @@ import { updateMailPiece as updateMailPiece_ext } from 'wasp/src/mail/operations
 import { deleteMailPiece as deleteMailPiece_ext } from 'wasp/src/mail/operations';
 import { updateMailPieceStatus as updateMailPieceStatus_ext } from 'wasp/src/mail/operations';
 import { createMailPaymentIntent as createMailPaymentIntent_ext } from 'wasp/src/mail/operations';
+import { createMailCheckoutSession as createMailCheckoutSession_ext } from 'wasp/src/mail/operations';
 import { confirmMailPayment as confirmMailPayment_ext } from 'wasp/src/mail/operations';
 import { refundMailPayment as refundMailPayment_ext } from 'wasp/src/mail/operations';
 import { submitMailPieceToLob as submitMailPieceToLob_ext } from 'wasp/src/mail/operations';
 import { syncMailPieceStatus as syncMailPieceStatus_ext } from 'wasp/src/mail/operations';
+import { bulkDeleteMailPieces as bulkDeleteMailPieces_ext } from 'wasp/src/mail/operations';
 export type UpdateIsUserAdminById_ext = typeof updateIsUserAdminById_ext;
 export declare const updateIsUserAdminById: AuthenticatedOperationFor<UpdateIsUserAdminById_ext>;
 export type GenerateGptResponse_ext = typeof generateGptResponse_ext;
@@ -54,6 +56,8 @@ export type UpdateMailPieceStatus_ext = typeof updateMailPieceStatus_ext;
 export declare const updateMailPieceStatus: AuthenticatedOperationFor<UpdateMailPieceStatus_ext>;
 export type CreateMailPaymentIntent_ext = typeof createMailPaymentIntent_ext;
 export declare const createMailPaymentIntent: AuthenticatedOperationFor<CreateMailPaymentIntent_ext>;
+export type CreateMailCheckoutSession_ext = typeof createMailCheckoutSession_ext;
+export declare const createMailCheckoutSession: AuthenticatedOperationFor<CreateMailCheckoutSession_ext>;
 export type ConfirmMailPayment_ext = typeof confirmMailPayment_ext;
 export declare const confirmMailPayment: AuthenticatedOperationFor<ConfirmMailPayment_ext>;
 export type RefundMailPayment_ext = typeof refundMailPayment_ext;
@@ -62,4 +66,6 @@ export type SubmitMailPieceToLob_ext = typeof submitMailPieceToLob_ext;
 export declare const submitMailPieceToLob: AuthenticatedOperationFor<SubmitMailPieceToLob_ext>;
 export type SyncMailPieceStatus_ext = typeof syncMailPieceStatus_ext;
 export declare const syncMailPieceStatus: AuthenticatedOperationFor<SyncMailPieceStatus_ext>;
+export type BulkDeleteMailPieces_ext = typeof bulkDeleteMailPieces_ext;
+export declare const bulkDeleteMailPieces: AuthenticatedOperationFor<BulkDeleteMailPieces_ext>;
 //# sourceMappingURL=index.d.ts.map

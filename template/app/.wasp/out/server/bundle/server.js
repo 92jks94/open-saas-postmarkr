@@ -10,7 +10,7 @@ import { registerCustom, deserialize, serialize } from 'superjson';
 import OpenAI from 'openai';
 import Stripe from 'stripe';
 import * as path from 'path';
-import crypto, { randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { S3Client, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
@@ -1144,7 +1144,8 @@ const sessionCompletedDataSchema = z.object({
   id: z.string(),
   customer: z.string(),
   payment_status: z.enum(["paid", "unpaid", "no_payment_required"]),
-  mode: z.enum(["payment", "subscription"])
+  mode: z.enum(["payment", "subscription"]),
+  metadata: z.record(z.string()).optional()
 });
 const invoicePaidDataSchema = z.object({
   id: z.string(),
@@ -1254,7 +1255,30 @@ const stripeMiddlewareConfigFn = (middlewareConfig) => {
 async function handleCheckoutSessionCompleted(session, prismaUserDelegate) {
   const isSuccessfulOneTimePayment = session.mode === "payment" && session.payment_status === "paid";
   if (isSuccessfulOneTimePayment) {
-    await saveSuccessfulOneTimePayment(session, prismaUserDelegate);
+    if (session.metadata?.type === "mail_payment" && session.metadata?.mailPieceId) {
+      await handleMailPaymentCompleted(session);
+    } else {
+      await saveSuccessfulOneTimePayment(session, prismaUserDelegate);
+    }
+  }
+}
+async function handleMailPaymentCompleted(session) {
+  try {
+    const mailPieceId = session.metadata?.mailPieceId;
+    if (!mailPieceId) {
+      console.error("Mail payment completed but no mailPieceId in metadata");
+      return;
+    }
+    const { confirmMailPaymentService } = require("../../server/mail/payments");
+    await confirmMailPaymentService(
+      session.id,
+      // Use session ID as payment intent ID
+      mailPieceId,
+      { entities: { MailPiece: require("wasp/server").prisma.mailPiece, MailPieceStatusHistory: require("wasp/server").prisma.mailPieceStatusHistory } }
+    );
+    console.log(`Mail payment completed for mail piece ${mailPieceId}`);
+  } catch (error) {
+    console.error("Failed to handle mail payment completion:", error);
   }
 }
 async function saveSuccessfulOneTimePayment(session, prismaUserDelegate) {
@@ -2346,6 +2370,184 @@ function getFallbackPricing(mailSpecs) {
     }
   };
 }
+async function createMailPiece$3(mailData) {
+  try {
+    const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
+    if (!lobApiKey || !lob) {
+      console.warn("Lob API key not configured, using simulation mode");
+      const mockLobId = `lob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      return {
+        id: mockLobId,
+        status: "submitted",
+        trackingNumber: `TRK${Date.now()}`,
+        estimatedDeliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1e3),
+        // 3 days from now
+        cost: 60
+        // 60 cents
+      };
+    }
+    const mailpieceData = {
+      to: {
+        name: mailData.to.contactName || mailData.to.name || "Recipient",
+        address_line1: mailData.to.addressLine1 || mailData.to.address_line1,
+        address_line2: mailData.to.addressLine2 || mailData.to.address_line2,
+        city: mailData.to.city,
+        state: mailData.to.state,
+        zip_code: mailData.to.postalCode || mailData.to.zip_code,
+        country: mailData.to.country || "US"
+      },
+      from: {
+        name: mailData.from.contactName || mailData.from.name || "Sender",
+        address_line1: mailData.from.addressLine1 || mailData.from.address_line1,
+        address_line2: mailData.from.addressLine2 || mailData.from.address_line2,
+        city: mailData.from.city,
+        state: mailData.from.state,
+        zip_code: mailData.from.postalCode || mailData.from.zip_code,
+        country: mailData.from.country || "US"
+      },
+      description: mailData.description || "Mail piece created via Postmarkr"
+    };
+    let lobResponse;
+    if (mailData.mailType === "postcard") {
+      lobResponse = await lob.postcards.create({
+        ...mailpieceData,
+        front: mailData.fileUrl || "https://s3.amazonaws.com/lob-assets/postcard-front.pdf",
+        // Use provided file or default
+        back: "https://s3.amazonaws.com/lob-assets/postcard-back.pdf",
+        // Default back template
+        size: mailData.mailSize === "4x6" ? "4x6" : "6x9"
+      });
+    } else if (mailData.mailType === "letter") {
+      const fileContent = mailData.fileUrl ? await fetchFileContent(mailData.fileUrl) : "<html><body><h1>Mail Letter</h1><p>This is a mail letter created via Postmarkr.</p></body></html>";
+      lobResponse = await lob.letters.create({
+        ...mailpieceData,
+        file: fileContent,
+        color: true,
+        double_sided: false
+      });
+    } else {
+      const fileContent = mailData.fileUrl ? await fetchFileContent(mailData.fileUrl) : "<html><body><h1>Mail Piece</h1><p>This is a mail piece created via Postmarkr.</p></body></html>";
+      lobResponse = await lob.letters.create({
+        ...mailpieceData,
+        file: fileContent,
+        color: true,
+        double_sided: false
+      });
+    }
+    const costInDollars = parseFloat(lobResponse.price || "0.60");
+    const costInCents = Math.round(costInDollars * 100);
+    return {
+      id: lobResponse.id,
+      status: lobResponse.status || "submitted",
+      trackingNumber: lobResponse.tracking_number || `TRK${lobResponse.id}`,
+      estimatedDeliveryDate: lobResponse.expected_delivery_date ? new Date(lobResponse.expected_delivery_date) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1e3),
+      // Default 3 days
+      cost: costInCents,
+      lobData: lobResponse
+      // Store full response for reference
+    };
+  } catch (error) {
+    console.error("Lob mail creation error:", error);
+    if (error && typeof error === "object" && "message" in error) {
+      const errorMessage = error.message;
+      if (errorMessage.includes("address")) {
+        throw new HttpError(400, "Invalid address format. Please check your address details.");
+      } else if (errorMessage.includes("file")) {
+        throw new HttpError(400, "Invalid file format. Please ensure your file is compatible with mail processing.");
+      } else if (errorMessage.includes("rate limit")) {
+        throw new HttpError(429, "Rate limit exceeded. Please try again later.");
+      }
+    }
+    throw new HttpError(500, "Failed to create mail piece with Lob API");
+  }
+}
+async function fetchFileContent(fileUrl) {
+  try {
+    return "<html><body><h1>Mail Content</h1><p>This is the content of your mail piece.</p></body></html>";
+  } catch (error) {
+    console.error("Error fetching file content:", error);
+    return "<html><body><h1>Mail Content</h1><p>This is the content of your mail piece.</p></body></html>";
+  }
+}
+async function getMailPieceStatus(lobId) {
+  try {
+    const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
+    if (!lobApiKey || !lob) {
+      console.warn("Lob API key not configured, using simulation mode");
+      const statuses = ["submitted", "in_transit", "delivered", "returned"];
+      const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+      return {
+        id: lobId,
+        status: randomStatus,
+        trackingNumber: `TRK${lobId.split("_")[1]}`,
+        estimatedDeliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1e3),
+        events: [
+          {
+            timestamp: /* @__PURE__ */ new Date(),
+            status: randomStatus,
+            description: `Mail piece ${randomStatus}`
+          }
+        ]
+      };
+    }
+    let lobResponse;
+    let mailType = "unknown";
+    try {
+      lobResponse = await lob.postcards.retrieve(lobId);
+      mailType = "postcard";
+    } catch (postcardError) {
+      try {
+        lobResponse = await lob.letters.retrieve(lobId);
+        mailType = "letter";
+      } catch (letterError) {
+        try {
+          lobResponse = await lob.checks.retrieve(lobId);
+          mailType = "check";
+        } catch (checkError) {
+          throw new Error("Mail piece not found in Lob API");
+        }
+      }
+    }
+    const status = lobResponse.status || "unknown";
+    const trackingNumber = lobResponse.tracking_number || `TRK${lobId}`;
+    const estimatedDeliveryDate = lobResponse.expected_delivery_date ? new Date(lobResponse.expected_delivery_date) : new Date(Date.now() + 3 * 24 * 60 * 60 * 1e3);
+    const events = [];
+    if (lobResponse.events && Array.isArray(lobResponse.events)) {
+      events.push(...lobResponse.events.map((event) => ({
+        timestamp: new Date(event.date_created || Date.now()),
+        status: event.name || status,
+        description: event.description || `Mail piece ${status}`
+      })));
+    } else {
+      events.push({
+        timestamp: /* @__PURE__ */ new Date(),
+        status,
+        description: `Mail piece ${status}`
+      });
+    }
+    return {
+      id: lobId,
+      status,
+      trackingNumber,
+      estimatedDeliveryDate,
+      events,
+      mailType,
+      lobData: lobResponse
+      // Store full response for reference
+    };
+  } catch (error) {
+    console.error("Lob status retrieval error:", error);
+    if (error && typeof error === "object" && "message" in error) {
+      const errorMessage = error.message;
+      if (errorMessage.includes("not found")) {
+        throw new HttpError(404, "Mail piece not found in Lob API");
+      } else if (errorMessage.includes("rate limit")) {
+        throw new HttpError(429, "Rate limit exceeded. Please try again later.");
+      }
+    }
+    throw new HttpError(500, "Failed to retrieve mail piece status from Lob API");
+  }
+}
 
 async function createMailPaymentIntent$3(mailSpecs, userId, context) {
   try {
@@ -2437,12 +2639,30 @@ async function refundMailPayment$3(paymentIntentId, mailPieceId, reason, context
   }
 }
 
-const getMailPieces$2 = async (_args, context) => {
+const getMailPieces$2 = async (args, context) => {
   if (!context.user) {
     throw new HttpError(401, "Not authorized");
   }
-  return context.entities.MailPiece.findMany({
-    where: { userId: context.user.id },
+  const page = args.page || 1;
+  const limit = Math.min(args.limit || 20, 100);
+  const skip = (page - 1) * limit;
+  const where = { userId: context.user.id };
+  if (args.status && args.status !== "all") {
+    where.status = args.status;
+  }
+  if (args.mailType && args.mailType !== "all") {
+    where.mailType = args.mailType;
+  }
+  if (args.search) {
+    where.OR = [
+      { description: { contains: args.search, mode: "insensitive" } },
+      { senderAddress: { contactName: { contains: args.search, mode: "insensitive" } } },
+      { recipientAddress: { contactName: { contains: args.search, mode: "insensitive" } } }
+    ];
+  }
+  const total = await context.entities.MailPiece.count({ where });
+  const mailPieces = await context.entities.MailPiece.findMany({
+    where,
     include: {
       senderAddress: true,
       recipientAddress: true,
@@ -2453,8 +2673,21 @@ const getMailPieces$2 = async (_args, context) => {
         // Get last 5 status updates
       }
     },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "desc" },
+    skip,
+    take: limit
   });
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+  return {
+    mailPieces,
+    total,
+    page,
+    totalPages,
+    hasNext,
+    hasPrev
+  };
 };
 const createMailPiece$2 = async (args, context) => {
   try {
@@ -2758,6 +2991,94 @@ const createMailPaymentIntent$2 = async (args, context) => {
     throw new HttpError(500, "Failed to create payment intent due to an internal error.");
   }
 };
+const createMailCheckoutSession$2 = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { id: args.mailPieceId, userId: context.user.id },
+      include: {
+        senderAddress: true,
+        recipientAddress: true
+      }
+    });
+    if (!mailPiece) {
+      throw new HttpError(404, validationErrors.MAIL_PIECE_NOT_FOUND);
+    }
+    if (mailPiece.status !== "draft") {
+      throw new HttpError(400, "Checkout can only be created for draft mail pieces");
+    }
+    const costData = await createMailPaymentIntent$3({
+      mailType: mailPiece.mailType,
+      mailClass: mailPiece.mailClass,
+      mailSize: mailPiece.mailSize,
+      toAddress: mailPiece.recipientAddress,
+      fromAddress: mailPiece.senderAddress
+    }, context.user.id, context);
+    const stripe = require("../../payment/stripe/stripeClient").stripe;
+    const DOMAIN = process.env.WASP_WEB_CLIENT_URL || "http://localhost:3000";
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Mail Piece - ${mailPiece.mailType}`,
+              description: `Send ${mailPiece.mailType} via ${mailPiece.mailClass} mail`
+            },
+            unit_amount: costData.cost
+            // Amount in cents
+          },
+          quantity: 1
+        }
+      ],
+      mode: "payment",
+      success_url: `${DOMAIN}/mail/checkout?status=success&mail_piece_id=${args.mailPieceId}`,
+      cancel_url: `${DOMAIN}/mail/checkout?status=canceled&mail_piece_id=${args.mailPieceId}`,
+      metadata: {
+        mailPieceId: args.mailPieceId,
+        userId: context.user.id,
+        mailType: mailPiece.mailType,
+        mailClass: mailPiece.mailClass,
+        mailSize: mailPiece.mailSize,
+        type: "mail_payment"
+      },
+      customer_email: context.user.email
+    });
+    if (!session.url) {
+      throw new HttpError(500, "Failed to create checkout session URL");
+    }
+    await context.entities.MailPiece.update({
+      where: { id: args.mailPieceId },
+      data: {
+        paymentIntentId: session.id,
+        // Store session ID for reference
+        status: "pending_payment"
+      }
+    });
+    await context.entities.MailPieceStatusHistory.create({
+      data: {
+        mailPieceId: args.mailPieceId,
+        status: "pending_payment",
+        previousStatus: "draft",
+        description: "Checkout session created",
+        source: "system"
+      }
+    });
+    return {
+      sessionUrl: session.url,
+      sessionId: session.id
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    console.error("Failed to create mail checkout session:", error);
+    throw new HttpError(500, "Failed to create checkout session due to an internal error.");
+  }
+};
 const confirmMailPayment$2 = async (args, context) => {
   try {
     if (!context.user) {
@@ -2807,6 +3128,198 @@ const refundMailPayment$2 = async (args, context) => {
     }
     console.error("Failed to refund mail payment:", error);
     throw new HttpError(500, "Failed to process refund due to an internal error.");
+  }
+};
+const submitMailPieceToLob$2 = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { id: args.mailPieceId, userId: context.user.id },
+      include: {
+        senderAddress: true,
+        recipientAddress: true,
+        file: true
+      }
+    });
+    if (!mailPiece) {
+      throw new HttpError(404, validationErrors.MAIL_PIECE_NOT_FOUND);
+    }
+    if (mailPiece.paymentStatus !== "paid") {
+      throw new HttpError(400, "Mail piece must be paid before submission to Lob");
+    }
+    if (mailPiece.lobId) {
+      throw new HttpError(400, "Mail piece already submitted to Lob");
+    }
+    const lobMailData = {
+      to: mailPiece.recipientAddress,
+      from: mailPiece.senderAddress,
+      mailType: mailPiece.mailType,
+      mailClass: mailPiece.mailClass,
+      mailSize: mailPiece.mailSize,
+      fileUrl: mailPiece.file?.uploadUrl,
+      description: mailPiece.description || `Mail piece created via Postmarkr - ${mailPiece.mailType}`
+    };
+    const lobResponse = await createMailPiece$3(lobMailData);
+    await context.entities.MailPiece.update({
+      where: { id: args.mailPieceId },
+      data: {
+        lobId: lobResponse.id,
+        lobStatus: lobResponse.status,
+        lobTrackingNumber: lobResponse.trackingNumber,
+        status: "submitted",
+        cost: lobResponse.cost / 100,
+        // Convert to USD for display
+        metadata: {
+          lobData: lobResponse.lobData,
+          submittedAt: (/* @__PURE__ */ new Date()).toISOString()
+        }
+      }
+    });
+    await context.entities.MailPieceStatusHistory.create({
+      data: {
+        mailPieceId: args.mailPieceId,
+        status: "submitted",
+        previousStatus: "paid",
+        description: `Submitted to Lob API - ID: ${lobResponse.id}`,
+        source: "system",
+        lobData: {
+          lobId: lobResponse.id,
+          lobStatus: lobResponse.status,
+          trackingNumber: lobResponse.trackingNumber,
+          submittedAt: (/* @__PURE__ */ new Date()).toISOString()
+        }
+      }
+    });
+    console.log(`Successfully submitted mail piece ${args.mailPieceId} to Lob with ID: ${lobResponse.id}`);
+    return {
+      success: true,
+      lobId: lobResponse.id
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    console.error("Failed to submit mail piece to Lob:", error);
+    throw new HttpError(500, "Failed to submit mail piece to Lob due to an internal error.");
+  }
+};
+const syncMailPieceStatus$2 = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { id: args.mailPieceId, userId: context.user.id }
+    });
+    if (!mailPiece) {
+      throw new HttpError(404, validationErrors.MAIL_PIECE_NOT_FOUND);
+    }
+    if (!mailPiece.lobId) {
+      throw new HttpError(400, "Mail piece has not been submitted to Lob yet");
+    }
+    const lobStatus = await getMailPieceStatus(mailPiece.lobId);
+    const statusMapping = {
+      "delivered": "delivered",
+      "returned": "returned",
+      "in_transit": "in_transit",
+      "processing": "submitted",
+      "printed": "submitted",
+      "mailed": "submitted",
+      "created": "submitted",
+      "cancelled": "failed",
+      "failed": "failed"
+    };
+    const newStatus = statusMapping[lobStatus.status] || lobStatus.status || mailPiece.status;
+    if (newStatus !== mailPiece.status) {
+      await context.entities.MailPiece.update({
+        where: { id: args.mailPieceId },
+        data: {
+          status: newStatus,
+          lobStatus: lobStatus.status,
+          lobTrackingNumber: lobStatus.trackingNumber,
+          metadata: {
+            ...mailPiece.metadata && typeof mailPiece.metadata === "object" ? mailPiece.metadata : {},
+            lastSyncedAt: (/* @__PURE__ */ new Date()).toISOString(),
+            lobData: lobStatus.lobData || {}
+          }
+        }
+      });
+      await context.entities.MailPieceStatusHistory.create({
+        data: {
+          mailPieceId: args.mailPieceId,
+          status: newStatus,
+          previousStatus: mailPiece.status,
+          description: `Status synced from Lob: ${lobStatus.status}`,
+          source: "system",
+          lobData: {
+            lobStatus: lobStatus.status,
+            trackingNumber: lobStatus.trackingNumber,
+            syncedAt: (/* @__PURE__ */ new Date()).toISOString()
+          }
+        }
+      });
+      console.log(`Successfully synced mail piece ${args.mailPieceId} status: ${mailPiece.status} -> ${newStatus}`);
+    }
+    return {
+      success: true,
+      status: newStatus
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    console.error("Failed to sync mail piece status from Lob:", error);
+    throw new HttpError(500, "Failed to sync mail piece status from Lob due to an internal error.");
+  }
+};
+const bulkDeleteMailPieces$2 = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, "Not authorized");
+    }
+    if (!args.mailPieceIds || args.mailPieceIds.length === 0) {
+      throw new HttpError(400, "No mail piece IDs provided");
+    }
+    if (args.mailPieceIds.length > 50) {
+      throw new HttpError(400, "Cannot delete more than 50 mail pieces at once");
+    }
+    const deletedIds = [];
+    const failedIds = [];
+    for (const mailPieceId of args.mailPieceIds) {
+      try {
+        const mailPiece = await context.entities.MailPiece.findFirst({
+          where: {
+            id: mailPieceId,
+            userId: context.user.id,
+            status: "draft"
+            // Only allow deletion of draft mail pieces
+          }
+        });
+        if (!mailPiece) {
+          failedIds.push(mailPieceId);
+          continue;
+        }
+        await context.entities.MailPiece.delete({
+          where: { id: mailPieceId }
+        });
+        deletedIds.push(mailPieceId);
+      } catch (error) {
+        console.error(`Failed to delete mail piece ${mailPieceId}:`, error);
+        failedIds.push(mailPieceId);
+      }
+    }
+    return {
+      deletedCount: deletedIds.length,
+      failedIds
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    console.error("Failed to bulk delete mail pieces:", error);
+    throw new HttpError(500, "Failed to bulk delete mail pieces due to an internal error.");
   }
 };
 
@@ -2875,6 +3388,19 @@ async function createMailPaymentIntent$1(args, context) {
 
 var createMailPaymentIntent = createAction(createMailPaymentIntent$1);
 
+async function createMailCheckoutSession$1(args, context) {
+  return createMailCheckoutSession$2(args, {
+    ...context,
+    entities: {
+      MailPiece: dbClient.mailPiece,
+      MailAddress: dbClient.mailAddress,
+      MailPieceStatusHistory: dbClient.mailPieceStatusHistory
+    }
+  });
+}
+
+var createMailCheckoutSession = createAction(createMailCheckoutSession$1);
+
 async function confirmMailPayment$1(args, context) {
   return confirmMailPayment$2(args, {
     ...context,
@@ -2898,6 +3424,44 @@ async function refundMailPayment$1(args, context) {
 }
 
 var refundMailPayment = createAction(refundMailPayment$1);
+
+async function submitMailPieceToLob$1(args, context) {
+  return submitMailPieceToLob$2(args, {
+    ...context,
+    entities: {
+      MailPiece: dbClient.mailPiece,
+      MailAddress: dbClient.mailAddress,
+      File: dbClient.file,
+      MailPieceStatusHistory: dbClient.mailPieceStatusHistory
+    }
+  });
+}
+
+var submitMailPieceToLob = createAction(submitMailPieceToLob$1);
+
+async function syncMailPieceStatus$1(args, context) {
+  return syncMailPieceStatus$2(args, {
+    ...context,
+    entities: {
+      MailPiece: dbClient.mailPiece,
+      MailPieceStatusHistory: dbClient.mailPieceStatusHistory
+    }
+  });
+}
+
+var syncMailPieceStatus = createAction(syncMailPieceStatus$1);
+
+async function bulkDeleteMailPieces$1(args, context) {
+  return bulkDeleteMailPieces$2(args, {
+    ...context,
+    entities: {
+      MailPiece: dbClient.mailPiece,
+      MailPieceStatusHistory: dbClient.mailPieceStatusHistory
+    }
+  });
+}
+
+var bulkDeleteMailPieces = createAction(bulkDeleteMailPieces$1);
 
 async function getPaginatedUsers$1(args, context) {
   return getPaginatedUsers$2(args, {
@@ -3064,8 +3628,12 @@ router$4.post("/update-mail-piece", auth, updateMailPiece);
 router$4.post("/delete-mail-piece", auth, deleteMailPiece);
 router$4.post("/update-mail-piece-status", auth, updateMailPieceStatus);
 router$4.post("/create-mail-payment-intent", auth, createMailPaymentIntent);
+router$4.post("/create-mail-checkout-session", auth, createMailCheckoutSession);
 router$4.post("/confirm-mail-payment", auth, confirmMailPayment);
 router$4.post("/refund-mail-payment", auth, refundMailPayment);
+router$4.post("/submit-mail-piece-to-lob", auth, submitMailPieceToLob);
+router$4.post("/sync-mail-piece-status", auth, syncMailPieceStatus);
+router$4.post("/bulk-delete-mail-pieces", auth, bulkDeleteMailPieces);
 router$4.post("/get-paginated-users", auth, getPaginatedUsers);
 router$4.post("/get-gpt-responses", auth, getGptResponses);
 router$4.post("/get-all-tasks-by-user", auth, getAllTasksByUser);
@@ -3512,36 +4080,17 @@ router$2.use("/", router$3);
 const paymentsWebhook = paymentProcessor.webhook;
 const paymentsMiddlewareConfigFn = paymentProcessor.webhookMiddlewareConfigFn;
 
-async function handleLobWebhook(req, res, context) {
+const lobWebhook = async (request, response, context) => {
   try {
-    const payload = req.body;
-    const signature = req.headers["x-lob-signature"];
-    if (process.env.NODE_ENV === "production" && !verifyWebhookSignature(payload, signature)) {
-      console.warn("Invalid Lob webhook signature received");
-      throw new HttpError(401, "Invalid webhook signature");
-    }
-    console.log("Lob webhook received:", {
-      lobId: payload.id,
-      status: payload.status,
-      type: payload.type,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    const {
-      id: lobId,
-      status,
-      tracking_number,
-      events,
-      type: mailType,
-      expected_delivery_date,
-      price,
-      url
-    } = payload;
+    const payload = JSON.parse(request.body);
+    const { id: lobId, status, tracking_number } = payload;
     if (!lobId) {
       throw new HttpError(400, "Missing required webhook data: lobId");
     }
     const statusMapping = {
       "delivered": "delivered",
       "returned": "returned",
+      "returned_to_sender": "returned",
       "in_transit": "in_transit",
       "processing": "submitted",
       "printed": "submitted",
@@ -3551,73 +4100,28 @@ async function handleLobWebhook(req, res, context) {
       "failed": "failed"
     };
     const internalStatus = statusMapping[status] || status || "unknown";
-    const lobData = {
-      status,
-      tracking_number,
-      events,
-      type: mailType,
-      expected_delivery_date,
-      price,
-      url,
-      webhook_received_at: (/* @__PURE__ */ new Date()).toISOString()
-    };
     await updateMailPieceStatus$2({
       lobId,
       lobStatus: internalStatus,
       lobTrackingNumber: tracking_number,
-      lobData
+      lobData: payload
     }, context);
-    console.log(`Successfully updated mail piece ${lobId} to status: ${internalStatus}`);
-    res.status(200).json({
-      received: true,
-      lobId,
-      status: internalStatus,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    });
-  } catch (error) {
-    console.error("Lob webhook error:", error);
-    if (error instanceof HttpError) {
-      res.status(error.statusCode).json({
-        error: error.message,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString()
-      });
+    console.log(`Updated mail piece ${lobId} to status: ${internalStatus}`);
+    return response.status(200).json({ received: true });
+  } catch (err) {
+    console.error("Lob webhook error:", err);
+    if (err instanceof HttpError) {
+      return response.status(err.statusCode).json({ error: err.message });
     } else {
-      res.status(500).json({
-        error: "Internal server error",
-        timestamp: (/* @__PURE__ */ new Date()).toISOString()
-      });
+      return response.status(400).json({ error: "Error processing Lob webhook event" });
     }
   }
-}
-function verifyWebhookSignature(payload, signature) {
-  try {
-    if (!signature) {
-      console.warn("No webhook signature provided");
-      return false;
-    }
-    const webhookSecret = process.env.LOB_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      console.warn("LOB_WEBHOOK_SECRET not configured, skipping signature verification");
-      return true;
-    }
-    const expectedSignature = crypto.createHmac("sha256", webhookSecret).update(JSON.stringify(payload)).digest("hex");
-    const providedSignature = signature.replace("sha256=", "");
-    const isValid = crypto.timingSafeEqual(
-      Buffer.from(expectedSignature, "hex"),
-      Buffer.from(providedSignature, "hex")
-    );
-    if (!isValid) {
-      console.warn("Webhook signature verification failed", {
-        expected: expectedSignature,
-        provided: providedSignature
-      });
-    }
-    return isValid;
-  } catch (error) {
-    console.error("Error verifying webhook signature:", error);
-    return false;
-  }
-}
+};
+const lobMiddlewareConfigFn = (middlewareConfig) => {
+  middlewareConfig.delete("express.json");
+  middlewareConfig.set("express.raw", express.raw({ type: "application/json" }));
+  return middlewareConfig;
+};
 
 async function validateAddressEndpoint(req, res, context) {
   try {
@@ -3650,7 +4154,6 @@ async function validateAddressEndpoint(req, res, context) {
 }
 
 const idFn = (x) => x;
-const _wasplobWebhookmiddlewareConfigFn = idFn;
 const _waspvalidateAddressmiddlewareConfigFn = idFn;
 const router$1 = express.Router();
 const paymentsWebhookMiddleware = globalMiddlewareConfigForExpress(paymentsMiddlewareConfigFn);
@@ -3669,7 +4172,7 @@ router$1.post(
     }
   )
 );
-const lobWebhookMiddleware = globalMiddlewareConfigForExpress(_wasplobWebhookmiddlewareConfigFn);
+const lobWebhookMiddleware = globalMiddlewareConfigForExpress(lobMiddlewareConfigFn);
 router$1.post(
   "/webhooks/lob",
   [auth, ...lobWebhookMiddleware],
@@ -3679,7 +4182,7 @@ router$1.post(
         user: makeAuthUserIfPossible(req.user),
         entities: {}
       };
-      return handleLobWebhook(req, res, context);
+      return lobWebhook(req, res, context);
     }
   )
 );

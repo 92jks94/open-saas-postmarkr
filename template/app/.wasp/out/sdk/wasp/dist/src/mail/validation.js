@@ -97,7 +97,21 @@ export const lobWebhookStatusSchema = z.object({
     lobTrackingNumber: z.string().optional(),
     lobData: z.any().optional(),
 });
-// Status transition validation
+/**
+ * Valid status transitions for mail pieces
+ *
+ * Defines the allowed state transitions in the mail piece lifecycle:
+ * - draft → pending_payment: User initiates payment
+ * - pending_payment → paid: Payment confirmed
+ * - pending_payment → draft: Payment cancelled, back to draft
+ * - paid → submitted: Submitted to Lob for processing
+ * - submitted → in_transit: Lob has processed and mailed
+ * - submitted → failed: Lob processing failed
+ * - in_transit → delivered: Successfully delivered (terminal)
+ * - in_transit → returned: Returned to sender (terminal)
+ * - in_transit → failed: Delivery failed
+ * - failed → submitted: Retry after failure
+ */
 export const validStatusTransitions = {
     'draft': ['pending_payment'],
     'pending_payment': ['paid', 'draft'],
@@ -108,17 +122,47 @@ export const validStatusTransitions = {
     'returned': [], // Terminal state
     'failed': ['submitted'], // Allow retry
 };
+/**
+ * Validates if a status transition is allowed
+ *
+ * @param currentStatus - Current status of the mail piece
+ * @param newStatus - Desired new status
+ * @returns true if transition is allowed, false otherwise
+ */
 export function validateStatusTransition(currentStatus, newStatus) {
     const allowedTransitions = validStatusTransitions[currentStatus] || [];
     return allowedTransitions.includes(newStatus);
 }
-// Business logic validation functions
+/**
+ * Business logic validation functions for ownership checks
+ */
+/**
+ * Validates that a mail piece belongs to the specified user
+ *
+ * @param mailPiece - Mail piece object to validate
+ * @param userId - User ID to check ownership against
+ * @returns true if mail piece belongs to user, false otherwise
+ */
 export function validateMailPieceOwnership(mailPiece, userId) {
     return mailPiece.userId === userId;
 }
+/**
+ * Validates that an address belongs to the specified user
+ *
+ * @param address - Address object to validate
+ * @param userId - User ID to check ownership against
+ * @returns true if address belongs to user, false otherwise
+ */
 export function validateAddressOwnership(address, userId) {
     return address.userId === userId;
 }
+/**
+ * Validates that a file belongs to the specified user
+ *
+ * @param file - File object to validate
+ * @param userId - User ID to check ownership against
+ * @returns true if file belongs to user, false otherwise
+ */
 export function validateFileOwnership(file, userId) {
     return file.userId === userId;
 }

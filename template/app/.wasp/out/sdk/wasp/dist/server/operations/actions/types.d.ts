@@ -68,6 +68,11 @@ export type CreateMailPaymentIntent<Input extends Payload = never, Output extend
     _MailAddress,
     _MailPieceStatusHistory
 ], Input, Output>;
+export type CreateMailCheckoutSession<Input extends Payload = never, Output extends Payload = Payload> = AuthenticatedActionDefinition<[
+    _MailPiece,
+    _MailAddress,
+    _MailPieceStatusHistory
+], Input, Output>;
 export type ConfirmMailPayment<Input extends Payload = never, Output extends Payload = Payload> = AuthenticatedActionDefinition<[
     _MailPiece,
     _MailPieceStatusHistory
@@ -83,6 +88,10 @@ export type SubmitMailPieceToLob<Input extends Payload = never, Output extends P
     _MailPieceStatusHistory
 ], Input, Output>;
 export type SyncMailPieceStatus<Input extends Payload = never, Output extends Payload = Payload> = AuthenticatedActionDefinition<[
+    _MailPiece,
+    _MailPieceStatusHistory
+], Input, Output>;
+export type BulkDeleteMailPieces<Input extends Payload = never, Output extends Payload = Payload> = AuthenticatedActionDefinition<[
     _MailPiece,
     _MailPieceStatusHistory
 ], Input, Output>;

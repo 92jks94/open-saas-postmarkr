@@ -57,6 +57,8 @@ export { updateMailPieceStatus } from './actions/index.js'
 
 export { createMailPaymentIntent } from './actions/index.js'
 
+export { createMailCheckoutSession } from './actions/index.js'
+
 export { confirmMailPayment } from './actions/index.js'
 
 export { refundMailPayment } from './actions/index.js'
@@ -64,3 +66,5 @@ export { refundMailPayment } from './actions/index.js'
 export { submitMailPieceToLob } from './actions/index.js'
 
 export { syncMailPieceStatus } from './actions/index.js'
+
+export { bulkDeleteMailPieces } from './actions/index.js'

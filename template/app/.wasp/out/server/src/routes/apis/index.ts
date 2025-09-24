@@ -8,12 +8,12 @@ import { type AuthUserData, makeAuthUserIfPossible } from 'wasp/auth/user'
 
 import { paymentsWebhook as _wasppaymentsWebhookfn } from '../../../../../../src/payment/webhook'
 import { paymentsMiddlewareConfigFn as _wasppaymentsWebhookmiddlewareConfigFn } from '../../../../../../src/payment/webhook'
-import { handleLobWebhook as _wasplobWebhookfn } from '../../../../../../src/server/lob/webhook'
+import { lobWebhook as _wasplobWebhookfn } from '../../../../../../src/server/lob/webhook'
+import { lobMiddlewareConfigFn as _wasplobWebhookmiddlewareConfigFn } from '../../../../../../src/server/lob/webhook'
 import { validateAddressEndpoint as _waspvalidateAddressfn } from '../../../../../../src/server/lob/addressValidation'
 
 const idFn: MiddlewareConfigFn = x => x
 
-const _wasplobWebhookmiddlewareConfigFn = idFn
 const _waspvalidateAddressmiddlewareConfigFn = idFn
 
 const router = express.Router()

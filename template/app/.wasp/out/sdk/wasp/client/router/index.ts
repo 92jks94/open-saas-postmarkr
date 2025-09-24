@@ -138,6 +138,19 @@ export const routes = {
         options?.hash
       ),
   },
+  MailCheckoutResultRoute: {
+    to: "/mail/checkout",
+    build: (
+      options?:
+      OptionalRouteOptions
+    ) => interpolatePath(
+        
+        "/mail/checkout",
+        undefined,
+        options?.search,
+        options?.hash
+      ),
+  },
   FileUploadRoute: {
     to: "/file-upload",
     build: (

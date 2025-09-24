@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, getAllFilesByUser } from 'wasp/client/operations';
 import type { File } from 'wasp/entities';
 import { Button } from '../../components/ui/button';
@@ -7,19 +7,91 @@ import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { CheckCircle, XCircle, FileText, Upload, AlertTriangle } from 'lucide-react';
 
+/**
+ * Props for the FileSelector component
+ */
 interface FileSelectorProps {
+  /** Currently selected file ID */
   selectedFileId: string | null;
+  /** Callback when file selection changes */
   onFileSelect: (fileId: string | null) => void;
+  /** Type of mail piece (affects file requirements) */
   mailType: string;
+  /** Size of mail piece (affects file dimensions) */
   mailSize: string;
+  /** Optional CSS classes for styling */
   className?: string;
 }
 
+/**
+ * Result of file validation against mail requirements
+ */
 interface FileValidationResult {
+  /** Whether the file meets all requirements */
   isValid: boolean;
+  /** List of validation errors that prevent usage */
   errors: string[];
+  /** List of warnings about potential issues */
   warnings: string[];
 }
+
+// Constants moved outside component to prevent recreation
+const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+
+const MAIL_TYPE_REQUIREMENTS = {
+  'postcard': { maxPages: 1, minPages: 1 },
+  'letter': { maxPages: 6, minPages: 1 },
+  'check': { maxPages: 1, minPages: 1 },
+  'self_mailer': { maxPages: 4, minPages: 1 },
+  'catalog': { maxPages: 50, minPages: 2 },
+  'booklet': { maxPages: 20, minPages: 2 }
+} as const;
+
+/**
+ * Validate a file for mail processing requirements
+ */
+const validateFileForMail = (file: File, mailType: string, mailSize: string): FileValidationResult => {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check file type
+  if (file.type !== 'application/pdf') {
+    errors.push('Only PDF files are supported for mail');
+  }
+
+  // Check file size (10MB limit for mail)
+  if (file.size && file.size > MAIL_MAX_FILE_SIZE_BYTES) {
+    errors.push('File size must be less than 10MB for mail processing');
+  }
+
+  // Check page count for mail type
+  if (file.pageCount) {
+    const requirements = MAIL_TYPE_REQUIREMENTS[mailType as keyof typeof MAIL_TYPE_REQUIREMENTS];
+    if (requirements) {
+      if (file.pageCount > requirements.maxPages) {
+        errors.push(`${mailType} cannot have more than ${requirements.maxPages} pages`);
+      }
+      if (file.pageCount < requirements.minPages) {
+        warnings.push(`${mailType} typically has at least ${requirements.minPages} pages`);
+      }
+    }
+  }
+
+  // Check if file is validated
+  if (file.validationStatus === 'invalid') {
+    errors.push('File failed validation');
+  }
+
+  if (file.validationStatus === 'pending') {
+    warnings.push('File validation in progress');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings
+  };
+};
 
 const FileSelector: React.FC<FileSelectorProps> = ({
   selectedFileId,
@@ -29,77 +101,21 @@ const FileSelector: React.FC<FileSelectorProps> = ({
   className = ''
 }) => {
   const { data: files, isLoading, error } = useQuery(getAllFilesByUser);
-  const [validationResults, setValidationResults] = useState<Record<string, FileValidationResult>>({});
 
-  // Validate files for mail compatibility
-  useEffect(() => {
-    if (files) {
-      const results: Record<string, FileValidationResult> = {};
-      
-      files.forEach((file: File) => {
-        const validation = validateFileForMail(file, mailType, mailSize);
-        results[file.id] = validation;
-      });
-      
-      setValidationResults(results);
-    }
+  // Memoize validation results to prevent re-validation on every render
+  const validationResults = useMemo(() => {
+    if (!files) return {};
+    
+    const results: Record<string, FileValidationResult> = {};
+    files.forEach((file: File) => {
+      results[file.id] = validateFileForMail(file, mailType, mailSize);
+    });
+    
+    return results;
   }, [files, mailType, mailSize]);
 
-  const validateFileForMail = (file: File, mailType: string, mailSize: string): FileValidationResult => {
-    // Client-side validation logic (moved from server-side validation)
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // Check file type
-    if (file.type !== 'application/pdf') {
-      errors.push('Only PDF files are supported for mail');
-    }
-
-    // Check file size (10MB limit for mail)
-    const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-    if (file.size && file.size > MAIL_MAX_FILE_SIZE_BYTES) {
-      errors.push('File size must be less than 10MB for mail processing');
-    }
-
-    // Check page count for mail type
-    const MAIL_TYPE_REQUIREMENTS = {
-      'postcard': { maxPages: 1, minPages: 1 },
-      'letter': { maxPages: 6, minPages: 1 },
-      'check': { maxPages: 1, minPages: 1 },
-      'self_mailer': { maxPages: 4, minPages: 1 },
-      'catalog': { maxPages: 50, minPages: 2 },
-      'booklet': { maxPages: 20, minPages: 2 }
-    };
-
-    if (file.pageCount) {
-      const requirements = MAIL_TYPE_REQUIREMENTS[mailType as keyof typeof MAIL_TYPE_REQUIREMENTS];
-      if (requirements) {
-        if (file.pageCount > requirements.maxPages) {
-          errors.push(`${mailType} cannot have more than ${requirements.maxPages} pages`);
-        }
-        if (file.pageCount < requirements.minPages) {
-          warnings.push(`${mailType} typically has at least ${requirements.minPages} pages`);
-        }
-      }
-    }
-
-    // Check if file is validated
-    if (file.validationStatus === 'invalid') {
-      errors.push('File failed validation');
-    }
-
-    if (file.validationStatus === 'pending') {
-      warnings.push('File validation in progress');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings
-    };
-  };
-
-  const getValidationIcon = (fileId: string) => {
+  // Memoize helper functions to prevent recreation on every render
+  const getValidationIcon = useCallback((fileId: string) => {
     const validation = validationResults[fileId];
     if (!validation) return <AlertTriangle className="h-4 w-4 text-gray-400" />;
     
@@ -108,9 +124,9 @@ const FileSelector: React.FC<FileSelectorProps> = ({
     } else {
       return <XCircle className="h-4 w-4 text-red-500" />;
     }
-  };
+  }, [validationResults]);
 
-  const getValidationBadge = (fileId: string) => {
+  const getValidationBadge = useCallback((fileId: string) => {
     const validation = validationResults[fileId];
     if (!validation) return null;
     
@@ -119,15 +135,15 @@ const FileSelector: React.FC<FileSelectorProps> = ({
     } else {
       return <Badge variant="destructive">Invalid</Badge>;
     }
-  };
+  }, [validationResults]);
 
-  const formatFileSize = (bytes: number) => {
+  const formatFileSize = useCallback((bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -169,15 +185,22 @@ const FileSelector: React.FC<FileSelectorProps> = ({
     );
   }
 
-  const validFiles = files?.filter((file: File) => {
-    const validation = validationResults[file.id];
-    return validation?.isValid;
-  }) || [];
+  // Memoize filtered files to prevent recalculation on every render
+  const validFiles = useMemo(() => {
+    if (!files) return [];
+    return files.filter((file: File) => {
+      const validation = validationResults[file.id];
+      return validation?.isValid;
+    });
+  }, [files, validationResults]);
 
-  const invalidFiles = files?.filter((file: File) => {
-    const validation = validationResults[file.id];
-    return validation && !validation.isValid;
-  }) || [];
+  const invalidFiles = useMemo(() => {
+    if (!files) return [];
+    return files.filter((file: File) => {
+      const validation = validationResults[file.id];
+      return validation && !validation.isValid;
+    });
+  }, [files, validationResults]);
 
   return (
     <Card className={className}>
@@ -310,4 +333,5 @@ const FileSelector: React.FC<FileSelectorProps> = ({
   );
 };
 
-export default FileSelector;
+// Wrap component with React.memo to prevent re-renders when props haven't changed
+export default React.memo(FileSelector);

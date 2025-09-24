@@ -14,6 +14,7 @@ import AccountPage from '../../../../src/user/AccountPage'
 import DemoAppPage from '../../../../src/demo-ai-app/DemoAppPage'
 import PricingPage from '../../../../src/payment/PricingPage'
 import CheckoutResultPage from '../../../../src/payment/CheckoutResultPage'
+import MailCheckoutResultPage from '../../../../src/mail/MailCheckoutResultPage'
 import FileUploadPage from '../../../../src/file-upload/FileUploadPage'
 import AddressManagementPage from '../../../../src/address-management/AddressManagementPage'
 import AnalyticsDashboardPage from '../../../../src/admin/dashboards/analytics/AnalyticsDashboardPage'
@@ -43,6 +44,7 @@ export const routeNameToRouteComponent = {
   DemoAppRoute: createAuthRequiredPage(DemoAppPage),
   PricingPageRoute: PricingPage,
   CheckoutResultRoute: createAuthRequiredPage(CheckoutResultPage),
+  MailCheckoutResultRoute: createAuthRequiredPage(MailCheckoutResultPage),
   FileUploadRoute: createAuthRequiredPage(FileUploadPage),
   AddressManagementRoute: createAuthRequiredPage(AddressManagementPage),
   AdminRoute: createAuthRequiredPage(AnalyticsDashboardPage),

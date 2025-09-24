@@ -7,6 +7,7 @@ export declare function parseWebhookPayload(rawStripeEvent: Stripe.Event): Promi
         mode: "subscription" | "payment";
         customer: string;
         payment_status: "paid" | "unpaid" | "no_payment_required";
+        metadata?: Record<string, string> | undefined;
     };
 } | {
     eventName: "invoice.paid";
@@ -74,16 +75,19 @@ declare const sessionCompletedDataSchema: z.ZodObject<{
     customer: z.ZodString;
     payment_status: z.ZodEnum<["paid", "unpaid", "no_payment_required"]>;
     mode: z.ZodEnum<["payment", "subscription"]>;
+    metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     mode: "subscription" | "payment";
     customer: string;
     payment_status: "paid" | "unpaid" | "no_payment_required";
+    metadata?: Record<string, string> | undefined;
 }, {
     id: string;
     mode: "subscription" | "payment";
     customer: string;
     payment_status: "paid" | "unpaid" | "no_payment_required";
+    metadata?: Record<string, string> | undefined;
 }>;
 /**
  * This is a subtype of

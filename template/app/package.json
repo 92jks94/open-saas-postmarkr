@@ -20,6 +20,8 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
+    "@stripe/react-stripe-js": "^4.0.2",
+    "@stripe/stripe-js": "^7.9.0",
     "@tailwindcss/forms": "^0.5.3",
     "@tailwindcss/typography": "^0.5.7",
     "apexcharts": "3.41.0",
@@ -56,6 +58,7 @@
     "vite": "^7.0.6"
   },
   "scripts": {
+    "build": "wasp build",
     "start:ci": "wasp start"
   }
 }

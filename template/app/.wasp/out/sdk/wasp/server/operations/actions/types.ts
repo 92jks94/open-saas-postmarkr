@@ -199,6 +199,18 @@ export type CreateMailPaymentIntent<Input extends Payload = never, Output extend
   >
 
 // PUBLIC API
+export type CreateMailCheckoutSession<Input extends Payload = never, Output extends Payload = Payload> = 
+  AuthenticatedActionDefinition<
+    [
+      _MailPiece,
+      _MailAddress,
+      _MailPieceStatusHistory,
+    ],
+    Input,
+    Output
+  >
+
+// PUBLIC API
 export type ConfirmMailPayment<Input extends Payload = never, Output extends Payload = Payload> = 
   AuthenticatedActionDefinition<
     [
@@ -235,6 +247,17 @@ export type SubmitMailPieceToLob<Input extends Payload = never, Output extends P
 
 // PUBLIC API
 export type SyncMailPieceStatus<Input extends Payload = never, Output extends Payload = Payload> = 
+  AuthenticatedActionDefinition<
+    [
+      _MailPiece,
+      _MailPieceStatusHistory,
+    ],
+    Input,
+    Output
+  >
+
+// PUBLIC API
+export type BulkDeleteMailPieces<Input extends Payload = never, Output extends Payload = Payload> = 
   AuthenticatedActionDefinition<
     [
       _MailPiece,

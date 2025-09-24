@@ -1,6 +1,37 @@
+// ============================================================================
+// MAIL SYSTEM OPERATIONS
+// ============================================================================
+// This file contains all server-side operations for the physical mail system.
+// It handles the complete mail lifecycle from creation to delivery tracking.
+//
+// Key Integration Points:
+// - Stripe API: Payment processing for mail pieces
+// - Lob API: Physical mail printing and delivery services
+// - Prisma: Database operations for mail pieces, addresses, and files
+// - Wasp: Authentication, validation, and operation framework
+//
+// Mail Lifecycle Flow:
+// 1. createMailPiece -> createMailPaymentIntent -> confirmMailPayment -> submitMailPieceToLob
+// 2. updateMailPieceStatus (webhook) -> syncMailPieceStatus
+
 import { HttpError } from 'wasp/server';
-import type { GetMailPieces, CreateMailPiece, UpdateMailPieceStatus } from 'wasp/server/operations';
+import type { 
+  GetMailPieces, 
+  CreateMailPiece, 
+  UpdateMailPieceStatus, 
+  BulkDeleteMailPieces, 
+  GetMailPiece,
+  UpdateMailPiece,
+  DeleteMailPiece,
+  CreateMailPaymentIntent,
+  CreateMailCheckoutSession,
+  ConfirmMailPayment,
+  RefundMailPayment,
+  SubmitMailPieceToLob,
+  SyncMailPieceStatus
+} from 'wasp/server/operations';
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory } from 'wasp/entities';
+import type { MailPieceWithRelations } from './types';
 import { 
   createMailPieceSchema, 
   updateMailPieceSchema, 
@@ -19,16 +50,76 @@ import {
 } from '../server/mail/payments';
 import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus } from '../server/lob/services';
 
+// ============================================================================
+// MAIL PIECE CRUD OPERATIONS
+// ============================================================================
+
 /**
- * Get all mail pieces for the current user
+ * Get all mail pieces for the current user with pagination and filtering support
+ * 
+ * Supports filtering by status, mail type, and text search across description and addresses.
+ * Returns paginated results with metadata for UI pagination controls.
+ * 
+ * @param args - Query parameters for filtering and pagination
+ * @param args.page - Page number (default: 1)
+ * @param args.limit - Items per page (max: 100, default: 20)
+ * @param args.status - Filter by mail piece status ('all' for no filter)
+ * @param args.mailType - Filter by mail type ('all' for no filter)
+ * @param args.search - Text search in description and address names
+ * @param context - Wasp context with user authentication and entity access
+ * @returns Paginated mail pieces with metadata
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
  */
-export const getMailPieces: GetMailPieces<void, MailPiece[]> = async (_args, context) => {
+type GetMailPiecesInput = {
+  page?: number;
+  limit?: number;
+  status?: string;
+  mailType?: string;
+  search?: string;
+};
+
+export const getMailPieces: GetMailPieces<GetMailPiecesInput, { 
+  mailPieces: MailPieceWithRelations[]; 
+  total: number; 
+  page: number; 
+  totalPages: number; 
+  hasNext: boolean; 
+  hasPrev: boolean; 
+}> = async (args, context) => {
   if (!context.user) {
     throw new HttpError(401, 'Not authorized');
   }
 
-  return context.entities.MailPiece.findMany({
-    where: { userId: context.user.id },
+  const page = args.page || 1;
+  const limit = Math.min(args.limit || 20, 100); // Max 100 items per page
+  const skip = (page - 1) * limit;
+
+  // Build where clause
+  const where: any = { userId: context.user.id };
+  
+  if (args.status && args.status !== 'all') {
+    where.status = args.status;
+  }
+  
+  if (args.mailType && args.mailType !== 'all') {
+    where.mailType = args.mailType;
+  }
+  
+  if (args.search) {
+    where.OR = [
+      { description: { contains: args.search, mode: 'insensitive' } },
+      { senderAddress: { contactName: { contains: args.search, mode: 'insensitive' } } },
+      { recipientAddress: { contactName: { contains: args.search, mode: 'insensitive' } } }
+    ];
+  }
+
+  // Get total count for pagination
+  const total = await context.entities.MailPiece.count({ where });
+
+  // Get paginated results
+  const mailPieces = await context.entities.MailPiece.findMany({
+    where,
     include: {
       senderAddress: true,
       recipientAddress: true,
@@ -39,11 +130,44 @@ export const getMailPieces: GetMailPieces<void, MailPiece[]> = async (_args, con
       },
     },
     orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
   });
+
+  const totalPages = Math.ceil(total / limit);
+  const hasNext = page < totalPages;
+  const hasPrev = page > 1;
+
+  return {
+    mailPieces,
+    total,
+    page,
+    totalPages,
+    hasNext,
+    hasPrev
+  };
 };
 
 /**
- * Create a new mail piece with comprehensive validation
+ * Create a new mail piece with comprehensive validation and ownership checks
+ * 
+ * Validates all inputs, ensures user owns addresses and files, creates mail piece in 'draft' status.
+ * This is the first step in the mail creation workflow - payment and Lob submission happen separately.
+ * 
+ * @param args - Mail piece creation data
+ * @param args.mailType - Type of mail (postcard, letter, check, etc.)
+ * @param args.mailClass - USPS mail class (first_class, standard, express, priority)
+ * @param args.mailSize - Physical dimensions (4x6, 6x9, etc.)
+ * @param args.senderAddressId - UUID of sender address (must belong to user)
+ * @param args.recipientAddressId - UUID of recipient address (must belong to user)
+ * @param args.fileId - Optional UUID of file attachment (must belong to user)
+ * @param args.description - Optional description text (max 500 chars)
+ * @param context - Wasp context with user authentication and entity access
+ * @returns Created mail piece in 'draft' status
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
+ * @throws {HttpError} 400 - If validation fails or addresses/files not found/owned by user
+ * @throws {HttpError} 500 - If database operation fails
  */
 type CreateMailPieceInput = {
   mailType: string;
@@ -137,7 +261,22 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
 };
 
 /**
- * Update mail piece status (used by webhook)
+ * Update mail piece status from Lob webhook notifications
+ * 
+ * Processes status updates from Lob API webhooks, mapping Lob statuses to internal statuses.
+ * Creates status history entries for tracking. Used by webhook endpoint for real-time updates.
+ * 
+ * @param args - Webhook data from Lob
+ * @param args.lobId - Lob's internal ID for the mail piece
+ * @param args.lobStatus - Current status from Lob (delivered, returned, in_transit, etc.)
+ * @param args.lobTrackingNumber - USPS tracking number if available
+ * @param args.lobData - Additional metadata from Lob webhook
+ * @param context - Wasp context with entity access
+ * @returns Updated mail piece with new status
+ * 
+ * @throws {HttpError} 404 - If mail piece with lobId not found
+ * @throws {HttpError} 400 - If webhook data validation fails
+ * @throws {HttpError} 500 - If database update fails
  */
 type UpdateMailPieceStatusInput = {
   lobId: string;
@@ -229,7 +368,7 @@ type UpdateMailPieceInput = {
   description?: string;
 };
 
-export const updateMailPiece = async (args: UpdateMailPieceInput, context: any): Promise<MailPiece> => {
+export const updateMailPiece: UpdateMailPiece<UpdateMailPieceInput, MailPiece> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -330,7 +469,7 @@ type DeleteMailPieceInput = {
   id: string;
 };
 
-export const deleteMailPiece = async (args: DeleteMailPieceInput, context: any): Promise<{ success: boolean }> => {
+export const deleteMailPiece: DeleteMailPiece<DeleteMailPieceInput, { success: boolean }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -375,7 +514,7 @@ type GetMailPieceInput = {
   id: string;
 };
 
-export const getMailPiece = async (args: GetMailPieceInput, context: any): Promise<MailPiece | null> => {
+export const getMailPiece: GetMailPiece<GetMailPieceInput, MailPieceWithRelations | null> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -407,14 +546,35 @@ export const getMailPiece = async (args: GetMailPieceInput, context: any): Promi
   }
 };
 
+// ============================================================================
+// PAYMENT PROCESSING OPERATIONS
+// ============================================================================
+// Handles Stripe payment integration for mail pieces:
+// - Payment intent creation with cost calculation
+// - Payment confirmation and status updates
+// - Refund processing for failed or cancelled mail pieces
+
 /**
- * Create payment intent for mail piece
+ * Create Stripe payment intent for mail piece processing
+ * 
+ * Calculates cost based on mail type, class, and size, then creates a Stripe payment intent.
+ * Only works for mail pieces in 'draft' status. Updates mail piece to 'pending_payment' status.
+ * 
+ * @param args - Payment intent creation data
+ * @param args.mailPieceId - UUID of mail piece to create payment for
+ * @param context - Wasp context with user authentication and entity access
+ * @returns Payment intent details for client-side Stripe integration
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
+ * @throws {HttpError} 404 - If mail piece not found or not owned by user
+ * @throws {HttpError} 400 - If mail piece not in 'draft' status
+ * @throws {HttpError} 500 - If Stripe API or cost calculation fails
  */
 type CreateMailPaymentIntentInput = {
   mailPieceId: string;
 };
 
-export const createMailPaymentIntent = async (args: CreateMailPaymentIntentInput, context: any): Promise<{ paymentIntentId: string; cost: number; clientSecret: string }> => {
+export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentIntentInput, { paymentIntentId: string; cost: number; clientSecret: string }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -502,6 +662,132 @@ export const createMailPaymentIntent = async (args: CreateMailPaymentIntentInput
 };
 
 /**
+ * Create Stripe Checkout Session for mail piece payment
+ * 
+ * Creates a Stripe Checkout Session that redirects the user to Stripe's hosted payment page.
+ * This is the recommended approach for mail payments as it handles all payment UI and security.
+ * 
+ * @param args - Checkout session creation data
+ * @param args.mailPieceId - UUID of mail piece to create checkout for
+ * @param context - Wasp context with user authentication and entity access
+ * @returns Checkout session URL for redirect
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
+ * @throws {HttpError} 404 - If mail piece not found or not owned by user
+ * @throws {HttpError} 400 - If mail piece not in 'draft' status
+ * @throws {HttpError} 500 - If Stripe API or cost calculation fails
+ */
+type CreateMailCheckoutSessionInput = {
+  mailPieceId: string;
+};
+
+export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailCheckoutSessionInput, { sessionUrl: string; sessionId: string }> = async (args, context) => {
+  try {
+    // Authentication check
+    if (!context.user) {
+      throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+
+    // Find the mail piece and verify ownership
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { id: args.mailPieceId, userId: context.user.id },
+      include: {
+        senderAddress: true,
+        recipientAddress: true,
+      },
+    });
+
+    if (!mailPiece) {
+      throw new HttpError(404, validationErrors.MAIL_PIECE_NOT_FOUND);
+    }
+
+    // Only allow checkout creation for draft status
+    if (mailPiece.status !== 'draft') {
+      throw new HttpError(400, 'Checkout can only be created for draft mail pieces');
+    }
+
+    // Calculate cost using existing service
+    const costData = await createMailPaymentIntentService({
+      mailType: mailPiece.mailType,
+      mailClass: mailPiece.mailClass,
+      mailSize: mailPiece.mailSize,
+      toAddress: mailPiece.recipientAddress,
+      fromAddress: mailPiece.senderAddress,
+    }, context.user.id, context);
+
+    // Create Stripe Checkout Session
+    const stripe = require('../../payment/stripe/stripeClient').stripe;
+    const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Mail Piece - ${mailPiece.mailType}`,
+              description: `Send ${mailPiece.mailType} via ${mailPiece.mailClass} mail`,
+            },
+            unit_amount: costData.cost, // Amount in cents
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${DOMAIN}/mail/checkout?status=success&mail_piece_id=${args.mailPieceId}`,
+      cancel_url: `${DOMAIN}/mail/checkout?status=canceled&mail_piece_id=${args.mailPieceId}`,
+      metadata: {
+        mailPieceId: args.mailPieceId,
+        userId: context.user.id,
+        mailType: mailPiece.mailType,
+        mailClass: mailPiece.mailClass,
+        mailSize: mailPiece.mailSize,
+        type: 'mail_payment',
+      },
+      customer_email: context.user.email,
+    });
+
+    if (!session.url) {
+      throw new HttpError(500, 'Failed to create checkout session URL');
+    }
+
+    // Update mail piece with checkout session ID
+    await context.entities.MailPiece.update({
+      where: { id: args.mailPieceId },
+      data: {
+        paymentIntentId: session.id, // Store session ID for reference
+        status: 'pending_payment',
+      },
+    });
+
+    // Create status history entry
+    await context.entities.MailPieceStatusHistory.create({
+      data: {
+        mailPieceId: args.mailPieceId,
+        status: 'pending_payment',
+        previousStatus: 'draft',
+        description: 'Checkout session created',
+        source: 'system',
+      },
+    });
+
+    return {
+      sessionUrl: session.url,
+      sessionId: session.id,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    
+    // Log unexpected errors
+    console.error('Failed to create mail checkout session:', error);
+    throw new HttpError(500, 'Failed to create checkout session due to an internal error.');
+  }
+};
+
+/**
  * Confirm payment for mail piece
  */
 type ConfirmMailPaymentInput = {
@@ -509,7 +795,7 @@ type ConfirmMailPaymentInput = {
   paymentIntentId: string;
 };
 
-export const confirmMailPayment = async (args: ConfirmMailPaymentInput, context: any): Promise<{ success: boolean }> => {
+export const confirmMailPayment: ConfirmMailPayment<ConfirmMailPaymentInput, { success: boolean }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -553,7 +839,7 @@ type RefundMailPaymentInput = {
   reason: string;
 };
 
-export const refundMailPayment = async (args: RefundMailPaymentInput, context: any): Promise<{ success: boolean }> => {
+export const refundMailPayment: RefundMailPayment<RefundMailPaymentInput, { success: boolean }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -593,14 +879,35 @@ export const refundMailPayment = async (args: RefundMailPaymentInput, context: a
   }
 };
 
+// ============================================================================
+// LOB API INTEGRATION OPERATIONS
+// ============================================================================
+// Handles integration with Lob API for physical mail services:
+// - Mail piece submission to Lob for printing and mailing
+// - Status synchronization and webhook processing
+// - Real-time tracking updates from Lob webhooks
+
 /**
- * Submit mail piece to Lob after payment confirmation
+ * Submit mail piece to Lob API for physical mail processing
+ * 
+ * Sends mail piece data to Lob API for printing and mailing. Only works for mail pieces
+ * in 'paid' status. Updates status to 'submitted' and stores Lob ID for tracking.
+ * 
+ * @param args - Submission data
+ * @param args.mailPieceId - UUID of mail piece to submit to Lob
+ * @param context - Wasp context with user authentication and entity access
+ * @returns Success status and Lob ID for tracking
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
+ * @throws {HttpError} 404 - If mail piece not found or not owned by user
+ * @throws {HttpError} 400 - If mail piece not in 'paid' status
+ * @throws {HttpError} 500 - If Lob API submission fails
  */
 type SubmitMailPieceToLobInput = {
   mailPieceId: string;
 };
 
-export const submitMailPieceToLob = async (args: SubmitMailPieceToLobInput, context: any): Promise<{ success: boolean; lobId?: string }> => {
+export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInput, { success: boolean; lobId?: string }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -702,7 +1009,7 @@ type SyncMailPieceStatusInput = {
   mailPieceId: string;
 };
 
-export const syncMailPieceStatus = async (args: SyncMailPieceStatusInput, context: any): Promise<{ success: boolean; status?: string }> => {
+export const syncMailPieceStatus: SyncMailPieceStatus<SyncMailPieceStatusInput, { success: boolean; status?: string }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -750,9 +1057,9 @@ export const syncMailPieceStatus = async (args: SyncMailPieceStatusInput, contex
           lobStatus: lobStatus.status,
           lobTrackingNumber: lobStatus.trackingNumber,
           metadata: {
-            ...mailPiece.metadata,
+            ...(mailPiece.metadata && typeof mailPiece.metadata === 'object' ? mailPiece.metadata : {}),
             lastSyncedAt: new Date().toISOString(),
-            lobData: lobStatus.lobData,
+            lobData: lobStatus.lobData || {},
           },
         },
       });
@@ -788,5 +1095,76 @@ export const syncMailPieceStatus = async (args: SyncMailPieceStatusInput, contex
     // Log unexpected errors
     console.error('Failed to sync mail piece status from Lob:', error);
     throw new HttpError(500, 'Failed to sync mail piece status from Lob due to an internal error.');
+  }
+};
+
+/**
+ * Bulk delete mail pieces (only draft status allowed)
+ */
+type BulkDeleteMailPiecesInput = {
+  mailPieceIds: string[];
+};
+
+export const bulkDeleteMailPieces: BulkDeleteMailPieces<BulkDeleteMailPiecesInput, { 
+  deletedCount: number; 
+  failedIds: string[]; 
+}> = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, 'Not authorized');
+    }
+
+    if (!args.mailPieceIds || args.mailPieceIds.length === 0) {
+      throw new HttpError(400, 'No mail piece IDs provided');
+    }
+
+    if (args.mailPieceIds.length > 50) {
+      throw new HttpError(400, 'Cannot delete more than 50 mail pieces at once');
+    }
+
+    const deletedIds: string[] = [];
+    const failedIds: string[] = [];
+
+    // Process each mail piece individually to handle errors gracefully
+    for (const mailPieceId of args.mailPieceIds) {
+      try {
+        // Verify ownership and status
+        const mailPiece = await context.entities.MailPiece.findFirst({
+          where: { 
+            id: mailPieceId, 
+            userId: context.user.id,
+            status: 'draft' // Only allow deletion of draft mail pieces
+          }
+        });
+
+        if (!mailPiece) {
+          failedIds.push(mailPieceId);
+          continue;
+        }
+
+        // Delete the mail piece (cascade will handle status history)
+        await context.entities.MailPiece.delete({
+          where: { id: mailPieceId }
+        });
+
+        deletedIds.push(mailPieceId);
+      } catch (error) {
+        console.error(`Failed to delete mail piece ${mailPieceId}:`, error);
+        failedIds.push(mailPieceId);
+      }
+    }
+
+    return {
+      deletedCount: deletedIds.length,
+      failedIds
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    
+    // Log unexpected errors
+    console.error('Failed to bulk delete mail pieces:', error);
+    throw new HttpError(500, 'Failed to bulk delete mail pieces due to an internal error.');
   }
 };

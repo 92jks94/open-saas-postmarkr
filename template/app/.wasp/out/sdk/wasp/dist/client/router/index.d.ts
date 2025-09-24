@@ -40,6 +40,10 @@ export declare const routes: {
         readonly to: "/checkout";
         readonly build: (options?: OptionalRouteOptions) => string;
     };
+    readonly MailCheckoutResultRoute: {
+        readonly to: "/mail/checkout";
+        readonly build: (options?: OptionalRouteOptions) => string;
+    };
     readonly FileUploadRoute: {
         readonly to: "/file-upload";
         readonly build: (options?: OptionalRouteOptions) => string;

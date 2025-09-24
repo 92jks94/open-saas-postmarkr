@@ -98,7 +98,37 @@ async function handleCheckoutSessionCompleted(
 ) {
   const isSuccessfulOneTimePayment = session.mode === 'payment' && session.payment_status === 'paid';
   if (isSuccessfulOneTimePayment) {
-    await saveSuccessfulOneTimePayment(session, prismaUserDelegate);
+    // Check if this is a mail payment
+    if (session.metadata?.type === 'mail_payment' && session.metadata?.mailPieceId) {
+      await handleMailPaymentCompleted(session);
+    } else {
+      // Handle regular subscription/credit payments
+      await saveSuccessfulOneTimePayment(session, prismaUserDelegate);
+    }
+  }
+}
+
+async function handleMailPaymentCompleted(session: SessionCompletedData) {
+  try {
+    const mailPieceId = session.metadata?.mailPieceId;
+    if (!mailPieceId) {
+      console.error('Mail payment completed but no mailPieceId in metadata');
+      return;
+    }
+
+    // Import the mail payment confirmation service
+    const { confirmMailPaymentService } = require('../../server/mail/payments');
+    
+    // Confirm the mail payment
+    await confirmMailPaymentService(
+      session.id, // Use session ID as payment intent ID
+      mailPieceId,
+      { entities: { MailPiece: require('wasp/server').prisma.mailPiece, MailPieceStatusHistory: require('wasp/server').prisma.mailPieceStatusHistory } }
+    );
+
+    console.log(`Mail payment completed for mail piece ${mailPieceId}`);
+  } catch (error) {
+    console.error('Failed to handle mail payment completion:', error);
   }
 }
 

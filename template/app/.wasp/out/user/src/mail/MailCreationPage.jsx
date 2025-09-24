@@ -5,6 +5,15 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import MailCreationForm from './components/MailCreationForm';
+/**
+ * Main page component for creating new mail pieces
+ *
+ * Features:
+ * - Renders MailCreationForm for mail piece creation
+ * - Handles success/error states with user feedback
+ * - Provides navigation to created mail piece or history
+ * - Shows success confirmation with next steps
+ */
 const MailCreationPage = () => {
     const { data: user } = useAuth();
     const navigate = useNavigate();
@@ -63,12 +72,11 @@ const MailCreationPage = () => {
           </p>
         </div>
 
-        {/* Phase 2 Implementation Notice */}
+        {/* Simplified Implementation Notice */}
         <Alert className="mb-6">
           <CheckCircle className="h-4 w-4"/>
           <AlertDescription>
-            <strong>Phase 2 Complete:</strong> File selection and address integration are now available. 
-            You can select from your uploaded files and address book to create mail pieces.
+            <strong>Simplified Mode:</strong> Basic mail creation for testing. Select files and addresses to create mail pieces.
           </AlertDescription>
         </Alert>
 

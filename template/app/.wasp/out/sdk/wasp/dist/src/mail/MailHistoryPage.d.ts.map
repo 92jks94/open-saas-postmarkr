@@ -1,1 +1,1 @@
-{"version":3,"file":"MailHistoryPage.d.ts","sourceRoot":"","sources":["../../../src/mail/MailHistoryPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAG1B,QAAA,MAAM,eAAe,EAAE,KAAK,CAAC,EAwB5B,CAAC;AAEF,eAAe,eAAe,CAAC"}
+{"version":3,"file":"MailHistoryPage.d.ts","sourceRoot":"","sources":["../../../src/mail/MailHistoryPage.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAmB,MAAM,OAAO,CAAC;AA4BxC;;;;;;;GAOG;AACH,QAAA,MAAM,eAAe,EAAE,KAAK,CAAC,EA4P5B,CAAC;AAEF,eAAe,eAAe,CAAC"}

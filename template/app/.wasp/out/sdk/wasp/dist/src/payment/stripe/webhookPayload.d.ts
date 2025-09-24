@@ -4,9 +4,10 @@ export declare function parseWebhookPayload(rawStripeEvent: Stripe.Event): Promi
     eventName: "checkout.session.completed";
     data: {
         id: string;
+        mode: "subscription" | "payment";
         customer: string;
         payment_status: "paid" | "unpaid" | "no_payment_required";
-        mode: "payment" | "subscription";
+        metadata?: Record<string, string> | undefined;
     };
 } | {
     eventName: "invoice.paid";
@@ -27,9 +28,9 @@ export declare function parseWebhookPayload(rawStripeEvent: Stripe.Event): Promi
 } | {
     eventName: "customer.subscription.updated";
     data: {
-        customer: string;
         status: string;
         cancel_at_period_end: boolean;
+        customer: string;
         items: {
             data: {
                 price: {
@@ -49,8 +50,8 @@ export declare function parseWebhookPayload(rawStripeEvent: Stripe.Event): Promi
         id: string;
         amount: number;
         currency: string;
-        customer?: string | undefined;
         metadata?: Record<string, string> | undefined;
+        customer?: string | undefined;
     };
 } | {
     eventName: "payment_intent.payment_failed";
@@ -58,8 +59,8 @@ export declare function parseWebhookPayload(rawStripeEvent: Stripe.Event): Promi
         id: string;
         amount: number;
         currency: string;
-        customer?: string | undefined;
         metadata?: Record<string, string> | undefined;
+        customer?: string | undefined;
         last_payment_error?: {
             message: string;
         } | undefined;
@@ -74,16 +75,19 @@ declare const sessionCompletedDataSchema: z.ZodObject<{
     customer: z.ZodString;
     payment_status: z.ZodEnum<["paid", "unpaid", "no_payment_required"]>;
     mode: z.ZodEnum<["payment", "subscription"]>;
+    metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodString>>;
 }, "strip", z.ZodTypeAny, {
     id: string;
+    mode: "subscription" | "payment";
     customer: string;
     payment_status: "paid" | "unpaid" | "no_payment_required";
-    mode: "payment" | "subscription";
+    metadata?: Record<string, string> | undefined;
 }, {
     id: string;
+    mode: "subscription" | "payment";
     customer: string;
     payment_status: "paid" | "unpaid" | "no_payment_required";
-    mode: "payment" | "subscription";
+    metadata?: Record<string, string> | undefined;
 }>;
 /**
  * This is a subtype of
@@ -209,9 +213,9 @@ declare const subscriptionUpdatedDataSchema: z.ZodObject<{
         }[];
     }>;
 }, "strip", z.ZodTypeAny, {
-    customer: string;
     status: string;
     cancel_at_period_end: boolean;
+    customer: string;
     items: {
         data: {
             price: {
@@ -220,9 +224,9 @@ declare const subscriptionUpdatedDataSchema: z.ZodObject<{
         }[];
     };
 }, {
-    customer: string;
     status: string;
     cancel_at_period_end: boolean;
+    customer: string;
     items: {
         data: {
             price: {
@@ -256,14 +260,14 @@ declare const paymentIntentSucceededDataSchema: z.ZodObject<{
     id: string;
     amount: number;
     currency: string;
-    customer?: string | undefined;
     metadata?: Record<string, string> | undefined;
+    customer?: string | undefined;
 }, {
     id: string;
     amount: number;
     currency: string;
-    customer?: string | undefined;
     metadata?: Record<string, string> | undefined;
+    customer?: string | undefined;
 }>;
 /**
  * This is a subtype of
@@ -286,8 +290,8 @@ declare const paymentIntentFailedDataSchema: z.ZodObject<{
     id: string;
     amount: number;
     currency: string;
-    customer?: string | undefined;
     metadata?: Record<string, string> | undefined;
+    customer?: string | undefined;
     last_payment_error?: {
         message: string;
     } | undefined;
@@ -295,8 +299,8 @@ declare const paymentIntentFailedDataSchema: z.ZodObject<{
     id: string;
     amount: number;
     currency: string;
-    customer?: string | undefined;
     metadata?: Record<string, string> | undefined;
+    customer?: string | undefined;
     last_payment_error?: {
         message: string;
     } | undefined;

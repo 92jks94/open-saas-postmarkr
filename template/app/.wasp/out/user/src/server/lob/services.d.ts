@@ -104,7 +104,11 @@ export declare function getMailPieceStatus(lobId: string): Promise<{
     status: any;
     trackingNumber: any;
     estimatedDeliveryDate: Date;
-    events: any[];
+    events: {
+        timestamp: Date;
+        status: string;
+        description: string;
+    }[];
     mailType: string;
     lobData: any;
 }>;

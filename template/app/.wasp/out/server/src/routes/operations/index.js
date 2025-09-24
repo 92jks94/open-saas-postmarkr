@@ -19,10 +19,12 @@ import updateMailPiece from './updateMailPiece.js'
 import deleteMailPiece from './deleteMailPiece.js'
 import updateMailPieceStatus from './updateMailPieceStatus.js'
 import createMailPaymentIntent from './createMailPaymentIntent.js'
+import createMailCheckoutSession from './createMailCheckoutSession.js'
 import confirmMailPayment from './confirmMailPayment.js'
 import refundMailPayment from './refundMailPayment.js'
 import submitMailPieceToLob from './submitMailPieceToLob.js'
 import syncMailPieceStatus from './syncMailPieceStatus.js'
+import bulkDeleteMailPieces from './bulkDeleteMailPieces.js'
 import getPaginatedUsers from './getPaginatedUsers.js'
 import getGptResponses from './getGptResponses.js'
 import getAllTasksByUser from './getAllTasksByUser.js'
@@ -53,10 +55,12 @@ router.post('/update-mail-piece', auth, updateMailPiece)
 router.post('/delete-mail-piece', auth, deleteMailPiece)
 router.post('/update-mail-piece-status', auth, updateMailPieceStatus)
 router.post('/create-mail-payment-intent', auth, createMailPaymentIntent)
+router.post('/create-mail-checkout-session', auth, createMailCheckoutSession)
 router.post('/confirm-mail-payment', auth, confirmMailPayment)
 router.post('/refund-mail-payment', auth, refundMailPayment)
 router.post('/submit-mail-piece-to-lob', auth, submitMailPieceToLob)
 router.post('/sync-mail-piece-status', auth, syncMailPieceStatus)
+router.post('/bulk-delete-mail-pieces', auth, bulkDeleteMailPieces)
 router.post('/get-paginated-users', auth, getPaginatedUsers)
 router.post('/get-gpt-responses', auth, getGptResponses)
 router.post('/get-all-tasks-by-user', auth, getAllTasksByUser)

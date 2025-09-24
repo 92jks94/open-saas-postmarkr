@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, getMailAddressesByUser } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -9,22 +9,26 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
     const { data: addresses, isLoading, error } = useQuery(getMailAddressesByUser);
     const [validationResults, setValidationResults] = useState({});
     const [validatingAddresses, setValidatingAddresses] = useState(new Set());
-    // Filter addresses by type
-    const filteredAddresses = addresses?.filter(address => {
-        if (addressType === 'sender') {
-            return address.addressType === 'sender' || address.addressType === 'both';
-        }
-        else {
-            return address.addressType === 'recipient' || address.addressType === 'both';
-        }
-    }) || [];
+    // Memoize filtered addresses to prevent recalculation on every render
+    const filteredAddresses = useMemo(() => {
+        if (!addresses)
+            return [];
+        return addresses.filter(address => {
+            if (addressType === 'sender') {
+                return address.addressType === 'sender' || address.addressType === 'both';
+            }
+            else {
+                return address.addressType === 'recipient' || address.addressType === 'both';
+            }
+        });
+    }, [addresses, addressType]);
     // Validate addresses using Lob API
     const validateAddress = async (address) => {
         if (validatingAddresses.has(address.id))
             return;
         setValidatingAddresses(prev => new Set(prev).add(address.id));
         try {
-            // Call server-side Lob validation
+            // Call the real address validation API endpoint
             const response = await fetch('/api/validate-address', {
                 method: 'POST',
                 headers: {
@@ -39,25 +43,23 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
                     country: address.country,
                 }),
             });
-            if (response.ok) {
-                const result = await response.json();
-                setValidationResults(prev => ({
-                    ...prev,
-                    [address.id]: {
-                        isValid: result.isValid,
-                        isValidated: true,
-                        validationError: result.error || undefined,
-                        lobAddressId: result.lobAddressId || undefined,
-                    }
-                }));
+            if (!response.ok) {
+                throw new Error(`Validation failed: ${response.statusText}`);
             }
-            else {
-                throw new Error('Validation request failed');
-            }
+            const result = await response.json();
+            setValidationResults(prev => ({
+                ...prev,
+                [address.id]: {
+                    isValid: result.isValid,
+                    isValidated: true,
+                    validationError: result.error,
+                    lobAddressId: result.lobAddressId,
+                }
+            }));
         }
         catch (error) {
             // Fallback to simulated validation for development
-            console.warn('Lob validation failed, using simulation:', error);
+            console.warn('Address validation failed, using simulation:', error);
             const isValid = Math.random() > 0.2; // 80% success rate for demo
             setValidationResults(prev => ({
                 ...prev,
@@ -87,7 +89,8 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
             });
         }
     }, [filteredAddresses]);
-    const getValidationIcon = (addressId) => {
+    // Memoize helper functions to prevent recreation on every render
+    const getValidationIcon = useCallback((addressId) => {
         const validation = validationResults[addressId];
         const address = filteredAddresses.find(a => a.id === addressId);
         if (validatingAddresses.has(addressId)) {
@@ -105,8 +108,8 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
             return <CheckCircle className="h-4 w-4 text-green-500"/>;
         }
         return <AlertTriangle className="h-4 w-4 text-gray-400"/>;
-    };
-    const getValidationBadge = (addressId) => {
+    }, [validationResults, filteredAddresses, validatingAddresses]);
+    const getValidationBadge = useCallback((addressId) => {
         const validation = validationResults[addressId];
         const address = filteredAddresses.find(a => a.id === addressId);
         if (validatingAddresses.has(addressId)) {
@@ -124,8 +127,8 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
             return <Badge variant="secondary" className="bg-green-100 text-green-800">Verified</Badge>;
         }
         return <Badge variant="outline">Unverified</Badge>;
-    };
-    const formatAddress = (address) => {
+    }, [validationResults, filteredAddresses, validatingAddresses]);
+    const formatAddress = useCallback((address) => {
         const parts = [
             address.addressLine1,
             address.addressLine2,
@@ -135,7 +138,7 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
             address.country
         ].filter(Boolean);
         return parts.join(', ');
-    };
+    }, []);
     if (isLoading) {
         return (<Card className={className}>
         <CardHeader>
@@ -170,18 +173,25 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
         </CardContent>
       </Card>);
     }
-    const validAddresses = filteredAddresses.filter(address => {
-        const validation = validationResults[address.id];
-        return validation?.isValid || address.isValidated;
-    });
-    const invalidAddresses = filteredAddresses.filter(address => {
-        const validation = validationResults[address.id];
-        return validation?.isValidated && !validation.isValid;
-    });
-    const unverifiedAddresses = filteredAddresses.filter(address => {
-        const validation = validationResults[address.id];
-        return !validation?.isValidated && !address.isValidated;
-    });
+    // Memoize filtered address lists to prevent recalculation on every render
+    const validAddresses = useMemo(() => {
+        return filteredAddresses.filter(address => {
+            const validation = validationResults[address.id];
+            return validation?.isValid || address.isValidated;
+        });
+    }, [filteredAddresses, validationResults]);
+    const invalidAddresses = useMemo(() => {
+        return filteredAddresses.filter(address => {
+            const validation = validationResults[address.id];
+            return validation?.isValidated && !validation.isValid;
+        });
+    }, [filteredAddresses, validationResults]);
+    const unverifiedAddresses = useMemo(() => {
+        return filteredAddresses.filter(address => {
+            const validation = validationResults[address.id];
+            return !validation?.isValidated && !address.isValidated;
+        });
+    }, [filteredAddresses, validationResults]);
     return (<Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -307,5 +317,6 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
       </CardContent>
     </Card>);
 };
-export default AddressSelector;
+// Wrap component with React.memo to prevent re-renders when props haven't changed
+export default React.memo(AddressSelector);
 //# sourceMappingURL=AddressSelector.jsx.map

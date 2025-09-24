@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, getMailAddressesByUser } from 'wasp/client/operations';
 import type { MailAddress } from 'wasp/entities';
 import { Button } from '../../components/ui/button';
@@ -7,17 +7,31 @@ import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { CheckCircle, XCircle, MapPin, Plus, AlertTriangle, Shield } from 'lucide-react';
 
+/**
+ * Props for the AddressSelector component
+ */
 interface AddressSelectorProps {
+  /** Currently selected address ID */
   selectedAddressId: string | null;
+  /** Callback when address selection changes */
   onAddressSelect: (addressId: string | null) => void;
+  /** Type of address being selected (sender or recipient) */
   addressType: 'sender' | 'recipient';
+  /** Optional CSS classes for styling */
   className?: string;
 }
 
+/**
+ * Result of address validation with Lob API
+ */
 interface AddressValidationResult {
+  /** Whether the address is valid according to Lob */
   isValid: boolean;
+  /** Whether validation has been completed */
   isValidated: boolean;
+  /** Error message if validation failed */
   validationError?: string;
+  /** Lob's internal address ID if validation succeeded */
   lobAddressId?: string;
 }
 
@@ -31,14 +45,17 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
   const [validationResults, setValidationResults] = useState<Record<string, AddressValidationResult>>({});
   const [validatingAddresses, setValidatingAddresses] = useState<Set<string>>(new Set());
 
-  // Filter addresses by type
-  const filteredAddresses = addresses?.filter(address => {
-    if (addressType === 'sender') {
-      return address.addressType === 'sender' || address.addressType === 'both';
-    } else {
-      return address.addressType === 'recipient' || address.addressType === 'both';
-    }
-  }) || [];
+  // Memoize filtered addresses to prevent recalculation on every render
+  const filteredAddresses = useMemo(() => {
+    if (!addresses) return [];
+    return addresses.filter(address => {
+      if (addressType === 'sender') {
+        return address.addressType === 'sender' || address.addressType === 'both';
+      } else {
+        return address.addressType === 'recipient' || address.addressType === 'both';
+      }
+    });
+  }, [addresses, addressType]);
 
   // Validate addresses using Lob API
   const validateAddress = async (address: MailAddress) => {
@@ -47,7 +64,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     setValidatingAddresses(prev => new Set(prev).add(address.id));
     
     try {
-      // Call server-side Lob validation
+      // Call the real address validation API endpoint
       const response = await fetch('/api/validate-address', {
         method: 'POST',
         headers: {
@@ -63,23 +80,24 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
         }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        setValidationResults(prev => ({
-          ...prev,
-          [address.id]: {
-            isValid: result.isValid,
-            isValidated: true,
-            validationError: result.error || undefined,
-            lobAddressId: result.lobAddressId || undefined,
-          }
-        }));
-      } else {
-        throw new Error('Validation request failed');
+      if (!response.ok) {
+        throw new Error(`Validation failed: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      
+      setValidationResults(prev => ({
+        ...prev,
+        [address.id]: {
+          isValid: result.isValid,
+          isValidated: true,
+          validationError: result.error,
+          lobAddressId: result.lobAddressId,
+        }
+      }));
     } catch (error) {
       // Fallback to simulated validation for development
-      console.warn('Lob validation failed, using simulation:', error);
+      console.warn('Address validation failed, using simulation:', error);
       const isValid = Math.random() > 0.2; // 80% success rate for demo
       
       setValidationResults(prev => ({
@@ -111,7 +129,8 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     }
   }, [filteredAddresses]);
 
-  const getValidationIcon = (addressId: string) => {
+  // Memoize helper functions to prevent recreation on every render
+  const getValidationIcon = useCallback((addressId: string) => {
     const validation = validationResults[addressId];
     const address = filteredAddresses.find(a => a.id === addressId);
     
@@ -132,9 +151,9 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     }
     
     return <AlertTriangle className="h-4 w-4 text-gray-400" />;
-  };
+  }, [validationResults, filteredAddresses, validatingAddresses]);
 
-  const getValidationBadge = (addressId: string) => {
+  const getValidationBadge = useCallback((addressId: string) => {
     const validation = validationResults[addressId];
     const address = filteredAddresses.find(a => a.id === addressId);
     
@@ -155,9 +174,9 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     }
     
     return <Badge variant="outline">Unverified</Badge>;
-  };
+  }, [validationResults, filteredAddresses, validatingAddresses]);
 
-  const formatAddress = (address: MailAddress) => {
+  const formatAddress = useCallback((address: MailAddress) => {
     const parts = [
       address.addressLine1,
       address.addressLine2,
@@ -168,7 +187,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     ].filter(Boolean);
     
     return parts.join(', ');
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -210,20 +229,27 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     );
   }
 
-  const validAddresses = filteredAddresses.filter(address => {
-    const validation = validationResults[address.id];
-    return validation?.isValid || address.isValidated;
-  });
+  // Memoize filtered address lists to prevent recalculation on every render
+  const validAddresses = useMemo(() => {
+    return filteredAddresses.filter(address => {
+      const validation = validationResults[address.id];
+      return validation?.isValid || address.isValidated;
+    });
+  }, [filteredAddresses, validationResults]);
 
-  const invalidAddresses = filteredAddresses.filter(address => {
-    const validation = validationResults[address.id];
-    return validation?.isValidated && !validation.isValid;
-  });
+  const invalidAddresses = useMemo(() => {
+    return filteredAddresses.filter(address => {
+      const validation = validationResults[address.id];
+      return validation?.isValidated && !validation.isValid;
+    });
+  }, [filteredAddresses, validationResults]);
 
-  const unverifiedAddresses = filteredAddresses.filter(address => {
-    const validation = validationResults[address.id];
-    return !validation?.isValidated && !address.isValidated;
-  });
+  const unverifiedAddresses = useMemo(() => {
+    return filteredAddresses.filter(address => {
+      const validation = validationResults[address.id];
+      return !validation?.isValidated && !address.isValidated;
+    });
+  }, [filteredAddresses, validationResults]);
 
   return (
     <Card className={className}>
@@ -408,4 +434,5 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
   );
 };
 
-export default AddressSelector;
+// Wrap component with React.memo to prevent re-renders when props haven't changed
+export default React.memo(AddressSelector);

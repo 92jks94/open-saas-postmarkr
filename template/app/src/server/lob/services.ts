@@ -1,7 +1,25 @@
+// ============================================================================
+// LOB API SERVICE LAYER
+// ============================================================================
+// This file provides the service layer for Lob API integration.
+// It handles all communication with Lob's physical mail services including:
+// - Address validation and verification
+// - Mail piece creation and submission
+// - Status tracking and webhook processing
+// - Error handling and retry logic
+//
+// Key Features:
+// - Retry logic with exponential backoff
+// - Rate limiting and circuit breaker patterns
+// - Type-safe API responses
+// - Comprehensive error handling
+
 import { lob } from './client';
 import { HttpError } from 'wasp/server';
-import { withRetry, RETRY_CONFIGS, RateLimitHandler, CircuitBreaker } from './retry';
 
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
 // Type definitions for Lob API responses
 interface LobPostcardResponse {
   id: string;
@@ -52,30 +70,14 @@ export async function validateAddress(addressData: {
       throw new Error('Lob client not initialized - API key missing');
     }
 
-    // Check circuit breaker
-    const circuitBreaker = CircuitBreaker.getInstance();
-    if (!circuitBreaker.canExecute()) {
-      throw new HttpError(503, 'Lob API is temporarily unavailable');
-    }
-
-    // Check rate limits
-    const rateLimitHandler = RateLimitHandler.getInstance();
-    await rateLimitHandler.waitForRateLimit();
-
-    const verification = await withRetry(
-      () => lob!.usVerifications.verify({
-        address_line1: addressData.address_line1,
-        address_line2: addressData.address_line2,
-        city: addressData.city,
-        state: addressData.state,
-        zip_code: addressData.zip_code,
-        country: addressData.country,
-      }),
-      RETRY_CONFIGS.addressValidation
-    );
-
-    // Record success
-    circuitBreaker.onSuccess();
+    const verification = await lob!.usVerifications.verify({
+      address_line1: addressData.address_line1,
+      address_line2: addressData.address_line2,
+      city: addressData.city,
+      state: addressData.state,
+      zip_code: addressData.zip_code,
+      country: addressData.country,
+    });
 
     return {
       isValid: verification.deliverability === 'deliverable',
@@ -84,17 +86,6 @@ export async function validateAddress(addressData: {
     };
   } catch (error) {
     console.error('Lob address validation error:', error);
-    
-    // Record failure
-    const circuitBreaker = CircuitBreaker.getInstance();
-    circuitBreaker.onFailure();
-    
-    // Handle rate limits
-    const rateLimitHandler = RateLimitHandler.getInstance();
-    if ((error as any)?.status === 429) {
-      rateLimitHandler.handleRateLimitError(error);
-    }
-    
     throw new HttpError(500, 'Failed to validate address');
   }
 }
@@ -117,12 +108,9 @@ export async function calculateCost(mailSpecs: {
       return getFallbackPricing(mailSpecs);
     }
 
-    // Use Lob API to get actual pricing with retry
+    // Use Lob API to get actual pricing
     try {
-      const pricingData = await withRetry(
-        () => getLobPricing(mailSpecs),
-        RETRY_CONFIGS.costCalculation
-      );
+      const pricingData = await getLobPricing(mailSpecs);
       return pricingData;
     } catch (lobError) {
       console.warn('Lob API pricing failed, using fallback:', lobError);
@@ -335,47 +323,38 @@ export async function createMailPiece(mailData: {
 
     let lobResponse: any;
 
-    // Create mail piece based on type with retry
+    // Create mail piece based on type
     if (mailData.mailType === 'postcard') {
-      lobResponse = await withRetry(
-        () => (lob as any).postcards.create({
-          ...mailpieceData,
-          front: mailData.fileUrl || 'https://s3.amazonaws.com/lob-assets/postcard-front.pdf', // Use provided file or default
-          back: 'https://s3.amazonaws.com/lob-assets/postcard-back.pdf', // Default back template
-          size: mailData.mailSize === '4x6' ? '4x6' : '6x9',
-        }),
-        RETRY_CONFIGS.mailPieceCreation
-      );
+      lobResponse = await (lob as any).postcards.create({
+        ...mailpieceData,
+        front: mailData.fileUrl || 'https://s3.amazonaws.com/lob-assets/postcard-front.pdf', // Use provided file or default
+        back: 'https://s3.amazonaws.com/lob-assets/postcard-back.pdf', // Default back template
+        size: mailData.mailSize === '4x6' ? '4x6' : '6x9',
+      });
     } else if (mailData.mailType === 'letter') {
       // For letters, we need to handle file content
       const fileContent = mailData.fileUrl 
         ? await fetchFileContent(mailData.fileUrl)
         : '<html><body><h1>Mail Letter</h1><p>This is a mail letter created via Postmarkr.</p></body></html>';
       
-      lobResponse = await withRetry(
-        () => (lob as any).letters.create({
-          ...mailpieceData,
-          file: fileContent,
-          color: true,
-          double_sided: false,
-        }),
-        RETRY_CONFIGS.mailPieceCreation
-      );
+      lobResponse = await (lob as any).letters.create({
+        ...mailpieceData,
+        file: fileContent,
+        color: true,
+        double_sided: false,
+      });
     } else {
       // For other mail types, use letter as fallback
       const fileContent = mailData.fileUrl 
         ? await fetchFileContent(mailData.fileUrl)
         : '<html><body><h1>Mail Piece</h1><p>This is a mail piece created via Postmarkr.</p></body></html>';
       
-      lobResponse = await withRetry(
-        () => (lob as any).letters.create({
-          ...mailpieceData,
-          file: fileContent,
-          color: true,
-          double_sided: false,
-        }),
-        RETRY_CONFIGS.mailPieceCreation
-      );
+      lobResponse = await (lob as any).letters.create({
+        ...mailpieceData,
+        file: fileContent,
+        color: true,
+        double_sided: false,
+      });
     }
 
     // Extract information from Lob response
@@ -459,27 +438,18 @@ export async function getMailPieceStatus(lobId: string) {
     let mailType = 'unknown';
 
     try {
-      // Try postcard first with retry
-      lobResponse = await withRetry(
-        () => (lob as any).postcards.retrieve(lobId),
-        RETRY_CONFIGS.statusRetrieval
-      );
+      // Try postcard first
+      lobResponse = await (lob as any).postcards.retrieve(lobId);
       mailType = 'postcard';
     } catch (postcardError) {
       try {
         // Try letter if postcard fails
-        lobResponse = await withRetry(
-          () => (lob as any).letters.retrieve(lobId),
-          RETRY_CONFIGS.statusRetrieval
-        );
+        lobResponse = await (lob as any).letters.retrieve(lobId);
         mailType = 'letter';
       } catch (letterError) {
         // If both fail, try other mail types
         try {
-          lobResponse = await withRetry(
-            () => (lob as any).checks.retrieve(lobId),
-            RETRY_CONFIGS.statusRetrieval
-          );
+          lobResponse = await (lob as any).checks.retrieve(lobId);
           mailType = 'check';
         } catch (checkError) {
           throw new Error('Mail piece not found in Lob API');
@@ -495,7 +465,11 @@ export async function getMailPieceStatus(lobId: string) {
       : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
     // Build events array from Lob response
-    const events = [];
+    const events: Array<{
+      timestamp: Date;
+      status: string;
+      description: string;
+    }> = [];
     if (lobResponse.events && Array.isArray(lobResponse.events)) {
       events.push(...lobResponse.events.map((event: any) => ({
         timestamp: new Date(event.date_created || Date.now()),

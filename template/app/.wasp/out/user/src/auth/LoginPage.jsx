@@ -1,3 +1,8 @@
+// ============================================================================
+// AUTHENTICATION PAGES
+// ============================================================================
+// This file contains the login page component for user authentication.
+// It uses Wasp's built-in auth components and provides navigation to other auth flows.
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { LoginForm } from 'wasp/client/auth';
 import { AuthPageLayout } from './AuthPageLayout';

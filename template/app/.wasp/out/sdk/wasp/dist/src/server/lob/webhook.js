@@ -1,27 +1,13 @@
 import { HttpError } from 'wasp/server';
 import { updateMailPieceStatus } from '../../mail/operations';
-import crypto from 'crypto';
+import express from 'express';
 /**
  * Handle Lob webhook for mail piece status updates
  */
-export async function handleLobWebhook(req, res, context) {
+export const lobWebhook = async (request, response, context) => {
     try {
-        const payload = req.body;
-        const signature = req.headers['x-lob-signature'];
-        // Verify webhook signature for security
-        if (process.env.NODE_ENV === 'production' && !verifyWebhookSignature(payload, signature)) {
-            console.warn('Invalid Lob webhook signature received');
-            throw new HttpError(401, 'Invalid webhook signature');
-        }
-        // Log webhook receipt for debugging
-        console.log('Lob webhook received:', {
-            lobId: payload.id,
-            status: payload.status,
-            type: payload.type,
-            timestamp: new Date().toISOString(),
-        });
-        // Extract mail piece data from webhook payload
-        const { id: lobId, status, tracking_number, events, type: mailType, expected_delivery_date, price, url } = payload;
+        const payload = JSON.parse(request.body);
+        const { id: lobId, status, tracking_number } = payload;
         if (!lobId) {
             throw new HttpError(400, 'Missing required webhook data: lobId');
         }
@@ -29,6 +15,7 @@ export async function handleLobWebhook(req, res, context) {
         const statusMapping = {
             'delivered': 'delivered',
             'returned': 'returned',
+            'returned_to_sender': 'returned',
             'in_transit': 'in_transit',
             'processing': 'submitted',
             'printed': 'submitted',
@@ -38,81 +25,32 @@ export async function handleLobWebhook(req, res, context) {
             'failed': 'failed',
         };
         const internalStatus = statusMapping[status] || status || 'unknown';
-        // Prepare Lob data for storage
-        const lobData = {
-            status,
-            tracking_number,
-            events,
-            type: mailType,
-            expected_delivery_date,
-            price,
-            url,
-            webhook_received_at: new Date().toISOString(),
-        };
         // Update mail piece status in database
         await updateMailPieceStatus({
             lobId,
             lobStatus: internalStatus,
             lobTrackingNumber: tracking_number,
-            lobData: lobData,
+            lobData: payload,
         }, context);
-        console.log(`Successfully updated mail piece ${lobId} to status: ${internalStatus}`);
-        res.status(200).json({
-            received: true,
-            lobId,
-            status: internalStatus,
-            timestamp: new Date().toISOString()
-        });
+        console.log(`Updated mail piece ${lobId} to status: ${internalStatus}`);
+        return response.status(200).json({ received: true });
     }
-    catch (error) {
-        console.error('Lob webhook error:', error);
-        if (error instanceof HttpError) {
-            res.status(error.statusCode).json({
-                error: error.message,
-                timestamp: new Date().toISOString()
-            });
+    catch (err) {
+        console.error('Lob webhook error:', err);
+        if (err instanceof HttpError) {
+            return response.status(err.statusCode).json({ error: err.message });
         }
         else {
-            res.status(500).json({
-                error: 'Internal server error',
-                timestamp: new Date().toISOString()
-            });
+            return response.status(400).json({ error: 'Error processing Lob webhook event' });
         }
     }
-}
+};
 /**
- * Verify Lob webhook signature using HMAC-SHA256
+ * Lob webhook middleware configuration
  */
-function verifyWebhookSignature(payload, signature) {
-    try {
-        if (!signature) {
-            console.warn('No webhook signature provided');
-            return false;
-        }
-        const webhookSecret = process.env.LOB_WEBHOOK_SECRET;
-        if (!webhookSecret) {
-            console.warn('LOB_WEBHOOK_SECRET not configured, skipping signature verification');
-            return true; // Allow in development
-        }
-        // Lob uses HMAC-SHA256 for webhook signatures
-        const expectedSignature = crypto
-            .createHmac('sha256', webhookSecret)
-            .update(JSON.stringify(payload))
-            .digest('hex');
-        // Compare signatures securely
-        const providedSignature = signature.replace('sha256=', '');
-        const isValid = crypto.timingSafeEqual(Buffer.from(expectedSignature, 'hex'), Buffer.from(providedSignature, 'hex'));
-        if (!isValid) {
-            console.warn('Webhook signature verification failed', {
-                expected: expectedSignature,
-                provided: providedSignature,
-            });
-        }
-        return isValid;
-    }
-    catch (error) {
-        console.error('Error verifying webhook signature:', error);
-        return false;
-    }
-}
+export const lobMiddlewareConfigFn = (middlewareConfig) => {
+    middlewareConfig.delete('express.json');
+    middlewareConfig.set('express.raw', express.raw({ type: 'application/json' }));
+    return middlewareConfig;
+};
 //# sourceMappingURL=webhook.js.map

@@ -1,9 +1,25 @@
+// ============================================================================
+// PAYMENT SYSTEM OPERATIONS
+// ============================================================================
+// This file handles subscription and payment operations for the application.
+// It manages the complete payment lifecycle from checkout to customer portal access.
+//
+// Key Features:
+// - Subscription plan management and checkout
+// - Customer portal access for billing management
+// - Payment processor abstraction (Stripe/LemonSqueezy)
+// - User authentication and email validation
+
 import * as z from 'zod';
 import type { GenerateCheckoutSession, GetCustomerPortalUrl } from 'wasp/server/operations';
 import { PaymentPlanId, paymentPlans } from '../payment/plans';
 import { paymentProcessor } from './paymentProcessor';
 import { HttpError } from 'wasp/server';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
+
+// ============================================================================
+// CHECKOUT AND SUBSCRIPTION OPERATIONS
+// ============================================================================
 
 export type CheckoutSession = {
   sessionUrl: string | null;

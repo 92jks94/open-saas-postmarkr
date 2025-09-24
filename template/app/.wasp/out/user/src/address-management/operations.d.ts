@@ -13,26 +13,26 @@ declare const createMailAddressInputSchema: z.ZodObject<{
     label: z.ZodOptional<z.ZodString>;
     addressType: z.ZodDefault<z.ZodEnum<["sender", "recipient", "both"]>>;
 }, "strip", z.ZodTypeAny, {
+    country: string;
     contactName: string;
     addressLine1: string;
     city: string;
     state: string;
     postalCode: string;
-    country: string;
     addressType: "both" | "sender" | "recipient";
+    label?: string | undefined;
     companyName?: string | undefined;
     addressLine2?: string | undefined;
-    label?: string | undefined;
 }, {
+    country: string;
     contactName: string;
     addressLine1: string;
     city: string;
     state: string;
     postalCode: string;
-    country: string;
+    label?: string | undefined;
     companyName?: string | undefined;
     addressLine2?: string | undefined;
-    label?: string | undefined;
     addressType?: "both" | "sender" | "recipient" | undefined;
 }>;
 type CreateMailAddressInput = z.infer<typeof createMailAddressInputSchema>;
@@ -55,6 +55,8 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         label: z.ZodOptional<z.ZodString>;
         addressType: z.ZodOptional<z.ZodEnum<["sender", "recipient", "both"]>>;
     }, "strip", z.ZodTypeAny, {
+        label?: string | undefined;
+        country?: string | undefined;
         contactName?: string | undefined;
         companyName?: string | undefined;
         addressLine1?: string | undefined;
@@ -62,10 +64,10 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         city?: string | undefined;
         state?: string | undefined;
         postalCode?: string | undefined;
-        country?: string | undefined;
-        label?: string | undefined;
         addressType?: "both" | "sender" | "recipient" | undefined;
     }, {
+        label?: string | undefined;
+        country?: string | undefined;
         contactName?: string | undefined;
         companyName?: string | undefined;
         addressLine1?: string | undefined;
@@ -73,13 +75,13 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         city?: string | undefined;
         state?: string | undefined;
         postalCode?: string | undefined;
-        country?: string | undefined;
-        label?: string | undefined;
         addressType?: "both" | "sender" | "recipient" | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     data: {
+        label?: string | undefined;
+        country?: string | undefined;
         contactName?: string | undefined;
         companyName?: string | undefined;
         addressLine1?: string | undefined;
@@ -87,13 +89,13 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         city?: string | undefined;
         state?: string | undefined;
         postalCode?: string | undefined;
-        country?: string | undefined;
-        label?: string | undefined;
         addressType?: "both" | "sender" | "recipient" | undefined;
     };
 }, {
     id: string;
     data: {
+        label?: string | undefined;
+        country?: string | undefined;
         contactName?: string | undefined;
         companyName?: string | undefined;
         addressLine1?: string | undefined;
@@ -101,8 +103,6 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         city?: string | undefined;
         state?: string | undefined;
         postalCode?: string | undefined;
-        country?: string | undefined;
-        label?: string | undefined;
         addressType?: "both" | "sender" | "recipient" | undefined;
     };
 }>;

@@ -1,14 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { useAction, createMailPiece } from 'wasp/client/operations';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { createMailPiece, getMailPiece } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Textarea } from '../../components/ui/textarea';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { Mail, Send, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Mail, AlertTriangle, CheckCircle, CreditCard, ArrowLeft } from 'lucide-react';
 import FileSelector from './FileSelector';
 import AddressSelector from './AddressSelector';
+import PaymentStep from './PaymentStep';
+// Mail size options based on mail type - moved outside component to prevent recreation
+const getMailSizeOptions = (mailType) => {
+    const sizeOptions = {
+        'postcard': [
+            { value: '4x6', label: '4" × 6"', description: 'Standard postcard size' }
+        ],
+        'letter': [
+            { value: '6x9', label: '6" × 9"', description: 'Standard letter size' },
+            { value: '6x11', label: '6" × 11"', description: 'Legal size letter' }
+        ],
+        'check': [
+            { value: '6x9', label: '6" × 9"', description: 'Standard check size' }
+        ],
+        'self_mailer': [
+            { value: '6x9', label: '6" × 9"', description: 'Standard self mailer' },
+            { value: '6x11', label: '6" × 11"', description: 'Legal size self mailer' },
+            { value: '6x18', label: '6" × 18"', description: 'Large self mailer' }
+        ],
+        'catalog': [
+            { value: '9x12', label: '9" × 12"', description: 'Standard catalog size' },
+            { value: '12x15', label: '12" × 15"', description: 'Large catalog' },
+            { value: '12x18', label: '12" × 18"', description: 'Extra large catalog' }
+        ],
+        'booklet': [
+            { value: '6x9', label: '6" × 9"', description: 'Standard booklet' },
+            { value: '9x12', label: '9" × 12"', description: 'Large booklet' }
+        ]
+    };
+    return sizeOptions[mailType] || sizeOptions['letter'];
+};
 const MailCreationForm = ({ onSuccess, className = '' }) => {
     const [formData, setFormData] = useState({
         mailType: 'letter',
@@ -22,7 +53,10 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
     const [submitError, setSubmitError] = useState(null);
-    const createMailPieceAction = useAction(createMailPiece);
+    // Payment step state
+    const [currentStep, setCurrentStep] = useState('form');
+    const [createdMailPiece, setCreatedMailPiece] = useState(null);
+    // Direct action call - no useAction hook needed
     // Mail type options
     const mailTypeOptions = [
         { value: 'postcard', label: 'Postcard', description: 'Single-sided mail piece' },
@@ -39,38 +73,8 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
         { value: 'usps_express', label: 'Express', description: 'Overnight delivery' },
         { value: 'usps_priority', label: 'Priority', description: '1-3 business days' }
     ];
-    // Mail size options based on mail type
-    const getMailSizeOptions = (mailType) => {
-        const sizeOptions = {
-            'postcard': [
-                { value: '4x6', label: '4" × 6"', description: 'Standard postcard size' }
-            ],
-            'letter': [
-                { value: '6x9', label: '6" × 9"', description: 'Standard letter size' },
-                { value: '6x11', label: '6" × 11"', description: 'Legal size letter' }
-            ],
-            'check': [
-                { value: '6x9', label: '6" × 9"', description: 'Standard check size' }
-            ],
-            'self_mailer': [
-                { value: '6x9', label: '6" × 9"', description: 'Standard self mailer' },
-                { value: '6x11', label: '6" × 11"', description: 'Legal size self mailer' },
-                { value: '6x18', label: '6" × 18"', description: 'Large self mailer' }
-            ],
-            'catalog': [
-                { value: '9x12', label: '9" × 12"', description: 'Standard catalog size' },
-                { value: '12x15', label: '12" × 15"', description: 'Large catalog' },
-                { value: '12x18', label: '12" × 18"', description: 'Extra large catalog' }
-            ],
-            'booklet': [
-                { value: '6x9', label: '6" × 9"', description: 'Standard booklet' },
-                { value: '9x12', label: '9" × 12"', description: 'Large booklet' }
-            ]
-        };
-        return sizeOptions[mailType] || sizeOptions['letter'];
-    };
-    // Validation
-    const validateForm = () => {
+    // Memoize form validation to prevent unnecessary re-computation
+    const formValidation = useMemo(() => {
         const newErrors = {};
         if (!formData.senderAddressId) {
             newErrors.senderAddressId = 'Please select a sender address';
@@ -87,9 +91,19 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
         if (formData.description && formData.description.length > 500) {
             newErrors.description = 'Description must be less than 500 characters';
         }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+        return {
+            errors: newErrors,
+            isValid: Object.keys(newErrors).length === 0
+        };
+    }, [formData.senderAddressId, formData.recipientAddressId, formData.fileId, formData.description]);
+    // Update errors state when validation changes
+    useEffect(() => {
+        setErrors(formValidation.errors);
+    }, [formValidation.errors]);
+    // Validation function for form submission
+    const validateForm = useCallback(() => {
+        return formValidation.isValid;
+    }, [formValidation.isValid]);
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -99,7 +113,7 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
         setIsSubmitting(true);
         setSubmitError(null);
         try {
-            const result = await createMailPieceAction({
+            const result = await createMailPiece({
                 mailType: formData.mailType,
                 mailClass: formData.mailClass,
                 mailSize: formData.mailSize,
@@ -108,8 +122,14 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
                 fileId: formData.fileId,
                 description: formData.description || undefined
             });
-            if (onSuccess) {
-                onSuccess(result.id);
+            // Fetch the complete mail piece with relations for payment step
+            const completeMailPiece = await getMailPiece({ id: result.id });
+            if (completeMailPiece) {
+                setCreatedMailPiece(completeMailPiece);
+                setCurrentStep('payment');
+            }
+            else {
+                throw new Error('Failed to load mail piece details');
             }
         }
         catch (error) {
@@ -119,17 +139,68 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
             setIsSubmitting(false);
         }
     };
+    // Handle payment success
+    const handlePaymentSuccess = (mailPieceId) => {
+        if (onSuccess) {
+            onSuccess(mailPieceId);
+        }
+    };
+    // Handle payment cancellation
+    const handlePaymentCancel = () => {
+        setCurrentStep('form');
+        setCreatedMailPiece(null);
+    };
+    // Go back to form step
+    const handleBackToForm = () => {
+        setCurrentStep('form');
+        setCreatedMailPiece(null);
+    };
+    // Memoize size options to prevent recreation on every render
+    const sizeOptions = useMemo(() => {
+        return getMailSizeOptions(formData.mailType);
+    }, [formData.mailType]);
     // Reset size when mail type changes
     useEffect(() => {
-        const sizeOptions = getMailSizeOptions(formData.mailType);
         if (sizeOptions.length > 0 && !sizeOptions.find(option => option.value === formData.mailSize)) {
             setFormData(prev => ({ ...prev, mailSize: sizeOptions[0].value }));
         }
-    }, [formData.mailType]);
-    const isFormValid = formData.senderAddressId &&
-        formData.recipientAddressId &&
-        formData.fileId &&
-        formData.senderAddressId !== formData.recipientAddressId;
+    }, [formData.mailType, sizeOptions, formData.mailSize]);
+    // Memoize form validity check
+    const isFormValid = useMemo(() => {
+        return formData.senderAddressId &&
+            formData.recipientAddressId &&
+            formData.fileId &&
+            formData.senderAddressId !== formData.recipientAddressId;
+    }, [formData.senderAddressId, formData.recipientAddressId, formData.fileId]);
+    // Render payment step
+    if (currentStep === 'payment' && createdMailPiece) {
+        return (<div className={className}>
+        <div className="mb-6">
+          <Button variant="ghost" onClick={handleBackToForm} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2"/>
+            Back to Mail Configuration
+          </Button>
+          
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium">
+                1
+              </div>
+              <span className="text-sm text-gray-600">Mail Created</span>
+            </div>
+            <div className="flex-1 h-px bg-gray-200"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
+                2
+              </div>
+              <span className="text-sm font-medium text-blue-600">Payment</span>
+            </div>
+          </div>
+        </div>
+
+        <PaymentStep mailPiece={createdMailPiece} onPaymentSuccess={handlePaymentSuccess} onPaymentCancel={handlePaymentCancel}/>
+      </div>);
+    }
     return (<div className={className}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Mail Configuration */}
@@ -185,7 +256,7 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
                   <SelectValue placeholder="Select mail size"/>
                 </SelectTrigger>
                 <SelectContent>
-                  {getMailSizeOptions(formData.mailType).map(option => (<SelectItem key={option.value} value={option.value}>
+                  {sizeOptions.map(option => (<SelectItem key={option.value} value={option.value}>
                       <div>
                         <div className="font-medium">{option.label}</div>
                         <div className="text-xs text-gray-500">{option.description}</div>
@@ -240,8 +311,8 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Creating...
               </>) : (<>
-                <Send className="h-4 w-4 mr-2"/>
-                Create Mail Piece
+                <CreditCard className="h-4 w-4 mr-2"/>
+                Create & Pay
               </>)}
           </Button>
         </div>
@@ -249,7 +320,7 @@ const MailCreationForm = ({ onSuccess, className = '' }) => {
         {/* Form Status */}
         {isFormValid && (<div className="flex items-center gap-2 text-green-600 text-sm">
             <CheckCircle className="h-4 w-4"/>
-            <span>Ready to create mail piece</span>
+            <span>Ready to create mail piece and proceed to payment</span>
           </div>)}
       </form>
     </div>);

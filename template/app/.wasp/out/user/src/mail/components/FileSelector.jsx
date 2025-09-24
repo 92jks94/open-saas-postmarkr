@@ -1,71 +1,73 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useQuery, getAllFilesByUser } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { CheckCircle, XCircle, FileText, Upload, AlertTriangle } from 'lucide-react';
-const FileSelector = ({ selectedFileId, onFileSelect, mailType, mailSize, className = '' }) => {
-    const { data: files, isLoading, error } = useQuery(getAllFilesByUser);
-    const [validationResults, setValidationResults] = useState({});
-    // Validate files for mail compatibility
-    useEffect(() => {
-        if (files) {
-            const results = {};
-            files.forEach((file) => {
-                const validation = validateFileForMail(file, mailType, mailSize);
-                results[file.id] = validation;
-            });
-            setValidationResults(results);
-        }
-    }, [files, mailType, mailSize]);
-    const validateFileForMail = (file, mailType, mailSize) => {
-        // Client-side validation logic (moved from server-side validation)
-        const errors = [];
-        const warnings = [];
-        // Check file type
-        if (file.type !== 'application/pdf') {
-            errors.push('Only PDF files are supported for mail');
-        }
-        // Check file size (10MB limit for mail)
-        const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-        if (file.size && file.size > MAIL_MAX_FILE_SIZE_BYTES) {
-            errors.push('File size must be less than 10MB for mail processing');
-        }
-        // Check page count for mail type
-        const MAIL_TYPE_REQUIREMENTS = {
-            'postcard': { maxPages: 1, minPages: 1 },
-            'letter': { maxPages: 6, minPages: 1 },
-            'check': { maxPages: 1, minPages: 1 },
-            'self_mailer': { maxPages: 4, minPages: 1 },
-            'catalog': { maxPages: 50, minPages: 2 },
-            'booklet': { maxPages: 20, minPages: 2 }
-        };
-        if (file.pageCount) {
-            const requirements = MAIL_TYPE_REQUIREMENTS[mailType];
-            if (requirements) {
-                if (file.pageCount > requirements.maxPages) {
-                    errors.push(`${mailType} cannot have more than ${requirements.maxPages} pages`);
-                }
-                if (file.pageCount < requirements.minPages) {
-                    warnings.push(`${mailType} typically has at least ${requirements.minPages} pages`);
-                }
+// Constants moved outside component to prevent recreation
+const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAIL_TYPE_REQUIREMENTS = {
+    'postcard': { maxPages: 1, minPages: 1 },
+    'letter': { maxPages: 6, minPages: 1 },
+    'check': { maxPages: 1, minPages: 1 },
+    'self_mailer': { maxPages: 4, minPages: 1 },
+    'catalog': { maxPages: 50, minPages: 2 },
+    'booklet': { maxPages: 20, minPages: 2 }
+};
+/**
+ * Validate a file for mail processing requirements
+ */
+const validateFileForMail = (file, mailType, mailSize) => {
+    const errors = [];
+    const warnings = [];
+    // Check file type
+    if (file.type !== 'application/pdf') {
+        errors.push('Only PDF files are supported for mail');
+    }
+    // Check file size (10MB limit for mail)
+    if (file.size && file.size > MAIL_MAX_FILE_SIZE_BYTES) {
+        errors.push('File size must be less than 10MB for mail processing');
+    }
+    // Check page count for mail type
+    if (file.pageCount) {
+        const requirements = MAIL_TYPE_REQUIREMENTS[mailType];
+        if (requirements) {
+            if (file.pageCount > requirements.maxPages) {
+                errors.push(`${mailType} cannot have more than ${requirements.maxPages} pages`);
+            }
+            if (file.pageCount < requirements.minPages) {
+                warnings.push(`${mailType} typically has at least ${requirements.minPages} pages`);
             }
         }
-        // Check if file is validated
-        if (file.validationStatus === 'invalid') {
-            errors.push('File failed validation');
-        }
-        if (file.validationStatus === 'pending') {
-            warnings.push('File validation in progress');
-        }
-        return {
-            isValid: errors.length === 0,
-            errors,
-            warnings
-        };
+    }
+    // Check if file is validated
+    if (file.validationStatus === 'invalid') {
+        errors.push('File failed validation');
+    }
+    if (file.validationStatus === 'pending') {
+        warnings.push('File validation in progress');
+    }
+    return {
+        isValid: errors.length === 0,
+        errors,
+        warnings
     };
-    const getValidationIcon = (fileId) => {
+};
+const FileSelector = ({ selectedFileId, onFileSelect, mailType, mailSize, className = '' }) => {
+    const { data: files, isLoading, error } = useQuery(getAllFilesByUser);
+    // Memoize validation results to prevent re-validation on every render
+    const validationResults = useMemo(() => {
+        if (!files)
+            return {};
+        const results = {};
+        files.forEach((file) => {
+            results[file.id] = validateFileForMail(file, mailType, mailSize);
+        });
+        return results;
+    }, [files, mailType, mailSize]);
+    // Memoize helper functions to prevent recreation on every render
+    const getValidationIcon = useCallback((fileId) => {
         const validation = validationResults[fileId];
         if (!validation)
             return <AlertTriangle className="h-4 w-4 text-gray-400"/>;
@@ -75,8 +77,8 @@ const FileSelector = ({ selectedFileId, onFileSelect, mailType, mailSize, classN
         else {
             return <XCircle className="h-4 w-4 text-red-500"/>;
         }
-    };
-    const getValidationBadge = (fileId) => {
+    }, [validationResults]);
+    const getValidationBadge = useCallback((fileId) => {
         const validation = validationResults[fileId];
         if (!validation)
             return null;
@@ -86,15 +88,15 @@ const FileSelector = ({ selectedFileId, onFileSelect, mailType, mailSize, classN
         else {
             return <Badge variant="destructive">Invalid</Badge>;
         }
-    };
-    const formatFileSize = (bytes) => {
+    }, [validationResults]);
+    const formatFileSize = useCallback((bytes) => {
         if (bytes === 0)
             return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
+    }, []);
     if (isLoading) {
         return (<Card className={className}>
         <CardHeader>
@@ -129,14 +131,23 @@ const FileSelector = ({ selectedFileId, onFileSelect, mailType, mailSize, classN
         </CardContent>
       </Card>);
     }
-    const validFiles = files?.filter((file) => {
-        const validation = validationResults[file.id];
-        return validation?.isValid;
-    }) || [];
-    const invalidFiles = files?.filter((file) => {
-        const validation = validationResults[file.id];
-        return validation && !validation.isValid;
-    }) || [];
+    // Memoize filtered files to prevent recalculation on every render
+    const validFiles = useMemo(() => {
+        if (!files)
+            return [];
+        return files.filter((file) => {
+            const validation = validationResults[file.id];
+            return validation?.isValid;
+        });
+    }, [files, validationResults]);
+    const invalidFiles = useMemo(() => {
+        if (!files)
+            return [];
+        return files.filter((file) => {
+            const validation = validationResults[file.id];
+            return validation && !validation.isValid;
+        });
+    }, [files, validationResults]);
     return (<Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -231,4 +242,5 @@ const FileSelector = ({ selectedFileId, onFileSelect, mailType, mailSize, classN
       </CardContent>
     </Card>);
 };
-export default FileSelector;
+// Wrap component with React.memo to prevent re-renders when props haven't changed
+export default React.memo(FileSelector);

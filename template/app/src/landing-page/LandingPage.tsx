@@ -1,3 +1,18 @@
+// ============================================================================
+// LANDING PAGE
+// ============================================================================
+// This file contains the main landing page component for the marketing site.
+// It orchestrates all the marketing sections and provides the public-facing
+// interface for the application.
+//
+// Page Sections:
+// - Hero: Main value proposition and CTA
+// - Examples: Product demonstrations and use cases
+// - Features: Key features and benefits
+// - Testimonials: Social proof and customer stories
+// - FAQ: Common questions and answers
+// - Footer: Navigation and legal links
+
 import ExamplesCarousel from './components/ExamplesCarousel';
 import FAQ from './components/FAQ';
 import FeaturesGrid from './components/FeaturesGrid';

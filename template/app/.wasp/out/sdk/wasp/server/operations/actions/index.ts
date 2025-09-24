@@ -23,10 +23,12 @@ import { updateMailPiece as updateMailPiece_ext } from 'wasp/src/mail/operations
 import { deleteMailPiece as deleteMailPiece_ext } from 'wasp/src/mail/operations'
 import { updateMailPieceStatus as updateMailPieceStatus_ext } from 'wasp/src/mail/operations'
 import { createMailPaymentIntent as createMailPaymentIntent_ext } from 'wasp/src/mail/operations'
+import { createMailCheckoutSession as createMailCheckoutSession_ext } from 'wasp/src/mail/operations'
 import { confirmMailPayment as confirmMailPayment_ext } from 'wasp/src/mail/operations'
 import { refundMailPayment as refundMailPayment_ext } from 'wasp/src/mail/operations'
 import { submitMailPieceToLob as submitMailPieceToLob_ext } from 'wasp/src/mail/operations'
 import { syncMailPieceStatus as syncMailPieceStatus_ext } from 'wasp/src/mail/operations'
+import { bulkDeleteMailPieces as bulkDeleteMailPieces_ext } from 'wasp/src/mail/operations'
 
 // PRIVATE API
 export type UpdateIsUserAdminById_ext = typeof updateIsUserAdminById_ext
@@ -251,6 +253,20 @@ export const createMailPaymentIntent: AuthenticatedOperationFor<CreateMailPaymen
   )
 
 // PRIVATE API
+export type CreateMailCheckoutSession_ext = typeof createMailCheckoutSession_ext
+
+// PUBLIC API
+export const createMailCheckoutSession: AuthenticatedOperationFor<CreateMailCheckoutSession_ext> =
+  createAuthenticatedOperation(
+    createMailCheckoutSession_ext,
+    {
+      MailPiece: prisma.mailPiece,
+      MailAddress: prisma.mailAddress,
+      MailPieceStatusHistory: prisma.mailPieceStatusHistory,
+    },
+  )
+
+// PRIVATE API
 export type ConfirmMailPayment_ext = typeof confirmMailPayment_ext
 
 // PUBLIC API
@@ -298,6 +314,19 @@ export type SyncMailPieceStatus_ext = typeof syncMailPieceStatus_ext
 export const syncMailPieceStatus: AuthenticatedOperationFor<SyncMailPieceStatus_ext> =
   createAuthenticatedOperation(
     syncMailPieceStatus_ext,
+    {
+      MailPiece: prisma.mailPiece,
+      MailPieceStatusHistory: prisma.mailPieceStatusHistory,
+    },
+  )
+
+// PRIVATE API
+export type BulkDeleteMailPieces_ext = typeof bulkDeleteMailPieces_ext
+
+// PUBLIC API
+export const bulkDeleteMailPieces: AuthenticatedOperationFor<BulkDeleteMailPieces_ext> =
+  createAuthenticatedOperation(
+    bulkDeleteMailPieces_ext,
     {
       MailPiece: prisma.mailPiece,
       MailPieceStatusHistory: prisma.mailPieceStatusHistory,

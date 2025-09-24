@@ -17,10 +17,12 @@ import { updateMailPiece as updateMailPiece_ext } from 'wasp/src/mail/operations
 import { deleteMailPiece as deleteMailPiece_ext } from 'wasp/src/mail/operations';
 import { updateMailPieceStatus as updateMailPieceStatus_ext } from 'wasp/src/mail/operations';
 import { createMailPaymentIntent as createMailPaymentIntent_ext } from 'wasp/src/mail/operations';
+import { createMailCheckoutSession as createMailCheckoutSession_ext } from 'wasp/src/mail/operations';
 import { confirmMailPayment as confirmMailPayment_ext } from 'wasp/src/mail/operations';
 import { refundMailPayment as refundMailPayment_ext } from 'wasp/src/mail/operations';
 import { submitMailPieceToLob as submitMailPieceToLob_ext } from 'wasp/src/mail/operations';
 import { syncMailPieceStatus as syncMailPieceStatus_ext } from 'wasp/src/mail/operations';
+import { bulkDeleteMailPieces as bulkDeleteMailPieces_ext } from 'wasp/src/mail/operations';
 // PUBLIC API
 export const updateIsUserAdminById = createAuthenticatedOperation(updateIsUserAdminById_ext, {
     User: prisma.user,
@@ -108,6 +110,12 @@ export const createMailPaymentIntent = createAuthenticatedOperation(createMailPa
     MailPieceStatusHistory: prisma.mailPieceStatusHistory,
 });
 // PUBLIC API
+export const createMailCheckoutSession = createAuthenticatedOperation(createMailCheckoutSession_ext, {
+    MailPiece: prisma.mailPiece,
+    MailAddress: prisma.mailAddress,
+    MailPieceStatusHistory: prisma.mailPieceStatusHistory,
+});
+// PUBLIC API
 export const confirmMailPayment = createAuthenticatedOperation(confirmMailPayment_ext, {
     MailPiece: prisma.mailPiece,
     MailPieceStatusHistory: prisma.mailPieceStatusHistory,
@@ -126,6 +134,11 @@ export const submitMailPieceToLob = createAuthenticatedOperation(submitMailPiece
 });
 // PUBLIC API
 export const syncMailPieceStatus = createAuthenticatedOperation(syncMailPieceStatus_ext, {
+    MailPiece: prisma.mailPiece,
+    MailPieceStatusHistory: prisma.mailPieceStatusHistory,
+});
+// PUBLIC API
+export const bulkDeleteMailPieces = createAuthenticatedOperation(bulkDeleteMailPieces_ext, {
     MailPiece: prisma.mailPiece,
     MailPieceStatusHistory: prisma.mailPieceStatusHistory,
 });

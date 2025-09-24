@@ -34,6 +34,8 @@ export const updateMailPieceStatus = createAction('operations/update-mail-piece-
 // PUBLIC API
 export const createMailPaymentIntent = createAction('operations/create-mail-payment-intent', ['MailPiece', 'MailAddress', 'MailPieceStatusHistory']);
 // PUBLIC API
+export const createMailCheckoutSession = createAction('operations/create-mail-checkout-session', ['MailPiece', 'MailAddress', 'MailPieceStatusHistory']);
+// PUBLIC API
 export const confirmMailPayment = createAction('operations/confirm-mail-payment', ['MailPiece', 'MailPieceStatusHistory']);
 // PUBLIC API
 export const refundMailPayment = createAction('operations/refund-mail-payment', ['MailPiece', 'MailPieceStatusHistory']);
@@ -41,4 +43,6 @@ export const refundMailPayment = createAction('operations/refund-mail-payment', 
 export const submitMailPieceToLob = createAction('operations/submit-mail-piece-to-lob', ['MailPiece', 'MailAddress', 'File', 'MailPieceStatusHistory']);
 // PUBLIC API
 export const syncMailPieceStatus = createAction('operations/sync-mail-piece-status', ['MailPiece', 'MailPieceStatusHistory']);
+// PUBLIC API
+export const bulkDeleteMailPieces = createAction('operations/bulk-delete-mail-pieces', ['MailPiece', 'MailPieceStatusHistory']);
 //# sourceMappingURL=index.js.map

@@ -1,16 +1,49 @@
+// ============================================================================
+// MAIL SYSTEM OPERATIONS
+// ============================================================================
+// This file contains all server-side operations for the physical mail system.
+// It handles the complete mail lifecycle from creation to delivery tracking.
+//
+// Key Integration Points:
+// - Stripe API: Payment processing for mail pieces
+// - Lob API: Physical mail printing and delivery services
+// - Prisma: Database operations for mail pieces, addresses, and files
+// - Wasp: Authentication, validation, and operation framework
+//
+// Mail Lifecycle Flow:
+// 1. createMailPiece -> createMailPaymentIntent -> confirmMailPayment -> submitMailPieceToLob
+// 2. updateMailPieceStatus (webhook) -> syncMailPieceStatus
 import { HttpError } from 'wasp/server';
 import { createMailPieceSchema, updateMailPieceSchema, lobWebhookStatusSchema, validationErrors } from './validation';
 import { createMailPaymentIntent as createMailPaymentIntentService, confirmMailPayment as confirmMailPaymentService, refundMailPayment as refundMailPaymentService } from '../server/mail/payments';
 import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus } from '../server/lob/services';
-/**
- * Get all mail pieces for the current user
- */
-export const getMailPieces = async (_args, context) => {
+export const getMailPieces = async (args, context) => {
     if (!context.user) {
         throw new HttpError(401, 'Not authorized');
     }
-    return context.entities.MailPiece.findMany({
-        where: { userId: context.user.id },
+    const page = args.page || 1;
+    const limit = Math.min(args.limit || 20, 100); // Max 100 items per page
+    const skip = (page - 1) * limit;
+    // Build where clause
+    const where = { userId: context.user.id };
+    if (args.status && args.status !== 'all') {
+        where.status = args.status;
+    }
+    if (args.mailType && args.mailType !== 'all') {
+        where.mailType = args.mailType;
+    }
+    if (args.search) {
+        where.OR = [
+            { description: { contains: args.search, mode: 'insensitive' } },
+            { senderAddress: { contactName: { contains: args.search, mode: 'insensitive' } } },
+            { recipientAddress: { contactName: { contains: args.search, mode: 'insensitive' } } }
+        ];
+    }
+    // Get total count for pagination
+    const total = await context.entities.MailPiece.count({ where });
+    // Get paginated results
+    const mailPieces = await context.entities.MailPiece.findMany({
+        where,
         include: {
             senderAddress: true,
             recipientAddress: true,
@@ -21,7 +54,20 @@ export const getMailPieces = async (_args, context) => {
             },
         },
         orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
     });
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
+    return {
+        mailPieces,
+        total,
+        page,
+        totalPages,
+        hasNext,
+        hasPrev
+    };
 };
 export const createMailPiece = async (args, context) => {
     try {
@@ -373,6 +419,101 @@ export const createMailPaymentIntent = async (args, context) => {
         throw new HttpError(500, 'Failed to create payment intent due to an internal error.');
     }
 };
+export const createMailCheckoutSession = async (args, context) => {
+    try {
+        // Authentication check
+        if (!context.user) {
+            throw new HttpError(401, validationErrors.UNAUTHORIZED);
+        }
+        // Find the mail piece and verify ownership
+        const mailPiece = await context.entities.MailPiece.findFirst({
+            where: { id: args.mailPieceId, userId: context.user.id },
+            include: {
+                senderAddress: true,
+                recipientAddress: true,
+            },
+        });
+        if (!mailPiece) {
+            throw new HttpError(404, validationErrors.MAIL_PIECE_NOT_FOUND);
+        }
+        // Only allow checkout creation for draft status
+        if (mailPiece.status !== 'draft') {
+            throw new HttpError(400, 'Checkout can only be created for draft mail pieces');
+        }
+        // Calculate cost using existing service
+        const costData = await createMailPaymentIntentService({
+            mailType: mailPiece.mailType,
+            mailClass: mailPiece.mailClass,
+            mailSize: mailPiece.mailSize,
+            toAddress: mailPiece.recipientAddress,
+            fromAddress: mailPiece.senderAddress,
+        }, context.user.id, context);
+        // Create Stripe Checkout Session
+        const stripe = require('../../payment/stripe/stripeClient').stripe;
+        const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+                {
+                    price_data: {
+                        currency: 'usd',
+                        product_data: {
+                            name: `Mail Piece - ${mailPiece.mailType}`,
+                            description: `Send ${mailPiece.mailType} via ${mailPiece.mailClass} mail`,
+                        },
+                        unit_amount: costData.cost, // Amount in cents
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: `${DOMAIN}/mail/checkout?status=success&mail_piece_id=${args.mailPieceId}`,
+            cancel_url: `${DOMAIN}/mail/checkout?status=canceled&mail_piece_id=${args.mailPieceId}`,
+            metadata: {
+                mailPieceId: args.mailPieceId,
+                userId: context.user.id,
+                mailType: mailPiece.mailType,
+                mailClass: mailPiece.mailClass,
+                mailSize: mailPiece.mailSize,
+                type: 'mail_payment',
+            },
+            customer_email: context.user.email,
+        });
+        if (!session.url) {
+            throw new HttpError(500, 'Failed to create checkout session URL');
+        }
+        // Update mail piece with checkout session ID
+        await context.entities.MailPiece.update({
+            where: { id: args.mailPieceId },
+            data: {
+                paymentIntentId: session.id, // Store session ID for reference
+                status: 'pending_payment',
+            },
+        });
+        // Create status history entry
+        await context.entities.MailPieceStatusHistory.create({
+            data: {
+                mailPieceId: args.mailPieceId,
+                status: 'pending_payment',
+                previousStatus: 'draft',
+                description: 'Checkout session created',
+                source: 'system',
+            },
+        });
+        return {
+            sessionUrl: session.url,
+            sessionId: session.id,
+        };
+    }
+    catch (error) {
+        if (error instanceof HttpError) {
+            throw error;
+        }
+        // Log unexpected errors
+        console.error('Failed to create mail checkout session:', error);
+        throw new HttpError(500, 'Failed to create checkout session due to an internal error.');
+    }
+};
 export const confirmMailPayment = async (args, context) => {
     try {
         // Authentication check
@@ -561,9 +702,9 @@ export const syncMailPieceStatus = async (args, context) => {
                     lobStatus: lobStatus.status,
                     lobTrackingNumber: lobStatus.trackingNumber,
                     metadata: {
-                        ...mailPiece.metadata,
+                        ...(mailPiece.metadata && typeof mailPiece.metadata === 'object' ? mailPiece.metadata : {}),
                         lastSyncedAt: new Date().toISOString(),
-                        lobData: lobStatus.lobData,
+                        lobData: lobStatus.lobData || {},
                     },
                 },
             });
@@ -596,5 +737,58 @@ export const syncMailPieceStatus = async (args, context) => {
         // Log unexpected errors
         console.error('Failed to sync mail piece status from Lob:', error);
         throw new HttpError(500, 'Failed to sync mail piece status from Lob due to an internal error.');
+    }
+};
+export const bulkDeleteMailPieces = async (args, context) => {
+    try {
+        if (!context.user) {
+            throw new HttpError(401, 'Not authorized');
+        }
+        if (!args.mailPieceIds || args.mailPieceIds.length === 0) {
+            throw new HttpError(400, 'No mail piece IDs provided');
+        }
+        if (args.mailPieceIds.length > 50) {
+            throw new HttpError(400, 'Cannot delete more than 50 mail pieces at once');
+        }
+        const deletedIds = [];
+        const failedIds = [];
+        // Process each mail piece individually to handle errors gracefully
+        for (const mailPieceId of args.mailPieceIds) {
+            try {
+                // Verify ownership and status
+                const mailPiece = await context.entities.MailPiece.findFirst({
+                    where: {
+                        id: mailPieceId,
+                        userId: context.user.id,
+                        status: 'draft' // Only allow deletion of draft mail pieces
+                    }
+                });
+                if (!mailPiece) {
+                    failedIds.push(mailPieceId);
+                    continue;
+                }
+                // Delete the mail piece (cascade will handle status history)
+                await context.entities.MailPiece.delete({
+                    where: { id: mailPieceId }
+                });
+                deletedIds.push(mailPieceId);
+            }
+            catch (error) {
+                console.error(`Failed to delete mail piece ${mailPieceId}:`, error);
+                failedIds.push(mailPieceId);
+            }
+        }
+        return {
+            deletedCount: deletedIds.length,
+            failedIds
+        };
+    }
+    catch (error) {
+        if (error instanceof HttpError) {
+            throw error;
+        }
+        // Log unexpected errors
+        console.error('Failed to bulk delete mail pieces:', error);
+        throw new HttpError(500, 'Failed to bulk delete mail pieces due to an internal error.');
     }
 };

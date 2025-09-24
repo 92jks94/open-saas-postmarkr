@@ -199,6 +199,12 @@ page CheckoutResultPage {
   component: import CheckoutResultPage from "@src/payment/CheckoutResultPage"
 }
 
+route MailCheckoutResultRoute { path: "/mail/checkout", to: MailCheckoutResultPage }
+page MailCheckoutResultPage {
+  authRequired: true,
+  component: import MailCheckoutResultPage from "@src/mail/MailCheckoutResultPage"
+}
+
 query getCustomerPortalUrl {
   fn: import { getCustomerPortalUrl } from  "@src/payment/operations",
   entities: [User]
@@ -397,6 +403,11 @@ action createMailPaymentIntent {
   entities: [MailPiece, MailAddress, MailPieceStatusHistory]
 }
 
+action createMailCheckoutSession {
+  fn: import { createMailCheckoutSession } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, MailPieceStatusHistory]
+}
+
 action confirmMailPayment {
   fn: import { confirmMailPayment } from "@src/mail/operations",
   entities: [MailPiece, MailPieceStatusHistory]
@@ -417,8 +428,14 @@ action syncMailPieceStatus {
   entities: [MailPiece, MailPieceStatusHistory]
 }
 
+action bulkDeleteMailPieces {
+  fn: import { bulkDeleteMailPieces } from "@src/mail/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
+}
+
 api lobWebhook {
-  fn: import { handleLobWebhook } from "@src/server/lob/webhook",
+  fn: import { lobWebhook } from "@src/server/lob/webhook",
+  middlewareConfigFn: import { lobMiddlewareConfigFn } from "@src/server/lob/webhook",
   httpRoute: (POST, "/webhooks/lob")
 }
 
@@ -426,13 +443,13 @@ api validateAddress {
   fn: import { validateAddressEndpoint } from "@src/server/lob/addressValidation",
   httpRoute: (POST, "/api/validate-address")
 }
-//#endregion
+
 
 //#region Contact Form Messages
-// TODO: 
+// TODO:
 // add functionality to allow users to send messages to admin
 // and make them accessible via the admin dashboard
-route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }
+route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }     
 page AdminMessagesPage {
   authRequired: true,
   component: import AdminMessages from "@src/admin/dashboards/messages/MessagesPage"

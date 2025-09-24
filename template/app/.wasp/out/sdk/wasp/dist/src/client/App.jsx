@@ -1,3 +1,10 @@
+// ============================================================================
+// CORE APPLICATION LAYOUT AND ROUTING
+// ============================================================================
+// This is the root component that wraps all pages and handles:
+// - Navigation bar display logic (marketing vs app vs admin)
+// - Route-based layout switching
+// - Global UI elements (cookie consent, etc.)
 import { useEffect, useMemo } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { routes } from 'wasp/client/router';
@@ -6,8 +13,18 @@ import NavBar from './components/NavBar/NavBar';
 import { demoNavigationitems, marketingNavigationItems } from './components/NavBar/constants';
 import CookieConsentBanner from './components/cookie-consent/Banner';
 /**
- * use this component to wrap all child components
- * this is useful for templates, themes, and context
+ * Root application component that handles layout and navigation
+ *
+ * Layout Modes:
+ * - Marketing: Landing page and pricing (no app navigation)
+ * - App: Authenticated user interface with main navigation
+ * - Admin: Admin dashboard with specialized layout
+ *
+ * Features:
+ * - Conditional navigation bar display
+ * - Route-based layout switching
+ * - Global UI elements (cookie consent)
+ * - Smooth scrolling for hash navigation
  */
 export default function App() {
     const location = useLocation();

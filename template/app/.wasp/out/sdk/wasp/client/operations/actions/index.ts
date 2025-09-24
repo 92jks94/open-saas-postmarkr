@@ -16,10 +16,12 @@ import { UpdateMailPiece_ext } from 'wasp/server/operations/actions'
 import { DeleteMailPiece_ext } from 'wasp/server/operations/actions'
 import { UpdateMailPieceStatus_ext } from 'wasp/server/operations/actions'
 import { CreateMailPaymentIntent_ext } from 'wasp/server/operations/actions'
+import { CreateMailCheckoutSession_ext } from 'wasp/server/operations/actions'
 import { ConfirmMailPayment_ext } from 'wasp/server/operations/actions'
 import { RefundMailPayment_ext } from 'wasp/server/operations/actions'
 import { SubmitMailPieceToLob_ext } from 'wasp/server/operations/actions'
 import { SyncMailPieceStatus_ext } from 'wasp/server/operations/actions'
+import { BulkDeleteMailPieces_ext } from 'wasp/server/operations/actions'
 
 // PUBLIC API
 export const updateIsUserAdminById: ActionFor<UpdateIsUserAdminById_ext> = createAction<UpdateIsUserAdminById_ext>(
@@ -124,6 +126,12 @@ export const createMailPaymentIntent: ActionFor<CreateMailPaymentIntent_ext> = c
 )
 
 // PUBLIC API
+export const createMailCheckoutSession: ActionFor<CreateMailCheckoutSession_ext> = createAction<CreateMailCheckoutSession_ext>(
+  'operations/create-mail-checkout-session',
+  ['MailPiece', 'MailAddress', 'MailPieceStatusHistory'],
+)
+
+// PUBLIC API
 export const confirmMailPayment: ActionFor<ConfirmMailPayment_ext> = createAction<ConfirmMailPayment_ext>(
   'operations/confirm-mail-payment',
   ['MailPiece', 'MailPieceStatusHistory'],
@@ -144,5 +152,11 @@ export const submitMailPieceToLob: ActionFor<SubmitMailPieceToLob_ext> = createA
 // PUBLIC API
 export const syncMailPieceStatus: ActionFor<SyncMailPieceStatus_ext> = createAction<SyncMailPieceStatus_ext>(
   'operations/sync-mail-piece-status',
+  ['MailPiece', 'MailPieceStatusHistory'],
+)
+
+// PUBLIC API
+export const bulkDeleteMailPieces: ActionFor<BulkDeleteMailPieces_ext> = createAction<BulkDeleteMailPieces_ext>(
+  'operations/bulk-delete-mail-pieces',
   ['MailPiece', 'MailPieceStatusHistory'],
 )
