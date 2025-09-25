@@ -57,8 +57,30 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
     });
   }, [addresses, addressType]);
 
-  // Validate addresses using Lob API
-  const validateAddress = async (address: MailAddress) => {
+  // Memoize filtered address lists to prevent recalculation on every render
+  const validAddresses = useMemo(() => {
+    return filteredAddresses.filter(address => {
+      const validation = validationResults[address.id];
+      return validation?.isValid || address.isValidated;
+    });
+  }, [filteredAddresses, validationResults]);
+
+  const invalidAddresses = useMemo(() => {
+    return filteredAddresses.filter(address => {
+      const validation = validationResults[address.id];
+      return validation?.isValidated && !validation.isValid;
+    });
+  }, [filteredAddresses, validationResults]);
+
+  const unverifiedAddresses = useMemo(() => {
+    return filteredAddresses.filter(address => {
+      const validation = validationResults[address.id];
+      return !validation?.isValidated && !address.isValidated;
+    });
+  }, [filteredAddresses, validationResults]);
+
+  // Validate addresses using Lob API - memoized to prevent recreation
+  const validateAddress = useCallback(async (address: MailAddress) => {
     if (validatingAddresses.has(address.id)) return;
     
     setValidatingAddresses(prev => new Set(prev).add(address.id));
@@ -116,7 +138,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
         return newSet;
       });
     }
-  };
+  }, [validatingAddresses]);
 
   // Auto-validate addresses on load
   useEffect(() => {
@@ -127,7 +149,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
         }
       });
     }
-  }, [filteredAddresses]);
+  }, [filteredAddresses, validateAddress, validationResults]);
 
   // Memoize helper functions to prevent recreation on every render
   const getValidationIcon = useCallback((addressId: string) => {
@@ -228,28 +250,6 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
       </Card>
     );
   }
-
-  // Memoize filtered address lists to prevent recalculation on every render
-  const validAddresses = useMemo(() => {
-    return filteredAddresses.filter(address => {
-      const validation = validationResults[address.id];
-      return validation?.isValid || address.isValidated;
-    });
-  }, [filteredAddresses, validationResults]);
-
-  const invalidAddresses = useMemo(() => {
-    return filteredAddresses.filter(address => {
-      const validation = validationResults[address.id];
-      return validation?.isValidated && !validation.isValid;
-    });
-  }, [filteredAddresses, validationResults]);
-
-  const unverifiedAddresses = useMemo(() => {
-    return filteredAddresses.filter(address => {
-      const validation = validationResults[address.id];
-      return !validation?.isValidated && !address.isValidated;
-    });
-  }, [filteredAddresses, validationResults]);
 
   return (
     <Card className={className}>

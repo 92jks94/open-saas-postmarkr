@@ -22,8 +22,27 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
             }
         });
     }, [addresses, addressType]);
-    // Validate addresses using Lob API
-    const validateAddress = async (address) => {
+    // Memoize filtered address lists to prevent recalculation on every render
+    const validAddresses = useMemo(() => {
+        return filteredAddresses.filter(address => {
+            const validation = validationResults[address.id];
+            return validation?.isValid || address.isValidated;
+        });
+    }, [filteredAddresses, validationResults]);
+    const invalidAddresses = useMemo(() => {
+        return filteredAddresses.filter(address => {
+            const validation = validationResults[address.id];
+            return validation?.isValidated && !validation.isValid;
+        });
+    }, [filteredAddresses, validationResults]);
+    const unverifiedAddresses = useMemo(() => {
+        return filteredAddresses.filter(address => {
+            const validation = validationResults[address.id];
+            return !validation?.isValidated && !address.isValidated;
+        });
+    }, [filteredAddresses, validationResults]);
+    // Validate addresses using Lob API - memoized to prevent recreation
+    const validateAddress = useCallback(async (address) => {
         if (validatingAddresses.has(address.id))
             return;
         setValidatingAddresses(prev => new Set(prev).add(address.id));
@@ -78,7 +97,7 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
                 return newSet;
             });
         }
-    };
+    }, [validatingAddresses]);
     // Auto-validate addresses on load
     useEffect(() => {
         if (filteredAddresses.length > 0) {
@@ -88,7 +107,7 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
                 }
             });
         }
-    }, [filteredAddresses]);
+    }, [filteredAddresses, validateAddress, validationResults]);
     // Memoize helper functions to prevent recreation on every render
     const getValidationIcon = useCallback((addressId) => {
         const validation = validationResults[addressId];
@@ -173,25 +192,6 @@ const AddressSelector = ({ selectedAddressId, onAddressSelect, addressType, clas
         </CardContent>
       </Card>);
     }
-    // Memoize filtered address lists to prevent recalculation on every render
-    const validAddresses = useMemo(() => {
-        return filteredAddresses.filter(address => {
-            const validation = validationResults[address.id];
-            return validation?.isValid || address.isValidated;
-        });
-    }, [filteredAddresses, validationResults]);
-    const invalidAddresses = useMemo(() => {
-        return filteredAddresses.filter(address => {
-            const validation = validationResults[address.id];
-            return validation?.isValidated && !validation.isValid;
-        });
-    }, [filteredAddresses, validationResults]);
-    const unverifiedAddresses = useMemo(() => {
-        return filteredAddresses.filter(address => {
-            const validation = validationResults[address.id];
-            return !validation?.isValidated && !address.isValidated;
-        });
-    }, [filteredAddresses, validationResults]);
     return (<Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">

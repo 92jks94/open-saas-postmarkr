@@ -114,6 +114,23 @@ const FileSelector: React.FC<FileSelectorProps> = ({
     return results;
   }, [files, mailType, mailSize]);
 
+  // Memoize filtered files to prevent recalculation on every render
+  const validFiles = useMemo(() => {
+    if (!files) return [];
+    return files.filter((file: File) => {
+      const validation = validationResults[file.id];
+      return validation?.isValid;
+    });
+  }, [files, validationResults]);
+
+  const invalidFiles = useMemo(() => {
+    if (!files) return [];
+    return files.filter((file: File) => {
+      const validation = validationResults[file.id];
+      return validation && !validation.isValid;
+    });
+  }, [files, validationResults]);
+
   // Memoize helper functions to prevent recreation on every render
   const getValidationIcon = useCallback((fileId: string) => {
     const validation = validationResults[fileId];
@@ -184,23 +201,6 @@ const FileSelector: React.FC<FileSelectorProps> = ({
       </Card>
     );
   }
-
-  // Memoize filtered files to prevent recalculation on every render
-  const validFiles = useMemo(() => {
-    if (!files) return [];
-    return files.filter((file: File) => {
-      const validation = validationResults[file.id];
-      return validation?.isValid;
-    });
-  }, [files, validationResults]);
-
-  const invalidFiles = useMemo(() => {
-    if (!files) return [];
-    return files.filter((file: File) => {
-      const validation = validationResults[file.id];
-      return validation && !validation.isValid;
-    });
-  }, [files, validationResults]);
 
   return (
     <Card className={className}>
