@@ -7,7 +7,7 @@
 // Key Features:
 // - Subscription plan management and checkout
 // - Customer portal access for billing management
-// - Payment processor abstraction (Stripe/LemonSqueezy)
+// - Payment processor abstraction (Stripe)
 // - User authentication and email validation
 
 import * as z from 'zod';

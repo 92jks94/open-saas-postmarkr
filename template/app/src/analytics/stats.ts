@@ -40,17 +40,7 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
       paidUserDelta -= yesterdaysStats.paidUserCount;
     }
 
-    let totalRevenue;
-    switch (paymentProcessor.id) {
-      case 'stripe':
-        totalRevenue = await fetchTotalStripeRevenue();
-        break;
-      case 'lemonsqueezy':
-        totalRevenue = await fetchTotalLemonSqueezyRevenue();
-        break;
-      default:
-        throw new Error(`Unsupported payment processor: ${paymentProcessor.id}`);
-    }
+    const totalRevenue = await fetchTotalStripeRevenue();
 
     const { totalViews, prevDayViewsChangePercent } = await getDailyPageViews();
 
@@ -162,9 +152,4 @@ async function fetchTotalStripeRevenue() {
   return totalRevenue / 100;
 }
 
-async function fetchTotalLemonSqueezyRevenue() {
-  // TODO: Implement LemonSqueezy revenue fetching
-  // For now, return 0 as a placeholder
-  return 0;
-}
 

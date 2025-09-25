@@ -8,3 +8,42 @@ node_modules/
 # We also don't want to ship these ignore rules to the users.
 template/app/migrations
 template/app/package-lock.json
+
+# Wasp generated files
+template/app/.wasp/out/
+template/app/.wasp/build/
+template/app/.wasproot
+
+# Environment variables
+template/app/.env
+template/app/.env.local
+template/app/.env.development.local
+template/app/.env.test.local
+template/app/.env.production.local
+
+# IDE
+template/app/.vscode/
+template/app/.idea/
+template/app/*.swp
+template/app/*.swo
+
+# OS
+template/app/.DS_Store
+template/app/Thumbs.db
+
+# Logs
+template/app/*.log
+template/app/logs/
+
+# Temporary files
+template/app/tmp/
+template/app/temp/
+
+# Test artifacts
+template/app/test-results/
+template/app/coverage/
+
+# Command artifacts (clean up existing ones)
+aux*
+chema.prisma*
+

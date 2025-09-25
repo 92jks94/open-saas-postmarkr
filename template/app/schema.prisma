@@ -14,7 +14,6 @@ model User {
   username                      String?              @unique
   isAdmin                       Boolean              @default(false)
   paymentProcessorUserId        String?              @unique
-  lemonSqueezyCustomerPortalUrl String?
   subscriptionStatus            String?
   subscriptionPlan              String?
   datePaid                      DateTime?
