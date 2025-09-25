@@ -10,7 +10,7 @@ template/app/migrations
 template/app/package-lock.json
 
 # Wasp generated files
-template/app/.wasp/out/
+template/app/.wasp/out/**
 template/app/.wasp/build/
 template/app/.wasproot
 
