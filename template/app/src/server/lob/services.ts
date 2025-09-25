@@ -16,6 +16,8 @@
 
 import { lob } from './client';
 import { HttpError } from 'wasp/server';
+import { calculatePricingTier } from '../pricing/pageBasedPricing';
+import { mapToLobAddress, normalizeAddress, validateLobAddress } from './addressMapper';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -51,6 +53,18 @@ export async function validateAddress(addressData: {
   error: string | null;
 }> {
   try {
+    // Normalize the address data to internal format
+    const normalizedAddress = normalizeAddress(addressData);
+    
+    // Validate required fields
+    if (!validateLobAddress(normalizedAddress)) {
+      return {
+        isValid: false,
+        verifiedAddress: null,
+        error: 'Missing required address fields',
+      };
+    }
+
     // Check if Lob API key is configured
     const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
     if (!lobApiKey) {
@@ -60,7 +74,7 @@ export async function validateAddress(addressData: {
         isValid: Math.random() > 0.2, // 80% success rate for demo
         verifiedAddress: {
           id: `sim_${Date.now()}`,
-          ...addressData
+          ...mapToLobAddress(normalizedAddress)
         },
         error: null,
       };
@@ -91,7 +105,7 @@ export async function validateAddress(addressData: {
 }
 
 /**
- * Calculate cost for mail specifications using Lob API
+ * Calculate cost for mail specifications using page-based pricing
  */
 export async function calculateCost(mailSpecs: {
   mailType: string;
@@ -99,25 +113,62 @@ export async function calculateCost(mailSpecs: {
   mailSize: string;
   toAddress: any;
   fromAddress: any;
+  pageCount?: number;
 }) {
   try {
-    // Check if Lob API key is configured
-    const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
-    if (!lobApiKey || !lob) {
-      console.warn('Lob API key not configured, using fallback pricing');
-      return getFallbackPricing(mailSpecs);
+    // Validate page count is provided
+    if (!mailSpecs.pageCount) {
+      throw new HttpError(400, 'Page count is required for pricing calculation');
     }
 
-    // Use Lob API to get actual pricing
+    // Calculate page-based pricing
+    const pagePricing = calculatePricingTier(mailSpecs.pageCount);
+    
+    // Get Lob API cost for tracking (for admin dashboard)
+    let lobCost = 0;
     try {
-      const pricingData = await getLobPricing(mailSpecs);
-      return pricingData;
+      const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
+      if (lobApiKey && lob) {
+        const lobPricingData = await getLobPricing(mailSpecs);
+        lobCost = lobPricingData.cost;
+      } else {
+        // Use fallback pricing for Lob cost estimation
+        const fallbackPricing = getFallbackPricing(mailSpecs);
+        lobCost = fallbackPricing.cost;
+      }
     } catch (lobError) {
-      console.warn('Lob API pricing failed, using fallback:', lobError);
-      return getFallbackPricing(mailSpecs);
+      console.warn('Lob API pricing failed for cost tracking:', lobError);
+      // Use fallback pricing for Lob cost estimation
+      const fallbackPricing = getFallbackPricing(mailSpecs);
+      lobCost = fallbackPricing.cost;
     }
+
+    // Calculate markup
+    const markup = pagePricing.price - lobCost;
+
+    return {
+      cost: pagePricing.price, // Customer price
+      currency: 'USD',
+      breakdown: {
+        baseCost: pagePricing.price / 100, // Convert cents to dollars
+        multiplier: 1.0,
+        mailType: mailSpecs.mailType,
+        mailClass: mailSpecs.mailClass,
+        mailSize: mailSpecs.mailSize,
+        pageCount: mailSpecs.pageCount,
+        pricingTier: pagePricing.tier,
+        envelopeType: pagePricing.envelopeType,
+        description: pagePricing.description,
+        lobCost: lobCost / 100, // Lob cost in dollars
+        markup: markup / 100, // Markup in dollars
+        pageBasedPricing: true
+      }
+    };
   } catch (error) {
-    console.error('Lob cost calculation error:', error);
+    console.error('Page-based cost calculation error:', error);
+    if (error instanceof HttpError) {
+      throw error;
+    }
     throw new HttpError(500, 'Failed to calculate mail cost');
   }
 }
@@ -131,34 +182,28 @@ async function getLobPricing(mailSpecs: {
   mailSize: string;
   toAddress: any;
   fromAddress: any;
+  pageCount?: number;
+  envelopeType?: string;
 }) {
   if (!lob) {
     throw new Error('Lob client not initialized');
   }
 
-  // Prepare the mailpiece data for pricing calculation
-  const mailpieceData = {
-    to: {
-      name: mailSpecs.toAddress.name || 'Test Recipient',
-      address_line1: mailSpecs.toAddress.address_line1,
-      address_line2: mailSpecs.toAddress.address_line2,
-      city: mailSpecs.toAddress.city,
-      state: mailSpecs.toAddress.state,
-      zip_code: mailSpecs.toAddress.zip_code,
-      country: mailSpecs.toAddress.country || 'US',
-    },
-    from: {
-      name: mailSpecs.fromAddress.name || 'Test Sender',
-      address_line1: mailSpecs.fromAddress.address_line1,
-      address_line2: mailSpecs.fromAddress.address_line2,
-      city: mailSpecs.fromAddress.city,
-      state: mailSpecs.fromAddress.state,
-      zip_code: mailSpecs.fromAddress.zip_code,
-      country: mailSpecs.fromAddress.country || 'US',
-    },
-    // Use test content for pricing calculation
+  // Normalize addresses to ensure consistent field names
+  const normalizedToAddress = normalizeAddress(mailSpecs.toAddress);
+  const normalizedFromAddress = normalizeAddress(mailSpecs.fromAddress);
+
+  // Prepare the mailpiece data for pricing calculation with all necessary fields
+  const baseMailpieceData = {
+    to: mapToLobAddress(normalizedToAddress),
+    from: mapToLobAddress(normalizedFromAddress),
     description: 'Pricing calculation - test mailpiece',
+    color: true, // Default to color printing for accurate pricing
+    double_sided: false, // Default to single-sided for accurate pricing
   };
+
+  // Add mail type specific fields
+  let mailpieceData: any = { ...baseMailpieceData };
 
   let pricingResponse: LobPostcardResponse | LobLetterResponse;
   
@@ -281,6 +326,7 @@ export async function createMailPiece(mailData: {
   mailSize: string;
   fileUrl?: string;
   description?: string;
+  envelopeType?: string;
 }) {
   try {
     // Check if Lob API key is configured
@@ -337,11 +383,25 @@ export async function createMailPiece(mailData: {
         ? await fetchFileContent(mailData.fileUrl)
         : '<html><body><h1>Mail Letter</h1><p>This is a mail letter created via Postmarkr.</p></body></html>';
       
+      // Prepare envelope specifications based on envelope type
+      const envelopeSpecs: any = {
+        color: true,
+        double_sided: false,
+      };
+
+      // Add envelope type specifications
+      if (mailData.envelopeType === 'standard_10_double_window') {
+        envelopeSpecs.extra_service = 'certified';
+        // Note: Lob API will handle the envelope type based on content size
+      } else if (mailData.envelopeType === 'flat_9x12_single_window') {
+        envelopeSpecs.extra_service = 'certified';
+        // Note: Lob API will handle the envelope type based on content size
+      }
+      
       lobResponse = await (lob as any).letters.create({
         ...mailpieceData,
         file: fileContent,
-        color: true,
-        double_sided: false,
+        ...envelopeSpecs,
       });
     } else {
       // For other mail types, use letter as fallback

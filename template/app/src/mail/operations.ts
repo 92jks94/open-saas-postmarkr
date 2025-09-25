@@ -48,6 +48,11 @@ import {
   confirmMailPayment as confirmMailPaymentService, 
   refundMailPayment as refundMailPaymentService 
 } from '../server/mail/payments';
+import { 
+  calculatePricingTier, 
+  validateAndCalculatePricing,
+  getPageCountErrorMessage 
+} from '../server/pricing/pageBasedPricing';
 import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus } from '../server/lob/services';
 
 // ============================================================================
@@ -206,7 +211,8 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
       throw new HttpError(400, validationErrors.ADDRESS_NOT_FOUND);
     }
 
-    // Validate file if provided
+    // Validate file if provided and get page count
+    let pageCount: number | undefined;
     if (validatedInput.fileId) {
       const file = await context.entities.File.findFirst({
         where: { id: validatedInput.fileId, userId: context.user.id },
@@ -215,6 +221,29 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
       if (!file) {
         throw new HttpError(400, validationErrors.FILE_NOT_FOUND);
       }
+
+      // Get page count from file
+      pageCount = file.pageCount || undefined;
+      
+      // Validate page count for pricing
+      if (pageCount) {
+        const pricingValidation = validateAndCalculatePricing(pageCount);
+        if (!pricingValidation.isValid) {
+          throw new HttpError(400, pricingValidation.error || 'Invalid page count');
+        }
+      }
+    }
+
+    // Calculate pricing tier and envelope type if page count is available
+    let pricingTier: string | undefined;
+    let envelopeType: string | undefined;
+    let customerPrice: number | undefined;
+    
+    if (pageCount) {
+      const pricing = calculatePricingTier(pageCount);
+      pricingTier = pricing.tier;
+      envelopeType = pricing.envelopeType;
+      customerPrice = pricing.price / 100; // Convert cents to dollars
     }
 
     // Create the mail piece
@@ -230,6 +259,10 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
         description: validatedInput.description,
         status: 'draft',
         paymentStatus: 'pending',
+        pageCount: pageCount,
+        pricingTier: pricingTier,
+        envelopeType: envelopeType,
+        customerPrice: customerPrice,
       },
     });
 
@@ -599,13 +632,19 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
       throw new HttpError(400, 'Payment can only be created for draft mail pieces');
     }
 
-    // Create payment intent
+    // Validate page count is available
+    if (!mailPiece.pageCount) {
+      throw new HttpError(400, 'Page count is required for pricing calculation');
+    }
+
+    // Create payment intent with page count
     const paymentData = await createMailPaymentIntentService({
       mailType: mailPiece.mailType,
       mailClass: mailPiece.mailClass,
       mailSize: mailPiece.mailSize,
       toAddress: mailPiece.recipientAddress,
       fromAddress: mailPiece.senderAddress,
+      pageCount: mailPiece.pageCount,
     }, context.user.id, context);
 
     // Update payment intent metadata with mailPieceId
@@ -947,6 +986,7 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       mailSize: mailPiece.mailSize,
       fileUrl: mailPiece.file?.uploadUrl,
       description: mailPiece.description || `Mail piece created via Postmarkr - ${mailPiece.mailType}`,
+      envelopeType: mailPiece.envelopeType || undefined,
     };
 
     // Submit to Lob API

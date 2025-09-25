@@ -176,6 +176,9 @@ model MailPiece {
   customerPrice      Float?
   lobCost            Float?
   markup             Float?
+  pageCount          Int?
+  pricingTier        String?                  // "tier_1" (1-5 pages) or "tier_2" (6-20 pages)
+  envelopeType       String?                  // "standard_10_double_window" or "flat_9x12_single_window"
   returnReceipt      Boolean                  @default(false)
   serviceOptions     Json?
   signatureConfirmation Boolean              @default(false)

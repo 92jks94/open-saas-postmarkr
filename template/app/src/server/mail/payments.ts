@@ -13,6 +13,7 @@ export async function createMailPaymentIntent(
     mailSize: string;
     toAddress: MailAddress;
     fromAddress: MailAddress;
+    pageCount?: number;
   },
   userId: string,
   context: any
