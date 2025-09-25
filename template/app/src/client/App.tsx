@@ -13,6 +13,7 @@ import './Main.css';
 import NavBar from './components/NavBar/NavBar';
 import { demoNavigationitems, marketingNavigationItems } from './components/NavBar/constants';
 import CookieConsentBanner from './components/cookie-consent/Banner';
+import { initSentry } from './sentry';
 
 /**
  * Root application component that handles layout and navigation
@@ -29,6 +30,11 @@ import CookieConsentBanner from './components/cookie-consent/Banner';
  * - Smooth scrolling for hash navigation
  */
 export default function App() {
+  // Initialize Sentry on app startup
+  useEffect(() => {
+    initSentry();
+  }, []);
+
   const location = useLocation();
   const isMarketingPage = useMemo(() => {
     return location.pathname === '/' || location.pathname.startsWith('/pricing');

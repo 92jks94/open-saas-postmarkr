@@ -242,6 +242,19 @@ export const routes = {
         options?.hash
       ),
   },
+  SentryTestRoute: {
+    to: "/sentry-test",
+    build: (
+      options?:
+      OptionalRouteOptions
+    ) => interpolatePath(
+        
+        "/sentry-test",
+        undefined,
+        options?.search,
+        options?.hash
+      ),
+  },
   NotFoundRoute: {
     to: "*",
     build: (

@@ -3,8 +3,10 @@ import type { StripeMode } from './paymentProcessor';
 import Stripe from 'stripe';
 import { stripe } from './stripeClient';
 
+import { getEnvVar } from '../../server/envValidation';
+
 // WASP_WEB_CLIENT_URL will be set up by Wasp when deploying to production: https://wasp.sh/docs/deploying
-const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+const DOMAIN = getEnvVar('WASP_WEB_CLIENT_URL', 'http://localhost:3000');
 
 export async function fetchStripeCustomer(customerEmail: string) {
   let customer: Stripe.Customer;

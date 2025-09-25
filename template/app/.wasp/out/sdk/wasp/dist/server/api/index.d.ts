@@ -7,4 +7,6 @@ export type LobWebhook<P extends ExpressParams = ExpressParams, ResBody = any, R
 ], P, ResBody, ReqBody, ReqQuery, Locals>;
 export type ValidateAddress<P extends ExpressParams = ExpressParams, ResBody = any, ReqBody = any, ReqQuery extends ExpressQuery = ExpressQuery, Locals extends Record<string, any> = Record<string, any>> = AuthenticatedApi<[
 ], P, ResBody, ReqBody, ReqQuery, Locals>;
+export type HealthCheck<P extends ExpressParams = ExpressParams, ResBody = any, ReqBody = any, ReqQuery extends ExpressQuery = ExpressQuery, Locals extends Record<string, any> = Record<string, any>> = AuthenticatedApi<[
+], P, ResBody, ReqBody, ReqQuery, Locals>;
 //# sourceMappingURL=index.d.ts.map

@@ -14,9 +14,21 @@ export default function FileUploadPage() {
     const [uploadProgressPercent, setUploadProgressPercent] = useState(0);
     const [uploadError, setUploadError] = useState(null);
     const allUserFiles = useQuery(getAllFilesByUser, undefined, {
-    // Enable automatic refetching - manual refetches will still work
-    // and won't conflict with automatic ones
+        // Smart polling: only poll when there are files being processed
+        refetchInterval: false, // We'll control this manually
+        refetchIntervalInBackground: true, // Continue polling when tab is not active
     });
+    // Check if there are any files currently being processed
+    const hasProcessingFiles = allUserFiles.data?.some(file => file.validationStatus === 'processing');
+    // Smart polling effect - only poll when there are files being processed
+    useEffect(() => {
+        if (!hasProcessingFiles)
+            return;
+        const interval = setInterval(() => {
+            allUserFiles.refetch();
+        }, 3000); // Poll every 3 seconds
+        return () => clearInterval(interval);
+    }, [hasProcessingFiles, allUserFiles]);
     const { isLoading: isDownloadUrlLoading, refetch: refetchDownloadUrl } = useQuery(getDownloadFileSignedURL, { key: fileKeyForS3 }, { enabled: false });
     useEffect(() => {
         allUserFiles.refetch();
@@ -121,7 +133,13 @@ export default function FileUploadPage() {
             </form>
             <div className='border-b-2 border-border'></div>
             <div className='space-y-4 col-span-full'>
-              <CardTitle className='text-xl font-bold text-foreground'>Uploaded Files</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className='text-xl font-bold text-foreground'>Uploaded Files</CardTitle>
+                {hasProcessingFiles && (<div className="flex items-center gap-2 text-sm text-blue-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    Processing metadata...
+                  </div>)}
+              </div>
               {allUserFiles.isLoading && <p className='text-muted-foreground'>Loading...</p>}
               {allUserFiles.error && (<Alert variant='destructive'>
                   <AlertDescription>Error: {allUserFiles.error.message}</AlertDescription>
@@ -132,7 +150,13 @@ export default function FileUploadPage() {
                     'opacity-70': file.key === fileKeyForS3 && isDownloadUrlLoading,
                 })}>
                         <div className="flex-1 min-w-0">
-                          <p className='text-foreground font-medium'>{file.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className='text-foreground font-medium'>{file.name}</p>
+                            {file.validationStatus === 'processing' && (<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-yellow-600 mr-1"></div>
+                                Processing...
+                              </span>)}
+                          </div>
                           {/* PDF Metadata Badges */}
                           <div className="flex flex-wrap gap-2 mt-2">
                             {file.pageCount && (<span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

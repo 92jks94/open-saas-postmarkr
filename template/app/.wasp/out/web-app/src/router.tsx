@@ -22,6 +22,7 @@ import AdminUsersPage from '../../../../src/admin/dashboards/users/UsersDashboar
 import AdminSettingsPage from '../../../../src/admin/elements/settings/SettingsPage'
 import AdminCalendarPage from '../../../../src/admin/elements/calendar/CalendarPage'
 import AdminUIButtonsPage from '../../../../src/admin/elements/ui-elements/ButtonsPage'
+import SentryTestPage from '../../../../src/client/SentryTestPage'
 import { NotFoundPage } from '../../../../src/client/components/NotFoundPage'
 import MailCreationPage from '../../../../src/mail/MailCreationPage'
 import MailHistoryPage from '../../../../src/mail/MailHistoryPage'
@@ -52,6 +53,7 @@ export const routeNameToRouteComponent = {
   AdminSettingsRoute: createAuthRequiredPage(AdminSettingsPage),
   AdminCalendarRoute: createAuthRequiredPage(AdminCalendarPage),
   AdminUIButtonsRoute: createAuthRequiredPage(AdminUIButtonsPage),
+  SentryTestRoute: SentryTestPage,
   NotFoundRoute: NotFoundPage,
   MailCreationRoute: createAuthRequiredPage(MailCreationPage),
   MailHistoryRoute: createAuthRequiredPage(MailHistoryPage),

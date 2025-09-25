@@ -5,11 +5,13 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { MAX_FILE_SIZE_BYTES } from './validation';
 
+import { getEnvVar } from '../server/envValidation';
+
 const s3Client = new S3Client({
-  region: process.env.AWS_S3_REGION,
+  region: getEnvVar('AWS_REGION'),
   credentials: {
-    accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
-    secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
+    accessKeyId: getEnvVar('AWS_ACCESS_KEY_ID'),
+    secretAccessKey: getEnvVar('AWS_SECRET_ACCESS_KEY'),
   },
 });
 

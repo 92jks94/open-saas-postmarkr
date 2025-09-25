@@ -1,14 +1,14 @@
 import Lob from 'lob';
-import { requireNodeEnvVar } from '../utils';
+import { getEnvVar } from '../envValidation';
 
 // Get the appropriate Lob API key based on environment
 function getLobApiKey(): string | null {
-  const environment = process.env.LOB_ENVIRONMENT || 'test';
+  const environment = getEnvVar('LOB_ENVIRONMENT', 'test');
   
   if (environment === 'live' || environment === 'prod') {
-    return process.env.LOB_PROD_KEY || null;
+    return getEnvVar('LOB_PROD_KEY', null);
   } else {
-    return process.env.LOB_TEST_KEY || null;
+    return getEnvVar('LOB_TEST_KEY', null);
   }
 }
 

@@ -424,7 +424,7 @@
             "file",
             "../out/sdk/wasp/client/router/index.ts"
         ],
-        "19bff8ffbeeb68eae825bc7333d5e8772fe3877ec409ae6934d5734f7d04f0ce"
+        "7c81608a758d639a02b00a7088b5c768558c62021466e1b8947b10a6c4ebad00"
     ],
     [
         [
@@ -564,7 +564,7 @@
             "file",
             "../out/sdk/wasp/server/api/index.ts"
         ],
-        "102fba59132b310b5b4e4557cc18ccc92bbf52f8d147872b7d71ac47d27530fa"
+        "41d62af225bca36313dfa6680d0eca1d67b5d673c43a9e65d6f98f401ed53f35"
     ],
     [
         [
@@ -884,6 +884,13 @@
     [
         [
             "file",
+            "../out/sdk/wasp/src/admin/dashboards/monitoring/MonitoringDashboard.tsx"
+        ],
+        "d52dd4fcae54917be4e09c6551f57fd8ce59a2d713b949d98ca5339f5fb460a7"
+    ],
+    [
+        [
+            "file",
             "../out/sdk/wasp/src/admin/dashboards/users/DropdownEditDelete.tsx"
         ],
         "50f0937bad9354e583306b50c040a11de0ca54f85d171b2320a57bee7bc75244"
@@ -1054,7 +1061,7 @@
             "file",
             "../out/sdk/wasp/src/client/App.tsx"
         ],
-        "f6ba15e354805284b56bab80c1661fc377694932846892f1ecb6420243a2bc55"
+        "fa770ea9bf86a509282039f9298a78effbcfa63df0de2ef873f0da05de5820f6"
     ],
     [
         [
@@ -1062,6 +1069,13 @@
             "../out/sdk/wasp/src/client/Main.css"
         ],
         "cb7d962e9a85dddbc229ad72618de152b6c378d2a385b03d32dd9667dac50181"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/client/SentryTestPage.tsx"
+        ],
+        "1a5151a3f9f15c477a51abe045e1fcc88f5a6f48b93e24da5da723f3e510da8c"
     ],
     [
         [
@@ -1146,6 +1160,13 @@
             "../out/sdk/wasp/src/client/icons/icon-copy-alt.svg"
         ],
         "8b00e12a1fdb5b32df280ae60024e5631b0c3c968aeeaaefbf7a2a8222e543bd"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/client/sentry.ts"
+        ],
+        "6f3535822a174fe4ff8bcd579680b96aaddb31275b04967abea2becd698253d5"
     ],
     [
         [
@@ -1474,7 +1495,7 @@
             "file",
             "../out/sdk/wasp/src/file-upload/FileUploadPage.tsx"
         ],
-        "28ca1da348a60fa4a1ebeea58a9e1ab957c1f409d97ac2dab400a58abe808379"
+        "6ca2165bbd242f522a6596fd145745b4f5199ee654f774311408ed3c6efcc3eb"
     ],
     [
         [
@@ -1488,7 +1509,7 @@
             "file",
             "../out/sdk/wasp/src/file-upload/operations.ts"
         ],
-        "ea3cddd082891d513d493326e320f5e3f31c9c08d942236429a3a368085b4c49"
+        "05a3a49507da6ccd8b5dba7bd656791ee20b802f976faecd6379e500af28cb2f"
     ],
     [
         [
@@ -1502,7 +1523,7 @@
             "file",
             "../out/sdk/wasp/src/file-upload/s3Utils.ts"
         ],
-        "95bba2ef1ac7b0ed755149778813ee0698465fd971c3996bb83e53e9da687182"
+        "c852db1c77a4bdad4d302b4be362a0ff613f0434de5b5758b6c269170f8c5208"
     ],
     [
         [
@@ -1803,7 +1824,7 @@
             "file",
             "../out/sdk/wasp/src/payment/stripe/checkoutUtils.ts"
         ],
-        "18d1bd85a307a0d8c0b880c491c44f9012008d4edfc89caea7c9396645987140"
+        "625f6fe817cd1cf0d1309837181ba0723bb952d5d722f13279ea653cd0813ca0"
     ],
     [
         [
@@ -1817,14 +1838,14 @@
             "file",
             "../out/sdk/wasp/src/payment/stripe/paymentProcessor.ts"
         ],
-        "437887d841a4bc49f7d9464d7a2a2392a4681353e29a0645d701cb01af0faead"
+        "54ee305a6a683d5ef2917b1c3e28120611da0431b6bce729729115ed6e5dbc4c"
     ],
     [
         [
             "file",
             "../out/sdk/wasp/src/payment/stripe/stripeClient.ts"
         ],
-        "cfd05ae036eaea99a5ee4861c46caed639f6af609b176a9780901fef14eef3cf"
+        "5f0554b7e680af154d77c73b76219d303197ab9cf6aa925debec7da89c101bf4"
     ],
     [
         [
@@ -1850,6 +1871,34 @@
     [
         [
             "file",
+            "../out/sdk/wasp/src/server/__tests__/envValidation.test.ts"
+        ],
+        "b0bb69d98da5eb8e5eaeabfcf349162c2224580d061833ed6c0a34113f1fe3b6"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/envValidation.ts"
+        ],
+        "a2b71e7be8efc4846b21a696dfeae5486855faec059ddc26103ebb3382b121fd"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/healthCheck.ts"
+        ],
+        "b44521cba926fcbdf89acd2b3f196a95501136657e8e09305be6a63a631ed4ec"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/healthCheckEndpoint.ts"
+        ],
+        "844aa190c97ba48f5f09d3919518a6442a2b55da25a416eac3b3ad6d08be8b95"
+    ],
+    [
+        [
+            "file",
             "../out/sdk/wasp/src/server/lob/addressValidation.ts"
         ],
         "62dceda11351cfd49b75b7d800f7fc18a2a662d49467ab65a26c8cac07b63b38"
@@ -1859,7 +1908,7 @@
             "file",
             "../out/sdk/wasp/src/server/lob/client.ts"
         ],
-        "559c255d5ddbc76c28f74d02382fb56a0e80fad7ebeeb23b127c390ef099aae3"
+        "4852f32125fa13a0cb46c58888e85bb5df4d6aec4b866b53f5c806d96d5373b8"
     ],
     [
         [
@@ -1913,9 +1962,44 @@
     [
         [
             "file",
+            "../out/sdk/wasp/src/server/sentry-example.ts"
+        ],
+        "9d4ce29cf1e0a5e9272e10d1cc0fe25d3be53769e978b03c9c59afa0567d163e"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/sentry-utils.ts"
+        ],
+        "e0ade8d15e30e0c1a64575ea7f8620b30f366e50be4e674768fbdff1aac6909a"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/sentry.ts"
+        ],
+        "4c97cf0bbe5a3fe9e396284836cf2657d3106fb2f84c205ccd5488ff7133db3a"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/setup.ts"
+        ],
+        "c851962419daa4f5147d668e003611f0eb48f18f709a5ce0afe8ea67553b817c"
+    ],
+    [
+        [
+            "file",
+            "../out/sdk/wasp/src/server/startupValidation.ts"
+        ],
+        "b7b749d5a4e0d881a81600e74fe0b54bb255974fcf1b4216ab5f0c75ff0cd86e"
+    ],
+    [
+        [
+            "file",
             "../out/sdk/wasp/src/server/utils.ts"
         ],
-        "5ce4d27b9cdd7d240c997dcb63139c89c4ded179bcbddc9ce2054b838e89ccd4"
+        "9c3f53bb0e7e2dd3de8c75960de44db7776284cc3786f0071e7fc5e39bbd880b"
     ],
     [
         [
@@ -2048,7 +2132,7 @@
             "dir",
             "db/migrations/"
         ],
-        "2145237fb0edff27066cf3918ebbb55fc97e1b5f71f96bb00c3a09f797beb904"
+        "5682d02f862ff469f28e98e93764f07996135b59d2529f0a3fa193d83a6f5361"
     ],
     [
         [
@@ -2062,7 +2146,7 @@
             "file",
             "server/.env"
         ],
-        "cef2dbb003e2d2fb178477cc009115fedd66f8214925ac7e238523b1a64de541"
+        "55fcc639ba13345aff9141c81ed869e37db772fb9981ab00284ba875bf4aa668"
     ],
     [
         [
@@ -2363,7 +2447,7 @@
             "file",
             "server/src/middleware/globalMiddleware.ts"
         ],
-        "2985dffda5277174be4e075070ab22ce67c653980b98b78734a64faf1a87d3de"
+        "e3cfa6431614cecaaada0d81c54d02243c864eed7345b57d03ea4cbc9f17170e"
     ],
     [
         [
@@ -2454,7 +2538,7 @@
             "file",
             "server/src/routes/apis/index.ts"
         ],
-        "aefdcded7ad8ec534ff97a84c57e92f29a83e7adcab9197303c86440f3ac6fda"
+        "83b09a5cb7c5a74558e8cd221c695dd2841bc2428c1f662c4bb8afb94d7aa66e"
     ],
     [
         [
@@ -3217,7 +3301,7 @@
             "file",
             "web-app/src/router.tsx"
         ],
-        "3b36dde4f90da62f52dbc821ec22701d6f4616073fdb425373734b36ae736dfd"
+        "a552ebdb4609c5a62b8316993a819ee6fc0ca55b2f2334781f65154e19b86e3b"
     ],
     [
         [

@@ -1,7 +1,7 @@
 import type { PaymentPlanEffect } from '../plans';
 import type { CreateCheckoutSessionArgs, FetchCustomerPortalUrlArgs, PaymentProcessor } from '../paymentProcessor'
 import { fetchStripeCustomer, createStripeCheckoutSession } from './checkoutUtils';
-import { requireNodeEnvVar } from '../../server/utils';
+import { getEnvVar } from '../../server/envValidation';
 import { stripeWebhook, stripeMiddlewareConfigFn } from './webhook';
 
 export type StripeMode = 'subscription' | 'payment';
@@ -31,7 +31,7 @@ export const stripePaymentProcessor: PaymentProcessor = {
     return { session };
   },
   fetchCustomerPortalUrl: async (_args: FetchCustomerPortalUrlArgs) =>
-    requireNodeEnvVar('STRIPE_CUSTOMER_PORTAL_URL'),
+    getEnvVar('STRIPE_CUSTOMER_PORTAL_URL'),
   webhook: stripeWebhook,
   webhookMiddlewareConfigFn: stripeMiddlewareConfigFn,
 };

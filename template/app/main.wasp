@@ -86,16 +86,16 @@ app OpenSaaS {
     rootComponent: import App from "@src/client/App",
   },
 
+  server: {
+    middlewareConfigFn: import { serverMiddlewareConfigFn } from "@src/server/setup",
+  },
+
   emailSender: {
-    // NOTE: "Dummy" provider is just for local development purposes.
-    //   Make sure to check the server logs for the email confirmation url (it will not be sent to an address)!
-    //   Once you are ready for production, switch to e.g. "SendGrid" or "Mailgun" providers. Check out https://docs.opensaas.sh/guides/email-sending/ .
     provider: Dummy,
     defaultFrom: {
       name: "Postmarkr",
-      // When using a real provider, e.g. SendGrid, you must use the same email address that you configured your account to send out emails with!
       email: "nathan@postmarkr.com"
-    },
+    }
   },
 }
 
@@ -343,6 +343,11 @@ page AdminUIButtonsPage {
   component: import AdminUI from "@src/admin/elements/ui-elements/ButtonsPage"
 }
 
+route SentryTestRoute { path: "/sentry-test", to: SentryTestPage }
+page SentryTestPage {
+  component: import SentryTestPage from "@src/client/SentryTestPage"
+}
+
 route NotFoundRoute { path: "*", to: NotFoundPage }
 page NotFoundPage {
   component: import { NotFoundPage } from "@src/client/components/NotFoundPage"
@@ -442,6 +447,11 @@ api lobWebhook {
 api validateAddress {
   fn: import { validateAddressEndpoint } from "@src/server/lob/addressValidation",
   httpRoute: (POST, "/api/validate-address")
+}
+
+api healthCheck {
+  fn: import { healthCheckEndpoint } from "@src/server/healthCheck",
+  httpRoute: (GET, "/health")
 }
 
 

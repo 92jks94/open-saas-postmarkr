@@ -11,10 +11,12 @@ import { paymentsMiddlewareConfigFn as _wasppaymentsWebhookmiddlewareConfigFn } 
 import { lobWebhook as _wasplobWebhookfn } from '../../../../../../src/server/lob/webhook'
 import { lobMiddlewareConfigFn as _wasplobWebhookmiddlewareConfigFn } from '../../../../../../src/server/lob/webhook'
 import { validateAddressEndpoint as _waspvalidateAddressfn } from '../../../../../../src/server/lob/addressValidation'
+import { healthCheckEndpoint as _wasphealthCheckfn } from '../../../../../../src/server/healthCheck'
 
 const idFn: MiddlewareConfigFn = x => x
 
 const _waspvalidateAddressmiddlewareConfigFn = idFn
+const _wasphealthCheckmiddlewareConfigFn = idFn
 
 const router = express.Router()
 
@@ -71,6 +73,24 @@ router.post(
         },
       }
       return _waspvalidateAddressfn(req, res, context)
+    }
+  )
+)
+const healthCheckMiddleware = globalMiddlewareConfigForExpress(_wasphealthCheckmiddlewareConfigFn)
+router.get(
+  '/health',
+  [auth, ...healthCheckMiddleware],
+  defineHandler(
+    (
+      req: Parameters<typeof _wasphealthCheckfn>[0] & { user: AuthUserData | null },
+      res: Parameters<typeof _wasphealthCheckfn>[1],
+    ) => {
+      const context = {
+        user: makeAuthUserIfPossible(req.user),
+        entities: {
+        },
+      }
+      return _wasphealthCheckfn(req, res, context)
     }
   )
 )

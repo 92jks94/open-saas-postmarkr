@@ -1,5 +1,5 @@
 import { fetchStripeCustomer, createStripeCheckoutSession } from './checkoutUtils';
-import { requireNodeEnvVar } from '../../server/utils';
+import { getEnvVar } from '../../server/envValidation';
 import { stripeWebhook, stripeMiddlewareConfigFn } from './webhook';
 export const stripePaymentProcessor = {
     id: 'stripe',
@@ -26,7 +26,7 @@ export const stripePaymentProcessor = {
         };
         return { session };
     },
-    fetchCustomerPortalUrl: async (_args) => requireNodeEnvVar('STRIPE_CUSTOMER_PORTAL_URL'),
+    fetchCustomerPortalUrl: async (_args) => getEnvVar('STRIPE_CUSTOMER_PORTAL_URL'),
     webhook: stripeWebhook,
     webhookMiddlewareConfigFn: stripeMiddlewareConfigFn,
 };

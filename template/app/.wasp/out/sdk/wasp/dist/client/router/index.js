@@ -73,6 +73,10 @@ export const routes = {
         to: "/admin/ui/buttons",
         build: (options) => interpolatePath("/admin/ui/buttons", undefined, options?.search, options?.hash),
     },
+    SentryTestRoute: {
+        to: "/sentry-test",
+        build: (options) => interpolatePath("/sentry-test", undefined, options?.search, options?.hash),
+    },
     NotFoundRoute: {
         to: "*",
         build: (options) => interpolatePath("*", options.params, options?.search, options?.hash),

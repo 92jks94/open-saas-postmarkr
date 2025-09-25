@@ -72,6 +72,10 @@ export declare const routes: {
         readonly to: "/admin/ui/buttons";
         readonly build: (options?: OptionalRouteOptions) => string;
     };
+    readonly SentryTestRoute: {
+        readonly to: "/sentry-test";
+        readonly build: (options?: OptionalRouteOptions) => string;
+    };
     readonly NotFoundRoute: {
         readonly to: "*";
         readonly build: (options: OptionalRouteOptions & {

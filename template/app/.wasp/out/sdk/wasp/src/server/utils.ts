@@ -1,3 +1,5 @@
+import { getEnvVar } from './envValidation';
+
 export function requireNodeEnvVar(name: string): string {
   const value = process.env[name];
   if (value === undefined) {
@@ -6,3 +8,8 @@ export function requireNodeEnvVar(name: string): string {
     return value;
   }
 }
+
+/**
+ * @deprecated Use getEnvVar from envValidation.ts instead for better type safety
+ */
+export { requireNodeEnvVar as getRequiredEnvVar };

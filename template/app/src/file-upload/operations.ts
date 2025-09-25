@@ -8,7 +8,7 @@ import {
   type GetDownloadFileSignedURL,
 } from 'wasp/server/operations';
 import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3, deleteFileFromS3 } from './s3Utils';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
 import { extractPDFMetadataFromBuffer, isPDFBuffer, type PDFMetadata } from './pdfMetadata';
@@ -181,7 +181,7 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
 
     // Validate PDF format
     if (!isPDFBuffer(pdfBuffer)) {
-      throw new Error('Invalid PDF file format');
+      throw new HttpError(400, 'Invalid PDF file format');
     }
 
     // Extract metadata using existing function
@@ -213,5 +213,89 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
         validationError: error instanceof Error ? error.message : 'Unknown processing error'
       }
     });
+  }
+};
+
+/**
+ * Clean up orphaned files in S3 that have been deleted from the database
+ * This should be run periodically to prevent S3 storage costs from accumulating
+ */
+export const cleanupOrphanedS3Files = async (args: any, context: any) => {
+  try {
+    console.log('🧹 Starting S3 file cleanup process...');
+    
+    // Get all file keys from database
+    const dbFiles = await context.entities.File.findMany({
+      select: { key: true }
+    });
+    const dbKeys = new Set(dbFiles.map((file: { key: string }) => file.key));
+    
+    // List all files in S3 bucket
+    const s3Client = new S3Client({
+      region: process.env.AWS_REGION || 'us-east-1',
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+    
+    const bucketName = process.env.AWS_S3_BUCKET!;
+    let continuationToken: string | undefined;
+    let orphanedFiles: string[] = [];
+    let totalFilesChecked = 0;
+    
+    do {
+      const listCommand = new ListObjectsV2Command({
+        Bucket: bucketName,
+        ContinuationToken: continuationToken,
+        MaxKeys: 1000
+      });
+      
+      const response = await s3Client.send(listCommand);
+      
+      if (response.Contents) {
+        for (const object of response.Contents) {
+          totalFilesChecked++;
+          const s3Key = object.Key!;
+          
+          // Check if this S3 file exists in our database
+          if (!dbKeys.has(s3Key)) {
+            orphanedFiles.push(s3Key);
+          }
+        }
+      }
+      
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+    
+    console.log(`📊 Cleanup stats: ${totalFilesChecked} files checked, ${orphanedFiles.length} orphaned files found`);
+    
+    // Delete orphaned files from S3
+    let deletedCount = 0;
+    for (const orphanedKey of orphanedFiles) {
+      try {
+        await deleteFileFromS3({ key: orphanedKey });
+        deletedCount++;
+        console.log(`🗑️ Deleted orphaned file: ${orphanedKey}`);
+      } catch (error) {
+        console.error(`❌ Failed to delete file ${orphanedKey}:`, error);
+      }
+    }
+    
+    console.log(`✅ S3 cleanup completed: ${deletedCount}/${orphanedFiles.length} orphaned files deleted`);
+    
+    return {
+      totalFilesChecked,
+      orphanedFilesFound: orphanedFiles.length,
+      filesDeleted: deletedCount,
+      success: true
+    };
+    
+  } catch (error) {
+    console.error('❌ S3 cleanup failed:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 };

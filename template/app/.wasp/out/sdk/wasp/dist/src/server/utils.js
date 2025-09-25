@@ -7,4 +7,8 @@ export function requireNodeEnvVar(name) {
         return value;
     }
 }
+/**
+ * @deprecated Use getEnvVar from envValidation.ts instead for better type safety
+ */
+export { requireNodeEnvVar as getRequiredEnvVar };
 //# sourceMappingURL=utils.js.map

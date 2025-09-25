@@ -1,0 +1,78 @@
+nohup: ignoring input
+[33m
+🐝 --- Starting compilation and setup phase. Hold tight... ------------------------
+[0m
+[33m
+🐝 --- Compiling wasp project... --------------------------------------------------
+[0m
+[33m
+✅ --- Successfully completed npm install. ----------------------------------------
+[0m
+[33m
+🐝 --- Setting up database... -----------------------------------------------------
+[0m
+
+[34m[[0m   [34mDb[0m   [34m][0m [+] Added tables
+[34m[[0m   [34mDb[0m   [34m][0m   - Notification
+[34m[[0m   [34mDb[0m   [34m][0m   - NotificationPreferences
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [-] Removed tables
+[34m[[0m   [34mDb[0m   [34m][0m   - Auth
+[34m[[0m   [34mDb[0m   [34m][0m   - AuthIdentity
+[34m[[0m   [34mDb[0m   [34m][0m   - Session
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `Auth` table
+[34m[[0m   [34mDb[0m   [34m][0m   [-] Removed foreign key on columns (userId)
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `AuthIdentity` table
+[34m[[0m   [34mDb[0m   [34m][0m   [-] Removed foreign key on columns (authId)
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `MailPiece` table
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `customerPrice`
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `lobCost`
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `markup`
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `returnReceipt`
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `serviceOptions`
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `signatureConfirmation`
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added column `trackingEnabled`
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `Notification` table
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added index on columns (createdAt)
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added index on columns (userId, readAt)
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added index on columns (userId, type)
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added foreign key on columns (mailPieceId)
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added foreign key on columns (userId)
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `NotificationPreferences` table
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added unique index on columns (userId)
+[34m[[0m   [34mDb[0m   [34m][0m   [+] Added foreign key on columns (userId)
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `Session` table
+[34m[[0m   [34mDb[0m   [34m][0m   [-] Removed foreign key on columns (userId)
+[34m[[0m   [34mDb[0m   [34m][0m 
+[34m[[0m   [34mDb[0m   [34m][0m [*] Changed the `User` table
+[34m[[0m   [34mDb[0m   [34m][0m   [-] Removed column `lemonSqueezyCustomerPortalUrl`[33m
+✅ --- Database successfully set up. ----------------------------------------------
+[0m
+[33m
+🐝 --- Building SDK... ------------------------------------------------------------
+[0m
+
+[33m[[0m  [33mWasp[0m  [33m][0m > wasp@1.0.0 build
+[33m[[0m  [33mWasp[0m  [33m][0m > tsc && node ./scripts/copy-assets.js
+[33m[[0m  [33mWasp[0m  [33m][0m [33m
+✅ --- SDK built successfully. ----------------------------------------------------
+[0m
+[33m
+✅ --- Your wasp project has successfully compiled. -------------------------------
+[0m
+[35m
+
+👀 --- [Warning] Your wasp project reported following warnings during compilation: ---
+
+- Your Prisma schema does not match your database, please run `wasp db migrate-dev`.[0m
+[31m
+
+❌ --- [Error] Can not connect to database: ---------------------------------------
+
+The database needs to be running in order to execute this command. You can easily start a managed dev database with `wasp start db`.[0m

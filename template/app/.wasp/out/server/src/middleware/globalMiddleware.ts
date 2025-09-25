@@ -8,7 +8,7 @@ import { config } from 'wasp/server'
 import type { MiddlewareConfig, MiddlewareConfigFn } from 'wasp/server/middleware'
 export type { MiddlewareConfig, MiddlewareConfigFn } from 'wasp/server/middleware'
 
-const _waspGlobalMiddlewareConfigFn = (mc: MiddlewareConfig) => mc
+import { serverMiddlewareConfigFn as _waspGlobalMiddlewareConfigFn } from '../../../../../src/server/setup'
 
 // This is the set of middleware Wasp supplies by default.
 // NOTE: Remember to update the docs of these change.
