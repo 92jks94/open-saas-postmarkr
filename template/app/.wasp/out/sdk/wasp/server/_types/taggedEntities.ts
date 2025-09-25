@@ -18,6 +18,8 @@ import {
   type State,
   type MailPiece,
   type MailPieceStatusHistory,
+  type Notification,
+  type NotificationPreferences,
 } from 'wasp/entities'
 
 export type _User = WithName<User, "User">
@@ -32,6 +34,8 @@ export type _MailAddress = WithName<MailAddress, "MailAddress">
 export type _State = WithName<State, "State">
 export type _MailPiece = WithName<MailPiece, "MailPiece">
 export type _MailPieceStatusHistory = WithName<MailPieceStatusHistory, "MailPieceStatusHistory">
+export type _Notification = WithName<Notification, "Notification">
+export type _NotificationPreferences = WithName<NotificationPreferences, "NotificationPreferences">
 
 export type _Entity = 
   | _User
@@ -46,6 +50,8 @@ export type _Entity =
   | _State
   | _MailPiece
   | _MailPieceStatusHistory
+  | _Notification
+  | _NotificationPreferences
   | never
 
 type WithName<E extends Entity, Name extends EntityName> = 

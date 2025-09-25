@@ -31,6 +31,8 @@ export type PrismaDelegate = {
     "State": typeof prisma.state;
     "MailPiece": typeof prisma.mailPiece;
     "MailPieceStatusHistory": typeof prisma.mailPieceStatusHistory;
+    "Notification": typeof prisma.notification;
+    "NotificationPreferences": typeof prisma.notificationPreferences;
 };
 type Context<Entities extends _Entity[]> = Expand<{
     entities: Expand<EntityMap<Entities>>;

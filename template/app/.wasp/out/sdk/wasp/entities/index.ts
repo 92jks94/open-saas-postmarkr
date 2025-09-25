@@ -11,6 +11,8 @@ import {
   type State,
   type MailPiece,
   type MailPieceStatusHistory,
+  type Notification,
+  type NotificationPreferences,
 } from "@prisma/client"
 
 export {
@@ -26,6 +28,8 @@ export {
   type State,
   type MailPiece,
   type MailPieceStatusHistory,
+  type Notification,
+  type NotificationPreferences,
   type Auth,
   type AuthIdentity,
 } from "@prisma/client"
@@ -43,6 +47,8 @@ export type Entity =
   | State
   | MailPiece
   | MailPieceStatusHistory
+  | Notification
+  | NotificationPreferences
   | never
 
 export type EntityName = 
@@ -58,4 +64,6 @@ export type EntityName =
   | "State"
   | "MailPiece"
   | "MailPieceStatusHistory"
+  | "Notification"
+  | "NotificationPreferences"
   | never

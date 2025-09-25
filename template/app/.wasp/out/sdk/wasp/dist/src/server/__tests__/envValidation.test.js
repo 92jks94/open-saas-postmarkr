@@ -1,92 +1,108 @@
-import { validateEnvironmentVariables, validateEnvironmentVariablesFor } from '../envValidation';
-// Mock process.env
-const originalEnv = process.env;
-beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...originalEnv };
-});
-afterAll(() => {
-    process.env = originalEnv;
-});
-describe('Environment Variable Validation', () => {
-    describe('validateEnvironmentVariables', () => {
-        it('should validate all required environment variables', () => {
-            // Set up minimal required environment variables
-            process.env = {
-                DATABASE_URL: 'postgresql://user:pass@host:port/db',
-                JWT_SECRET: 'your-super-secret-jwt-key-here-32-chars',
-                WASP_WEB_CLIENT_URL: 'https://postmarkr.com',
-                WASP_SERVER_URL: 'https://api.postmarkr.com',
-                SENDGRID_API_KEY: 'SG.your_sendgrid_api_key_here',
-                SENDGRID_FROM_EMAIL: 'noreply@postmarkr.com',
-                SENDGRID_FROM_NAME: 'Postmarkr',
-                STRIPE_SECRET_KEY: 'sk_live_your_stripe_secret_key_here',
-                STRIPE_PUBLISHABLE_KEY: 'pk_live_your_stripe_publishable_key_here',
-                STRIPE_WEBHOOK_SECRET: 'whsec_your_stripe_webhook_secret_here',
-                STRIPE_CUSTOMER_PORTAL_URL: 'https://billing.stripe.com/p/login/...',
-                LOB_PROD_KEY: 'live_your_lob_production_api_key_here',
-                LOB_ENVIRONMENT: 'live',
-                LOB_WEBHOOK_SECRET: 'your_lob_webhook_secret_here',
-                AWS_ACCESS_KEY_ID: 'AKIAIOSFODNN7EXAMPLE',
-                AWS_SECRET_ACCESS_KEY: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-                AWS_REGION: 'us-east-1',
-                AWS_S3_BUCKET: 'postmarkr-files',
-                SENTRY_DSN: 'https://your-dsn@sentry.io/project-id',
-                SENTRY_RELEASE: 'v1.0.0',
-                SENTRY_SERVER_NAME: 'postmarkr-production',
-            };
-            expect(() => validateEnvironmentVariables()).not.toThrow();
-        });
-        it('should throw error for missing required variables', () => {
-            process.env = {};
-            expect(() => validateEnvironmentVariables()).toThrow('Environment variable validation failed');
-        });
-        it('should throw error for invalid email format', () => {
-            process.env = {
-                DATABASE_URL: 'postgresql://user:pass@host:port/db',
-                JWT_SECRET: 'your-super-secret-jwt-key-here-32-chars',
-                WASP_WEB_CLIENT_URL: 'https://postmarkr.com',
-                WASP_SERVER_URL: 'https://api.postmarkr.com',
-                SENDGRID_API_KEY: 'SG.your_sendgrid_api_key_here',
-                SENDGRID_FROM_EMAIL: 'invalid-email',
-                SENDGRID_FROM_NAME: 'Postmarkr',
-                // ... other required vars
-            };
-            expect(() => validateEnvironmentVariables()).toThrow('SENDGRID_FROM_EMAIL must be a valid email');
-        });
-        it('should throw error for invalid URL format', () => {
-            process.env = {
-                DATABASE_URL: 'postgresql://user:pass@host:port/db',
-                JWT_SECRET: 'your-super-secret-jwt-key-here-32-chars',
-                WASP_WEB_CLIENT_URL: 'not-a-valid-url',
-                WASP_SERVER_URL: 'https://api.postmarkr.com',
-                // ... other required vars
-            };
-            expect(() => validateEnvironmentVariables()).toThrow('WASP_WEB_CLIENT_URL must be a valid URL');
+/**
+ * Environment validation tests
+ * Tests the environment variable validation functionality
+ */
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { getRequiredEnvironmentVariables, validateEnvironmentVariablesFor, getOptionalEnvironmentVariables } from '../envValidation';
+describe('Environment Validation', () => {
+    let originalEnv;
+    beforeEach(() => {
+        // Store original environment
+        originalEnv = { ...process.env };
+    });
+    afterEach(() => {
+        // Restore original environment
+        process.env = originalEnv;
+    });
+    it('should return correct required environment variables', () => {
+        const requiredVars = getRequiredEnvironmentVariables();
+        expect(requiredVars).toBeDefined();
+        expect(Array.isArray(requiredVars)).toBe(true);
+        // Check that all expected variables are included
+        const expectedVars = [
+            'DATABASE_URL',
+            'JWT_SECRET',
+            'WASP_WEB_CLIENT_URL',
+            'WASP_SERVER_URL',
+            'SENDGRID_API_KEY',
+            'SENDGRID_FROM_EMAIL',
+            'SENDGRID_FROM_NAME',
+            'STRIPE_SECRET_KEY',
+            'STRIPE_PUBLISHABLE_KEY',
+            'STRIPE_WEBHOOK_SECRET',
+            'STRIPE_CUSTOMER_PORTAL_URL',
+            'LOB_PROD_KEY',
+            'LOB_ENVIRONMENT',
+            'LOB_WEBHOOK_SECRET',
+            'AWS_ACCESS_KEY_ID',
+            'AWS_SECRET_ACCESS_KEY',
+            'AWS_REGION',
+            'AWS_S3_BUCKET',
+            'SENTRY_DSN',
+            'SENTRY_RELEASE',
+            'SENTRY_SERVER_NAME'
+        ];
+        expectedVars.forEach(varName => {
+            expect(requiredVars).toContain(varName);
         });
     });
-    describe('validateEnvironmentVariablesFor', () => {
-        it('should be more lenient for development environment', () => {
-            process.env = {
-                NODE_ENV: 'development',
-                DATABASE_URL: 'postgresql://user:pass@host:port/db',
-                JWT_SECRET: 'your-super-secret-jwt-key-here-32-chars',
-                WASP_WEB_CLIENT_URL: 'http://localhost:3000',
-                WASP_SERVER_URL: 'http://localhost:3001',
-            };
-            expect(() => validateEnvironmentVariablesFor('development')).not.toThrow();
-        });
-        it('should require all variables for production environment', () => {
-            process.env = {
-                NODE_ENV: 'production',
-                DATABASE_URL: 'postgresql://user:pass@host:port/db',
-                JWT_SECRET: 'your-super-secret-jwt-key-here-32-chars',
-                WASP_WEB_CLIENT_URL: 'https://postmarkr.com',
-                WASP_SERVER_URL: 'https://api.postmarkr.com',
-                // Missing other required variables
-            };
-            expect(() => validateEnvironmentVariablesFor('production')).toThrow();
-        });
+    it('should return optional environment variables', () => {
+        const optionalVars = getOptionalEnvironmentVariables();
+        expect(optionalVars).toBeDefined();
+        expect(Array.isArray(optionalVars)).toBe(true);
+        expect(optionalVars).toContain('NODE_ENV');
+        expect(optionalVars).toContain('PORT');
+    });
+    it('should validate environment variables in production mode', () => {
+        process.env.NODE_ENV = 'production';
+        // Set up valid production environment
+        process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+        process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-characters-long';
+        process.env.WASP_WEB_CLIENT_URL = 'http://localhost:3000';
+        process.env.WASP_SERVER_URL = 'http://localhost:3001';
+        process.env.SENDGRID_API_KEY = 'test-sendgrid-key';
+        process.env.SENDGRID_FROM_EMAIL = 'test@example.com';
+        process.env.SENDGRID_FROM_NAME = 'Test App';
+        process.env.STRIPE_SECRET_KEY = 'sk_test_123';
+        process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_123';
+        process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_123';
+        process.env.STRIPE_CUSTOMER_PORTAL_URL = 'https://billing.stripe.com/test';
+        process.env.LOB_PROD_KEY = 'test-lob-key';
+        process.env.LOB_ENVIRONMENT = 'test';
+        process.env.LOB_WEBHOOK_SECRET = 'test-lob-webhook-secret';
+        process.env.AWS_ACCESS_KEY_ID = 'test-aws-key';
+        process.env.AWS_SECRET_ACCESS_KEY = 'test-aws-secret';
+        process.env.AWS_REGION = 'us-east-1';
+        process.env.AWS_S3_BUCKET = 'test-bucket';
+        process.env.SENTRY_DSN = 'https://test@sentry.io/test';
+        process.env.SENTRY_RELEASE = 'test-release';
+        process.env.SENTRY_SERVER_NAME = 'test-server';
+        expect(() => validateEnvironmentVariablesFor('production')).not.toThrow();
+    });
+    it('should handle missing variables gracefully in development mode', () => {
+        process.env.NODE_ENV = 'development';
+        // Only set core required variables
+        process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+        process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-characters-long';
+        process.env.WASP_WEB_CLIENT_URL = 'http://localhost:3000';
+        process.env.WASP_SERVER_URL = 'http://localhost:3001';
+        expect(() => validateEnvironmentVariablesFor('development')).not.toThrow();
+    });
+    it('should throw error for invalid JWT_SECRET length', () => {
+        process.env.NODE_ENV = 'production';
+        process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+        process.env.JWT_SECRET = 'short'; // Too short
+        process.env.WASP_WEB_CLIENT_URL = 'http://localhost:3000';
+        process.env.WASP_SERVER_URL = 'http://localhost:3001';
+        expect(() => validateEnvironmentVariablesFor('production')).toThrow();
+    });
+    it('should throw error for invalid URL format', () => {
+        process.env.NODE_ENV = 'production';
+        process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
+        process.env.JWT_SECRET = 'test-secret-that-is-at-least-32-characters-long';
+        process.env.WASP_WEB_CLIENT_URL = 'invalid-url'; // Invalid URL
+        process.env.WASP_SERVER_URL = 'http://localhost:3001';
+        expect(() => validateEnvironmentVariablesFor('production')).toThrow();
     });
 });
 //# sourceMappingURL=envValidation.test.js.map

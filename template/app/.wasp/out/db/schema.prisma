@@ -8,23 +8,25 @@ generator client {
 }
 
 model User {
-  id                            String               @id @default(uuid())
-  createdAt                     DateTime             @default(now())
-  email                         String?              @unique
-  username                      String?              @unique
-  isAdmin                       Boolean              @default(false)
-  paymentProcessorUserId        String?              @unique
+  id                            String                   @id @default(uuid())
+  createdAt                     DateTime                 @default(now())
+  email                         String?                  @unique
+  username                      String?                  @unique
+  isAdmin                       Boolean                  @default(false)
+  paymentProcessorUserId        String?                  @unique
   lemonSqueezyCustomerPortalUrl String?
   subscriptionStatus            String?
   subscriptionPlan              String?
   datePaid                      DateTime?
-  credits                       Int                  @default(3)
-  gptResponses                  GptResponse[]
+  credits                       Int                      @default(3)
   contactFormMessages           ContactFormMessage[]
-  tasks                         Task[]
   files                         File[]
+  gptResponses                  GptResponse[]
   mailAddresses                 MailAddress[]
   mailPieces                    MailPiece[]
+  tasks                         Task[]
+  notifications                 Notification[]
+  notificationPreferences       NotificationPreferences?
   auth                          Auth?
 }
 
@@ -32,26 +34,25 @@ model GptResponse {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
   userId    String
   content   String
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Task {
   id          String   @id @default(uuid())
   createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
   userId      String
   description String
   time        String   @default("1")
   isDone      Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model File {
   id               String      @id @default(uuid())
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
-  user             User        @relation(fields: [userId], references: [id])
   userId           String
   name             String
   type             String
@@ -64,6 +65,7 @@ model File {
   pageCount        Int?
   pdfMetadata      Json?
   lastProcessedAt  DateTime?
+  user             User        @relation(fields: [userId], references: [id])
   mailPieces       MailPiece[]
 
   @@index([userId, isMailFile])
@@ -87,9 +89,9 @@ model DailyStats {
 model PageViewSource {
   name         String
   date         DateTime    @default(now())
-  dailyStats   DailyStats? @relation(fields: [dailyStatsId], references: [id])
   dailyStatsId Int?
   visitors     Int
+  dailyStats   DailyStats? @relation(fields: [dailyStatsId], references: [id])
 
   @@id([date, name])
 }
@@ -104,18 +106,17 @@ model Logs {
 model ContactFormMessage {
   id        String    @id @default(uuid())
   createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id])
   userId    String
   content   String
   isRead    Boolean   @default(false)
   repliedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id])
 }
 
 model MailAddress {
   id                  String      @id @default(uuid())
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
-  user                User        @relation(fields: [userId], references: [id])
   userId              String
   contactName         String
   companyName         String?
@@ -134,8 +135,9 @@ model MailAddress {
   lobAddressId        String?
   usageCount          Int         @default(0)
   lastUsedAt          DateTime?
-  senderMailPieces    MailPiece[] @relation("MailPieceSender")
+  user                User        @relation(fields: [userId], references: [id])
   recipientMailPieces MailPiece[] @relation("MailPieceRecipient")
+  senderMailPieces    MailPiece[] @relation("MailPieceSender")
 
   @@index([userId, addressType])
   @@index([userId, isDefault])
@@ -154,30 +156,38 @@ model State {
 }
 
 model MailPiece {
-  id                 String                   @id @default(uuid())
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
-  user               User                     @relation(fields: [userId], references: [id])
-  userId             String
-  mailType           String
-  mailClass          String
-  mailSize           String
-  senderAddress      MailAddress              @relation("MailPieceSender", fields: [senderAddressId], references: [id])
-  senderAddressId    String
-  recipientAddress   MailAddress              @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])
-  recipientAddressId String
-  file               File?                    @relation(fields: [fileId], references: [id])
-  fileId             String?
-  lobId              String?
-  lobStatus          String?
-  lobTrackingNumber  String?
-  paymentIntentId    String?
-  paymentStatus      String                   @default("pending")
-  cost               Float?
-  status             String                   @default("draft")
-  description        String?
-  metadata           Json?
-  statusHistory      MailPieceStatusHistory[]
+  id                    String                   @id @default(uuid())
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  userId                String
+  mailType              String
+  mailClass             String
+  mailSize              String
+  senderAddressId       String
+  recipientAddressId    String
+  fileId                String?
+  lobId                 String?
+  lobStatus             String?
+  lobTrackingNumber     String?
+  paymentIntentId       String?
+  paymentStatus         String                   @default("pending")
+  cost                  Float?
+  status                String                   @default("draft")
+  description           String?
+  metadata              Json?
+  customerPrice         Float?
+  lobCost               Float?
+  markup                Float?
+  returnReceipt         Boolean                  @default(false)
+  serviceOptions        Json?
+  signatureConfirmation Boolean                  @default(false)
+  trackingEnabled       Boolean                  @default(false)
+  file                  File?                    @relation(fields: [fileId], references: [id])
+  recipientAddress      MailAddress              @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])
+  senderAddress         MailAddress              @relation("MailPieceSender", fields: [senderAddressId], references: [id])
+  user                  User                     @relation(fields: [userId], references: [id])
+  statusHistory         MailPieceStatusHistory[]
+  notifications         Notification[]
 
   @@index([userId, status])
   @@index([userId, createdAt])
@@ -189,16 +199,56 @@ model MailPiece {
 model MailPieceStatusHistory {
   id             String    @id @default(uuid())
   createdAt      DateTime  @default(now())
-  mailPiece      MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
   mailPieceId    String
   status         String
   previousStatus String?
   description    String?
   source         String    @default("system")
   lobData        Json?
+  mailPiece      MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
 
   @@index([mailPieceId, createdAt])
   @@index([status])
+}
+
+model Notification {
+  id          String     @id @default(uuid())
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  userId      String
+  type        String
+  title       String
+  message     String
+  data        Json?
+  readAt      DateTime?
+  mailPieceId String?
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mailPiece   MailPiece? @relation(fields: [mailPieceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@index([mailPieceId])
+}
+
+model NotificationPreferences {
+  id                 String   @id @default(uuid())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  userId             String   @unique
+  emailEnabled       Boolean  @default(true)
+  emailStatusChanges Boolean  @default(true)
+  emailDeliveries    Boolean  @default(true)
+  emailFailures      Boolean  @default(true)
+  emailPayments      Boolean  @default(true)
+  inAppEnabled       Boolean  @default(true)
+  inAppStatusChanges Boolean  @default(true)
+  inAppDeliveries    Boolean  @default(true)
+  inAppFailures      Boolean  @default(true)
+  inAppPayments      Boolean  @default(true)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Auth {

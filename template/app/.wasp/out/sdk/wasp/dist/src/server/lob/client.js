@@ -4,10 +4,22 @@ import { getEnvVar } from '../envValidation';
 function getLobApiKey() {
     const environment = getEnvVar('LOB_ENVIRONMENT', 'test');
     if (environment === 'live' || environment === 'prod') {
-        return getEnvVar('LOB_PROD_KEY', null);
+        try {
+            const key = getEnvVar('LOB_PROD_KEY');
+            return key || null;
+        }
+        catch {
+            return null;
+        }
     }
     else {
-        return getEnvVar('LOB_TEST_KEY', null);
+        try {
+            const key = getEnvVar('LOB_TEST_KEY');
+            return key || null;
+        }
+        catch {
+            return null;
+        }
     }
 }
 // Initialize Lob client only if API key is available

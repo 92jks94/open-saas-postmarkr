@@ -138,3 +138,19 @@ export function simpleHealthCheck(): { status: 'ok' | 'error'; timestamp: string
     };
   }
 }
+
+/**
+ * Health check endpoint handler for Express routes
+ */
+export function healthCheckEndpoint(req: any, res: any, context: any) {
+  try {
+    const healthData = performHealthCheck();
+    res.status(200).json(healthData);
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Health check failed'
+    });
+  }
+}

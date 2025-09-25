@@ -1,178 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
-
-  email                     String?         @unique
-  username                  String?         @unique
-  isAdmin                   Boolean         @default(false)
-
-  paymentProcessorUserId    String?         @unique
-  lemonSqueezyCustomerPortalUrl String?     // You can delete this if you're not using Lemon Squeezy as your payments processor.
-  subscriptionStatus        String?         // 'active', 'cancel_at_period_end', 'past_due', 'deleted'
-  subscriptionPlan          String?         // 'hobby', 'pro'
-  datePaid                  DateTime?
-  credits                   Int             @default(3)
-
-  gptResponses              GptResponse[]
-  contactFormMessages       ContactFormMessage[]
-  tasks                     Task[]
-  files                     File[]
-  mailAddresses             MailAddress[]
-  mailPieces                MailPiece[]
+  id                            String               @id @default(uuid())
+  createdAt                     DateTime             @default(now())
+  email                         String?              @unique
+  username                      String?              @unique
+  isAdmin                       Boolean              @default(false)
+  paymentProcessorUserId        String?              @unique
+  lemonSqueezyCustomerPortalUrl String?
+  subscriptionStatus            String?
+  subscriptionPlan              String?
+  datePaid                      DateTime?
+  credits                       Int                  @default(3)
+  contactFormMessages           ContactFormMessage[]
+  files                         File[]
+  gptResponses                  GptResponse[]
+  mailAddresses                 MailAddress[]
+  mailPieces                    MailPiece[]
+  tasks                         Task[]
+  notifications                 Notification[]
+  notificationPreferences       NotificationPreferences?
 }
 
 model GptResponse {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
-  updatedAt                 DateTime        @updatedAt
-
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
-
-  content                   String
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  content   String
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Task {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
-
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
-
-  description               String
-  time                      String          @default("1")
-  isDone                    Boolean         @default(false)
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  userId      String
+  description String
+  time        String   @default("1")
+  isDone      Boolean  @default(false)
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model File {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
-  updatedAt                 DateTime        @updatedAt
+  id               String      @id @default(uuid())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  userId           String
+  name             String
+  type             String
+  key              String
+  uploadUrl        String
+  size             Int?
+  isMailFile       Boolean     @default(false)
+  validationStatus String?
+  validationError  String?
+  pageCount        Int?
+  pdfMetadata      Json?
+  lastProcessedAt  DateTime?
+  user             User        @relation(fields: [userId], references: [id])
+  mailPieces       MailPiece[]
 
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
-
-  name                      String
-  type                      String
-  key                       String
-  uploadUrl                 String
-  
-  // File size for validation
-  size                      Int?
-  
-  // Mail-specific metadata (optional - only for mail files)
-  isMailFile                Boolean         @default(false)
-  validationStatus          String?         // 'pending', 'valid', 'invalid', 'processing'
-  validationError           String?
-  pageCount                 Int?
-  pdfMetadata               Json?           // Store complex PDF metadata as JSON
-  lastProcessedAt           DateTime?       // Timestamp when metadata was last processed
-  
-  // Relationships
-  mailPieces            MailPiece[]
-
-  // Indexes for performance
   @@index([userId, isMailFile])
   @@index([validationStatus])
 }
 
 model DailyStats {
-  id                               Int             @id @default(autoincrement())
-  date                             DateTime        @default(now()) @unique
-
-  totalViews                       Int             @default(0)
-  prevDayViewsChangePercent        String          @default("0")
-  userCount                        Int             @default(0)
-  paidUserCount                    Int             @default(0)
-  userDelta                        Int             @default(0)
-  paidUserDelta                    Int             @default(0)
-  totalRevenue                     Float           @default(0)
-  totalProfit                      Float           @default(0)
-
-  sources                          PageViewSource[]
+  id                        Int              @id @default(autoincrement())
+  date                      DateTime         @unique @default(now())
+  totalViews                Int              @default(0)
+  prevDayViewsChangePercent String           @default("0")
+  userCount                 Int              @default(0)
+  paidUserCount             Int              @default(0)
+  userDelta                 Int              @default(0)
+  paidUserDelta             Int              @default(0)
+  totalRevenue              Float            @default(0)
+  totalProfit               Float            @default(0)
+  sources                   PageViewSource[]
 }
 
 model PageViewSource {
+  name         String
+  date         DateTime    @default(now())
+  dailyStatsId Int?
+  visitors     Int
+  dailyStats   DailyStats? @relation(fields: [dailyStatsId], references: [id])
+
   @@id([date, name])
-  name                     String
-  date                     DateTime        @default(now())
-
-  dailyStats               DailyStats?     @relation(fields: [dailyStatsId], references: [id])
-  dailyStatsId             Int?
-
-  visitors                 Int
 }
 
 model Logs {
-  id                       Int             @id @default(autoincrement())
-  createdAt                DateTime        @default(now())
-
-  message                  String
-  level                    String
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  message   String
+  level     String
 }
 
 model ContactFormMessage {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
-
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
-
-  content                   String
-  isRead                    Boolean         @default(false)
-  repliedAt                 DateTime?
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  userId    String
+  content   String
+  isRead    Boolean   @default(false)
+  repliedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id])
 }
 
 model MailAddress {
-  id                String   @id @default(uuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                  String      @id @default(uuid())
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  userId              String
+  contactName         String
+  companyName         String?
+  addressLine1        String
+  addressLine2        String?
+  city                String
+  state               String
+  postalCode          String
+  country             String
+  label               String?
+  isDefault           Boolean     @default(false)
+  addressType         String      @default("both")
+  isValidated         Boolean     @default(false)
+  validationDate      DateTime?
+  validationError     String?
+  lobAddressId        String?
+  usageCount          Int         @default(0)
+  lastUsedAt          DateTime?
+  user                User        @relation(fields: [userId], references: [id])
+  recipientMailPieces MailPiece[] @relation("MailPieceRecipient")
+  senderMailPieces    MailPiece[] @relation("MailPieceSender")
 
-  // User relationship
-  user              User     @relation(fields: [userId], references: [id])
-  userId            String
-
-  // Contact information (updated per requirements)
-  contactName       String   // Individual contact name
-  companyName       String?  // Company name (optional)
-
-  // Address components (required)
-  addressLine1      String   // Primary street address
-  addressLine2      String?  // Secondary address line (apartment, suite, etc.)
-  city              String   // City name
-  state             String   // State/province
-  postalCode        String   // ZIP/postal code
-  country           String   // Country code (ISO 3166-1 alpha-2)
-
-  // Address book features
-  label             String?  // Custom label (e.g., "Home", "Office", "Client ABC")
-  isDefault         Boolean  @default(false) // Default sender address
-  addressType       String   @default("both") // "sender", "recipient", "both"
-
-  // Validation and processing
-  isValidated       Boolean  @default(false)  // Lob API validation status
-  validationDate    DateTime? // When last validated
-  validationError   String?   // Validation error message if any
-  lobAddressId      String?  // Lob's internal address ID for verified addresses
-
-  // Usage tracking
-  usageCount        Int      @default(0)     // How many times used
-  lastUsedAt        DateTime? // Last time this address was used
-
-  // Relationships
-  senderMailPieces     MailPiece[] @relation("MailPieceSender")
-  recipientMailPieces  MailPiece[] @relation("MailPieceRecipient")
-
-  // Indexes for performance
   @@index([userId, addressType])
   @@index([userId, isDefault])
   @@index([postalCode])
@@ -180,60 +145,49 @@ model MailAddress {
 }
 
 model State {
-  id        String   @id @default(uuid())
-  code      String   // State/province code (CA, NY, ON, etc.)
-  name      String   // Full state/province name
-  country   String   // Country code for reference
-  
+  id      String @id @default(uuid())
+  code    String
+  name    String
+  country String
+
   @@unique([code, country])
   @@index([country])
 }
 
 model MailPiece {
-  id                String   @id @default(uuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // User relationship
-  user              User     @relation(fields: [userId], references: [id])
-  userId            String
-
-  // Mail specifications
-  mailType          String   // 'postcard', 'letter', 'check', 'self_mailer', 'catalog', 'booklet'
-  mailClass         String   // 'usps_first_class', 'usps_standard', 'usps_express', 'usps_priority'
-  mailSize          String   // '4x6', '6x9', '6x11', '6x18', '9x12', '12x15', '12x18'
-  
-  // Address relationships
-  senderAddress     MailAddress @relation("MailPieceSender", fields: [senderAddressId], references: [id])
-  senderAddressId   String
-  recipientAddress  MailAddress @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])
+  id                 String                   @id @default(uuid())
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  userId             String
+  mailType           String
+  mailClass          String
+  mailSize           String
+  senderAddressId    String
   recipientAddressId String
+  fileId             String?
+  lobId              String?
+  lobStatus          String?
+  lobTrackingNumber  String?
+  paymentIntentId    String?
+  paymentStatus      String                   @default("pending")
+  cost               Float?
+  status             String                   @default("draft")
+  description        String?
+  metadata           Json?
+  customerPrice      Float?
+  lobCost            Float?
+  markup             Float?
+  returnReceipt      Boolean                  @default(false)
+  serviceOptions     Json?
+  signatureConfirmation Boolean              @default(false)
+  trackingEnabled    Boolean                  @default(false)
+  file               File?                    @relation(fields: [fileId], references: [id])
+  recipientAddress   MailAddress              @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])
+  senderAddress      MailAddress              @relation("MailPieceSender", fields: [senderAddressId], references: [id])
+  user               User                     @relation(fields: [userId], references: [id])
+  statusHistory      MailPieceStatusHistory[]
+  notifications      Notification[]
 
-  // File relationship
-  file              File?    @relation(fields: [fileId], references: [id])
-  fileId            String?
-
-  // Lob integration
-  lobId             String?  // Lob's internal mail piece ID
-  lobStatus         String?  // Current status from Lob API
-  lobTrackingNumber String?  // Tracking number from Lob
-  
-  // Payment information
-  paymentIntentId   String?  // Stripe payment intent ID
-  paymentStatus     String   @default("pending") // 'pending', 'paid', 'failed', 'refunded'
-  cost              Float?   // Final cost in USD
-  
-  // Mail piece status
-  status            String   @default("draft") // 'draft', 'pending_payment', 'paid', 'submitted', 'in_transit', 'delivered', 'returned', 'failed'
-  
-  // Additional metadata
-  description       String?  // User description of the mail piece
-  metadata          Json?    // Additional Lob-specific metadata
-  
-  // Status history relationship
-  statusHistory     MailPieceStatusHistory[]
-
-  // Indexes for performance
   @@index([userId, status])
   @@index([userId, createdAt])
   @@index([lobId])
@@ -242,23 +196,57 @@ model MailPiece {
 }
 
 model MailPieceStatusHistory {
-  id                String   @id @default(uuid())
-  createdAt         DateTime @default(now())
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  mailPieceId    String
+  status         String
+  previousStatus String?
+  description    String?
+  source         String    @default("system")
+  lobData        Json?
+  mailPiece      MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
 
-  // Mail piece relationship
-  mailPiece         MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
-  mailPieceId       String
-
-  // Status information
-  status            String   // Status at this point in time
-  previousStatus    String?  // Previous status for context
-  description       String?  // Description of the status change
-  source            String   @default("system") // 'system', 'user', 'lob', 'webhook'
-  
-  // Lob-specific data
-  lobData           Json?    // Additional data from Lob API
-  
-  // Indexes for performance
   @@index([mailPieceId, createdAt])
   @@index([status])
+}
+
+
+model Notification {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  userId      String
+  type        String   // mail_status_change, delivery_confirmation, etc.
+  title       String
+  message     String
+  data        Json?
+  readAt      DateTime?
+  mailPieceId String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mailPiece   MailPiece? @relation(fields: [mailPieceId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([userId, type])
+  @@index([userId, createdAt])
+  @@index([mailPieceId])
+}
+
+model NotificationPreferences {
+  id                  String   @id @default(uuid())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  userId              String   @unique
+  emailEnabled        Boolean  @default(true)
+  emailStatusChanges  Boolean  @default(true)
+  emailDeliveries     Boolean  @default(true)
+  emailFailures       Boolean  @default(true)
+  emailPayments       Boolean  @default(true)
+  inAppEnabled        Boolean  @default(true)
+  inAppStatusChanges  Boolean  @default(true)
+  inAppDeliveries     Boolean  @default(true)
+  inAppFailures       Boolean  @default(true)
+  inAppPayments       Boolean  @default(true)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

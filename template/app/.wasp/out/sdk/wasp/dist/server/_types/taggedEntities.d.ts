@@ -1,4 +1,4 @@
-import { type Entity, type EntityName, type User, type GptResponse, type Task, type File, type DailyStats, type PageViewSource, type Logs, type ContactFormMessage, type MailAddress, type State, type MailPiece, type MailPieceStatusHistory } from 'wasp/entities';
+import { type Entity, type EntityName, type User, type GptResponse, type Task, type File, type DailyStats, type PageViewSource, type Logs, type ContactFormMessage, type MailAddress, type State, type MailPiece, type MailPieceStatusHistory, type Notification, type NotificationPreferences } from 'wasp/entities';
 export type _User = WithName<User, "User">;
 export type _GptResponse = WithName<GptResponse, "GptResponse">;
 export type _Task = WithName<Task, "Task">;
@@ -11,7 +11,9 @@ export type _MailAddress = WithName<MailAddress, "MailAddress">;
 export type _State = WithName<State, "State">;
 export type _MailPiece = WithName<MailPiece, "MailPiece">;
 export type _MailPieceStatusHistory = WithName<MailPieceStatusHistory, "MailPieceStatusHistory">;
-export type _Entity = _User | _GptResponse | _Task | _File | _DailyStats | _PageViewSource | _Logs | _ContactFormMessage | _MailAddress | _State | _MailPiece | _MailPieceStatusHistory | never;
+export type _Notification = WithName<Notification, "Notification">;
+export type _NotificationPreferences = WithName<NotificationPreferences, "NotificationPreferences">;
+export type _Entity = _User | _GptResponse | _Task | _File | _DailyStats | _PageViewSource | _Logs | _ContactFormMessage | _MailAddress | _State | _MailPiece | _MailPieceStatusHistory | _Notification | _NotificationPreferences | never;
 type WithName<E extends Entity, Name extends EntityName> = E & {
     _entityName: Name;
 };

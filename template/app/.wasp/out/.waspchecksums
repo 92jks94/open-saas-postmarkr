@@ -501,7 +501,7 @@
             "file",
             "../out/sdk/wasp/entities/index.ts"
         ],
-        "abfe7b47267cb458c1d5c3d8e36c4ef0c35741e68eeb70ed77d59d9a470b6d51"
+        "0dee7a105ce606b50559452a1261e7e195a93631c3224c3532266cc01eec8c09"
     ],
     [
         [
@@ -550,14 +550,14 @@
             "file",
             "../out/sdk/wasp/server/_types/index.ts"
         ],
-        "17c098b14f01a484036289ecd1d094b080eb0565fc6992e7974fcbac3c9049de"
+        "c876603fd8a1ca5ce94991cb7ae241622ba85eca4f537abb412080ce96cf6400"
     ],
     [
         [
             "file",
             "../out/sdk/wasp/server/_types/taggedEntities.ts"
         ],
-        "9474a422adad19ce80a94ec9da99545262eecba469da14370beae96cb689c2d9"
+        "0804c8cd2a15755fbac80bc493c3d731b54db3c3bfa22e8a3fcb9f62f9032af3"
     ],
     [
         [
@@ -1166,7 +1166,7 @@
             "file",
             "../out/sdk/wasp/src/client/sentry.ts"
         ],
-        "6f3535822a174fe4ff8bcd579680b96aaddb31275b04967abea2becd698253d5"
+        "3b65bdf2b6c12af600b1ccbffaef09b6ddfb4927860f79f128bf3beba79b14f4"
     ],
     [
         [
@@ -1873,21 +1873,21 @@
             "file",
             "../out/sdk/wasp/src/server/__tests__/envValidation.test.ts"
         ],
-        "b0bb69d98da5eb8e5eaeabfcf349162c2224580d061833ed6c0a34113f1fe3b6"
+        "96ef949c26b6285a145a88a7eb473b85c482bc422f962f2b1952e7fb479208cd"
     ],
     [
         [
             "file",
             "../out/sdk/wasp/src/server/envValidation.ts"
         ],
-        "a2b71e7be8efc4846b21a696dfeae5486855faec059ddc26103ebb3382b121fd"
+        "a105a693a18208825843ef45045d57639cf1cf48d1dd399f06523abdd44471ab"
     ],
     [
         [
             "file",
             "../out/sdk/wasp/src/server/healthCheck.ts"
         ],
-        "b44521cba926fcbdf89acd2b3f196a95501136657e8e09305be6a63a631ed4ec"
+        "5a467bb3c1d73d2b71992dd8e2cb9d274bc20417ed8a07d57e0d00378fc0b5f6"
     ],
     [
         [
@@ -1908,7 +1908,7 @@
             "file",
             "../out/sdk/wasp/src/server/lob/client.ts"
         ],
-        "4852f32125fa13a0cb46c58888e85bb5df4d6aec4b866b53f5c806d96d5373b8"
+        "1268cce2a51852476740440ed09ee221aca3219d0ae1c4a996aabee8ae6ce05a"
     ],
     [
         [
@@ -2132,21 +2132,21 @@
             "dir",
             "db/migrations/"
         ],
-        "5682d02f862ff469f28e98e93764f07996135b59d2529f0a3fa193d83a6f5361"
+        "8225e55d9e357718b39fcf9944d542fb4ff0816014c4df142847b6e8c4c97206"
     ],
     [
         [
             "file",
             "db/schema.prisma"
         ],
-        "88d21db0f6ad6f32384d555c951affc56b19476ee076b9d3cc15b7d8d3682b91"
+        "60bb5b224a8febad53115fb7a829de81ea2ab9b2f79e99d426edd8fad4e5d2f8"
     ],
     [
         [
             "file",
             "server/.env"
         ],
-        "55fcc639ba13345aff9141c81ed869e37db772fb9981ab00284ba875bf4aa668"
+        "b1ee88153641c68e8d9a17ac42d880e72963fd4859bed8c6c59e8c8c0faaa893"
     ],
     [
         [

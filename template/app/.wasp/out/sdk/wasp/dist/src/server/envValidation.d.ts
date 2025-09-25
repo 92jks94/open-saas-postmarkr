@@ -88,7 +88,7 @@ export declare function validateEnvironmentVariables(): ValidatedEnv;
  * Validates environment variables for a specific environment
  * @param environment - The target environment ('development' | 'production' | 'test')
  */
-export declare function validateEnvironmentVariablesFor(environment: 'development' | 'production' | 'test'): ValidatedEnv;
+export declare function validateEnvironmentVariablesFor(environment: 'development' | 'production' | 'test'): any;
 /**
  * Gets a validated environment variable with type safety
  * @param key - The environment variable key

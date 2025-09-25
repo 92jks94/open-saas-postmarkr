@@ -102,7 +102,7 @@ export function validateEnvironmentVariables(): ValidatedEnv {
  * Validates environment variables for a specific environment
  * @param environment - The target environment ('development' | 'production' | 'test')
  */
-export function validateEnvironmentVariablesFor(environment: 'development' | 'production' | 'test'): ValidatedEnv {
+export function validateEnvironmentVariablesFor(environment: 'development' | 'production' | 'test'): any {
   const env = process.env.NODE_ENV || 'development';
   
   if (environment === 'production') {
@@ -112,12 +112,31 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
     // In development/test, some variables are optional
     const developmentSchema = z.object({
       ...coreEnvSchema.shape,
-      ...emailEnvSchema.shape.optional(),
-      ...stripeEnvSchema.shape.optional(),
-      ...lobEnvSchema.shape.optional(),
-      ...awsEnvSchema.shape.optional(),
-      ...monitoringEnvSchema.shape.optional(),
+      ...emailEnvSchema.shape,
+      ...stripeEnvSchema.shape,
+      ...lobEnvSchema.shape,
+      ...awsEnvSchema.shape,
+      ...monitoringEnvSchema.shape,
       ...optionalEnvSchema.shape,
+    }).partial({
+      // Make these optional in development
+      SENDGRID_API_KEY: true,
+      SENDGRID_FROM_EMAIL: true,
+      SENDGRID_FROM_NAME: true,
+      STRIPE_SECRET_KEY: true,
+      STRIPE_PUBLISHABLE_KEY: true,
+      STRIPE_WEBHOOK_SECRET: true,
+      STRIPE_CUSTOMER_PORTAL_URL: true,
+      LOB_PROD_KEY: true,
+      LOB_ENVIRONMENT: true,
+      LOB_WEBHOOK_SECRET: true,
+      AWS_ACCESS_KEY_ID: true,
+      AWS_SECRET_ACCESS_KEY: true,
+      AWS_REGION: true,
+      AWS_S3_BUCKET: true,
+      SENTRY_DSN: true,
+      SENTRY_RELEASE: true,
+      SENTRY_SERVER_NAME: true,
     });
     
     try {

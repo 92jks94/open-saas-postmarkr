@@ -33,4 +33,8 @@ export declare function simpleHealthCheck(): {
     status: 'ok' | 'error';
     timestamp: string;
 };
+/**
+ * Health check endpoint handler for Express routes
+ */
+export declare function healthCheckEndpoint(req: any, res: any, context: any): void;
 //# sourceMappingURL=healthCheck.d.ts.map

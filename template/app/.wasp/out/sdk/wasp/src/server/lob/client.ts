@@ -6,9 +6,19 @@ function getLobApiKey(): string | null {
   const environment = getEnvVar('LOB_ENVIRONMENT', 'test');
   
   if (environment === 'live' || environment === 'prod') {
-    return getEnvVar('LOB_PROD_KEY', null);
+    try {
+      const key = getEnvVar('LOB_PROD_KEY');
+      return key || null;
+    } catch {
+      return null;
+    }
   } else {
-    return getEnvVar('LOB_TEST_KEY', null);
+    try {
+      const key = getEnvVar('LOB_TEST_KEY');
+      return key || null;
+    } catch {
+      return null;
+    }
   }
 }
 

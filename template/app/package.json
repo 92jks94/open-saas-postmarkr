@@ -55,6 +55,7 @@
   "devDependencies": {
     "@faker-js/faker": "8.3.1",
     "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "^18.0.37",
     "prisma": "5.19.1",
     "typescript": "5.8.2",
@@ -62,6 +63,9 @@
   },
   "scripts": {
     "build": "wasp build",
-    "start:ci": "wasp start"
+    "start:ci": "wasp start",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   }
 }

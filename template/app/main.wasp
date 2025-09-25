@@ -43,7 +43,6 @@ app OpenSaaS {
           name: "Postmarkr",
           email: "nathan@postmarkr.com"
         },
-       //**** Nathan - commented out email verification for dev - FIX before production ****
         emailVerification: {
           clientRoute: EmailVerificationRoute,
           getEmailContentFn: import { getVerificationEmailContent } from "@src/auth/email-and-pass/emails",
@@ -55,7 +54,7 @@ app OpenSaaS {
         userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
       },
       // Uncomment to enable Google Auth (check https://wasp.sh/docs/auth/social-auth/google for setup instructions):
-      // google: { // Guide for setting up Auth via Google
+      // google: {
       //   userSignupFields: import { getGoogleUserFields } from "@src/auth/userSignupFields",
       //   configFn: import { getGoogleAuthConfig } from "@src/auth/userSignupFields",
       // },
@@ -91,7 +90,7 @@ app OpenSaaS {
   },
 
   emailSender: {
-    provider: Dummy,
+    provider: Dummy, // logs all email verification links/tokens to the server's console
     defaultFrom: {
       name: "Postmarkr",
       email: "nathan@postmarkr.com"

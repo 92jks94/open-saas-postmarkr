@@ -1,0 +1,436 @@
+[1mdiff --git a/template/app/schema.prisma b/template/app/schema.prisma[m
+[1mindex fba5569..e188e35 100644[m
+[1m--- a/template/app/schema.prisma[m
+[1m+++ b/template/app/schema.prisma[m
+[36m@@ -1,178 +1,142 @@[m
+[32m+[m[32mgenerator client {[m
+[32m+[m[32m  provider = "prisma-client-js"[m
+[32m+[m[32m}[m
+[32m+[m
+ datasource db {[m
+   provider = "postgresql"[m
+   url      = env("DATABASE_URL")[m
+ }[m
+ [m
+[31m-generator client {[m
+[31m-  provider = "prisma-client-js"[m
+[31m-}[m
+[31m-[m
+ model User {[m
+[31m-  id                        String          @id @default(uuid())[m
+[31m-  createdAt                 DateTime        @default(now())[m
+[31m-[m
+[31m-  email                     String?         @unique[m
+[31m-  username                  String?         @unique[m
+[31m-  isAdmin                   Boolean         @default(false)[m
+[31m-[m
+[31m-  paymentProcessorUserId    String?         @unique[m
+[31m-  lemonSqueezyCustomerPortalUrl String?     // You can delete this if you're not using Lemon Squeezy as your payments processor.[m
+[31m-  subscriptionStatus        String?         // 'active', 'cancel_at_period_end', 'past_due', 'deleted'[m
+[31m-  subscriptionPlan          String?         // 'hobby', 'pro'[m
+[31m-  datePaid                  DateTime?[m
+[31m-  credits                   Int             @default(3)[m
+[31m-[m
+[31m-  gptResponses              GptResponse[][m
+[31m-  contactFormMessages       ContactFormMessage[][m
+[31m-  tasks                     Task[][m
+[31m-  files                     File[][m
+[31m-  mailAddresses             MailAddress[][m
+[31m-  mailPieces                MailPiece[][m
+[32m+[m[32m  id                            String               @id @default(uuid())[m
+[32m+[m[32m  createdAt                     DateTime             @default(now())[m
+[32m+[m[32m  email                         String?              @unique[m
+[32m+[m[32m  username                      String?              @unique[m
+[32m+[m[32m  isAdmin                       Boolean              @default(false)[m
+[32m+[m[32m  paymentProcessorUserId        String?              @unique[m
+[32m+[m[32m  lemonSqueezyCustomerPortalUrl String?[m
+[32m+[m[32m  subscriptionStatus            String?[m
+[32m+[m[32m  subscriptionPlan              String?[m
+[32m+[m[32m  datePaid                      DateTime?[m
+[32m+[m[32m  credits                       Int                  @default(3)[m
+[32m+[m[32m  Auth                          Auth?[m
+[32m+[m[32m  contactFormMessages           ContactFormMessage[][m
+[32m+[m[32m  files                         File[][m
+[32m+[m[32m  gptResponses                  GptResponse[][m
+[32m+[m[32m  mailAddresses                 MailAddress[][m
+[32m+[m[32m  mailPieces                    MailPiece[][m
+[32m+[m[32m  tasks                         Task[][m
+ }[m
+ [m
+ model GptResponse {[m
+[31m-  id                        String          @id @default(uuid())[m
+[31m-  createdAt                 DateTime        @default(now())[m
+[31m-  updatedAt                 DateTime        @updatedAt[m
+[31m-[m
+[31m-  user                      User            @relation(fields: [userId], references: [id])[m
+[31m-  userId                    String[m
+[31m-[m
+[31m-  content                   String[m
+[32m+[m[32m  id        String   @id @default(uuid())[m
+[32m+[m[32m  createdAt DateTime @default(now())[m
+[32m+[m[32m  updatedAt DateTime @updatedAt[m
+[32m+[m[32m  userId    String[m
+[32m+[m[32m  content   String[m
+[32m+[m[32m  user      User     @relation(fields: [userId], references: [id])[m
+ }[m
+ [m
+ model Task {[m
+[31m-  id                        String          @id @default(uuid())[m
+[31m-  createdAt                 DateTime        @default(now())[m
+[31m-[m
+[31m-  user                      User            @relation(fields: [userId], references: [id])[m
+[31m-  userId                    String[m
+[31m-[m
+[31m-  description               String[m
+[31m-  time                      String          @default("1")[m
+[31m-  isDone                    Boolean         @default(false)[m
+[32m+[m[32m  id          String   @id @default(uuid())[m
+[32m+[m[32m  createdAt   DateTime @default(now())[m
+[32m+[m[32m  userId      String[m
+[32m+[m[32m  description String[m
+[32m+[m[32m  time        String   @default("1")[m
+[32m+[m[32m  isDone      Boolean  @default(false)[m
+[32m+[m[32m  user        User     @relation(fields: [userId], references: [id])[m
+ }[m
+ [m
+ model File {[m
+[31m-  id                        String          @id @default(uuid())[m
+[31m-  createdAt                 DateTime        @default(now())[m
+[31m-  updatedAt                 DateTime        @updatedAt[m
+[31m-[m
+[31m-  user                      User            @relation(fields: [userId], references: [id])[m
+[31m-  userId                    String[m
+[31m-[m
+[31m-  name                      String[m
+[31m-  type                      String[m
+[31m-  key                       String[m
+[31m-  uploadUrl                 String[m
+[31m-  [m
+[31m-  // File size for validation[m
+[31m-  size                      Int?[m
+[31m-  [m
+[31m-  // Mail-specific metadata (optional - only for mail files)[m
+[31m-  isMailFile                Boolean         @default(false)[m
+[31m-  validationStatus          String?         // 'pending', 'valid', 'invalid', 'processing'[m
+[31m-  validationError           String?[m
+[31m-  pageCount                 Int?[m
+[31m-  pdfMetadata               Json?           // Store complex PDF metadata as JSON[m
+[31m-  lastProcessedAt           DateTime?       // Timestamp when metadata was last processed[m
+[31m-  [m
+[31m-  // Relationships[m
+[31m-  mailPieces            MailPiece[][m
+[32m+[m[32m  id               String      @id @default(uuid())[m
+[32m+[m[32m  createdAt        DateTime    @default(now())[m
+[32m+[m[32m  updatedAt        DateTime    @updatedAt[m
+[32m+[m[32m  userId           String[m
+[32m+[m[32m  name             String[m
+[32m+[m[32m  type             String[m
+[32m+[m[32m  key              String[m
+[32m+[m[32m  uploadUrl        String[m
+[32m+[m[32m  size             Int?[m
+[32m+[m[32m  isMailFile       Boolean     @default(false)[m
+[32m+[m[32m  validationStatus String?[m
+[32m+[m[32m  validationError  String?[m
+[32m+[m[32m  pageCount        Int?[m
+[32m+[m[32m  pdfMetadata      Json?[m
+[32m+[m[32m  lastProcessedAt  DateTime?[m
+[32m+[m[32m  user             User        @relation(fields: [userId], references: [id])[m
+[32m+[m[32m  mailPieces       MailPiece[][m
+ [m
+[31m-  // Indexes for performance[m
+   @@index([userId, isMailFile])[m
+   @@index([validationStatus])[m
+ }[m
+ [m
+ model DailyStats {[m
+[31m-  id                               Int             @id @default(autoincrement())[m
+[31m-  date                             DateTime        @default(now()) @unique[m
+[31m-[m
+[31m-  totalViews                       Int             @default(0)[m
+[31m-  prevDayViewsChangePercent        String          @default("0")[m
+[31m-  userCount                        Int             @default(0)[m
+[31m-  paidUserCount                    Int             @default(0)[m
+[31m-  userDelta                        Int             @default(0)[m
+[31m-  paidUserDelta                    Int             @default(0)[m
+[31m-  totalRevenue                     Float           @default(0)[m
+[31m-  totalProfit                      Float           @default(0)[m
+[31m-[m
+[31m-  sources                          PageViewSource[][m
+[32m+[m[32m  id                        Int              @id @default(autoincrement())[m
+[32m+[m[32m  date                      DateTime         @unique @default(now())[m
+[32m+[m[32m  totalViews                Int              @default(0)[m
+[32m+[m[32m  prevDayViewsChangePercent String           @default("0")[m
+[32m+[m[32m  userCount                 Int              @default(0)[m
+[32m+[m[32m  paidUserCount             Int              @default(0)[m
+[32m+[m[32m  userDelta                 Int              @default(0)[m
+[32m+[m[32m  paidUserDelta             Int              @default(0)[m
+[32m+[m[32m  totalRevenue              Float            @default(0)[m
+[32m+[m[32m  totalProfit               Float            @default(0)[m
+[32m+[m[32m  sources                   PageViewSource[][m
+ }[m
+ [m
+ model PageViewSource {[m
+[31m-  @@id([date, name])[m
+[31m-  name                     String[m
+[31m-  date                     DateTime        @default(now())[m
+[32m+[m[32m  name         String[m
+[32m+[m[32m  date         DateTime    @default(now())[m
+[32m+[m[32m  dailyStatsId Int?[m
+[32m+[m[32m  visitors     Int[m
+[32m+[m[32m  dailyStats   DailyStats? @relation(fields: [dailyStatsId], references: [id])[m
+ [m
+[31m-  dailyStats               DailyStats?     @relation(fields: [dailyStatsId], references: [id])[m
+[31m-  dailyStatsId             Int?[m
+[31m-[m
+[31m-  visitors                 Int[m
+[32m+[m[32m  @@id([date, name])[m
+ }[m
+ [m
+ model Logs {[m
+[31m-  id                       Int             @id @default(autoincrement())[m
+[31m-  createdAt                DateTime        @default(now())[m
+[31m-[m
+[31m-  message                  String[m
+[31m-  level                    String[m
+[32m+[m[32m  id        Int      @id @default(autoincrement())[m
+[32m+[m[32m  createdAt DateTime @default(now())[m
+[32m+[m[32m  message   String[m
+[32m+[m[32m  level     String[m
+ }[m
+ [m
+ model ContactFormMessage {[m
+[31m-  id                        String          @id @default(uuid())[m
+[31m-  createdAt                 DateTime        @default(now())[m
+[31m-[m
+[31m-  user                      User            @relation(fields: [userId], references: [id])[m
+[31m-  userId                    String[m
+[31m-[m
+[31m-  content                   String[m
+[31m-  isRead                    Boolean         @default(false)[m
+[31m-  repliedAt                 DateTime?[m
+[32m+[m[32m  id        String    @id @default(uuid())[m
+[32m+[m[32m  createdAt DateTime  @default(now())[m
+[32m+[m[32m  userId    String[m
+[32m+[m[32m  content   String[m
+[32m+[m[32m  isRead    Boolean   @default(false)[m
+[32m+[m[32m  repliedAt DateTime?[m
+[32m+[m[32m  user      User      @relation(fields: [userId], references: [id])[m
+ }[m
+ [m
+ model MailAddress {[m
+[31m-  id                String   @id @default(uuid())[m
+[31m-  createdAt         DateTime @default(now())[m
+[31m-  updatedAt         DateTime @updatedAt[m
+[31m-[m
+[31m-  // User relationship[m
+[31m-  user              User     @relation(fields: [userId], references: [id])[m
+[31m-  userId            String[m
+[31m-[m
+[31m-  // Contact information (updated per requirements)[m
+[31m-  contactName       String   // Individual contact name[m
+[31m-  companyName       String?  // Company name (optional)[m
+[31m-[m
+[31m-  // Address components (required)[m
+[31m-  addressLine1      String   // Primary street address[m
+[31m-  addressLine2      String?  // Secondary address line (apartment, suite, etc.)[m
+[31m-  city              String   // City name[m
+[31m-  state             String   // State/province[m
+[31m-  postalCode        String   // ZIP/postal code[m
+[31m-  country           String   // Country code (ISO 3166-1 alpha-2)[m
+[31m-[m
+[31m-  // Address book features[m
+[31m-  label             String?  // Custom label (e.g., "Home", "Office", "Client ABC")[m
+[31m-  isDefault         Boolean  @default(false) // Default sender address[m
+[31m-  addressType       String   @default("both") // "sender", "recipient", "both"[m
+[32m+[m[32m  id                  String      @id @default(uuid())[m
+[32m+[m[32m  createdAt           DateTime    @default(now())[m
+[32m+[m[32m  updatedAt           DateTime    @updatedAt[m
+[32m+[m[32m  userId              String[m
+[32m+[m[32m  contactName         String[m
+[32m+[m[32m  companyName         String?[m
+[32m+[m[32m  addressLine1        String[m
+[32m+[m[32m  addressLine2        String?[m
+[32m+[m[32m  city                String[m
+[32m+[m[32m  state               String[m
+[32m+[m[32m  postalCode          String[m
+[32m+[m[32m  country             String[m
+[32m+[m[32m  label               String?[m
+[32m+[m[32m  isDefault           Boolean     @default(false)[m
+[32m+[m[32m  addressType         String      @default("both")[m
+[32m+[m[32m  isValidated         Boolean     @default(false)[m
+[32m+[m[32m  validationDate      DateTime?[m
+[32m+[m[32m  validationError     String?[m
+[32m+[m[32m  lobAddressId        String?[m
+[32m+[m[32m  usageCount          Int         @default(0)[m
+[32m+[m[32m  lastUsedAt          DateTime?[m
+[32m+[m[32m  user                User        @relation(fields: [userId], references: [id])[m
+[32m+[m[32m  recipientMailPieces MailPiece[] @relation("MailPieceRecipient")[m
+[32m+[m[32m  senderMailPieces    MailPiece[] @relation("MailPieceSender")[m
+ [m
+[31m-  // Validation and processing[m
+[31m-  isValidated       Boolean  @default(false)  // Lob API validation status[m
+[31m-  validationDate    DateTime? // When last validated[m
+[31m-  validationError   String?   // Validation error message if any[m
+[31m-  lobAddressId      String?  // Lob's internal address ID for verified addresses[m
+[31m-[m
+[31m-  // Usage tracking[m
+[31m-  usageCount        Int      @default(0)     // How many times used[m
+[31m-  lastUsedAt        DateTime? // Last time this address was used[m
+[31m-[m
+[31m-  // Relationships[m
+[31m-  senderMailPieces     MailPiece[] @relation("MailPieceSender")[m
+[31m-  recipientMailPieces  MailPiece[] @relation("MailPieceRecipient")[m
+[31m-[m
+[31m-  // Indexes for performance[m
+   @@index([userId, addressType])[m
+   @@index([userId, isDefault])[m
+   @@index([postalCode])[m
+[36m@@ -180,60 +144,41 @@[m [mmodel MailAddress {[m
+ }[m
+ [m
+ model State {[m
+[31m-  id        String   @id @default(uuid())[m
+[31m-  code      String   // State/province code (CA, NY, ON, etc.)[m
+[31m-  name      String   // Full state/province name[m
+[31m-  country   String   // Country code for reference[m
+[31m-  [m
+[32m+[m[32m  id      String @id @default(uuid())[m
+[32m+[m[32m  code    String[m
+[32m+[m[32m  name    String[m
+[32m+[m[32m  country String[m
+[32m+[m
+   @@unique([code, country])[m
+   @@index([country])[m
+ }[m
+ [m
+ model MailPiece {[m
+[31m-  id                String   @id @default(uuid())[m
+[31m-  createdAt         DateTime @default(now())[m
+[31m-  updatedAt         DateTime @updatedAt[m
+[31m-[m
+[31m-  // User relationship[m
+[31m-  user              User     @relation(fields: [userId], references: [id])[m
+[31m-  userId            String[m
+[31m-[m
+[31m-  // Mail specifications[m
+[31m-  mailType          String   // 'postcard', 'letter', 'check', 'self_mailer', 'catalog', 'booklet'[m
+[31m-  mailClass         String   // 'usps_first_class', 'usps_standard', 'usps_express', 'usps_priority'[m
+[31m-  mailSize          String   // '4x6', '6x9', '6x11', '6x18', '9x12', '12x15', '12x18'[m
+[31m-  [m
+[31m-  // Address relationships[m
+[31m-  senderAddress     MailAddress @relation("MailPieceSender", fields: [senderAddressId], references: [id])[m
+[31m-  senderAddressId   String[m
+[31m-  recipientAddress  MailAddress @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])[m
+[32m+[m[32m  id                 String                   @id @default(uuid())[m
+[32m+[m[32m  createdAt          DateTime                 @default(now())[m
+[32m+[m[32m  updatedAt          DateTime                 @updatedAt[m
+[32m+[m[32m  userId             String[m
+[32m+[m[32m  mailType           String[m
+[32m+[m[32m  mailClass          String[m
+[32m+[m[32m  mailSize           String[m
+[32m+[m[32m  senderAddressId    String[m
+   recipientAddressId String[m
+[32m+[m[32m  fileId             String?[m
+[32m+[m[32m  lobId              String?[m
+[32m+[m[32m  lobStatus          String?[m
+[32m+[m[32m  lobTrackingNumber  String?[m
+[32m+[m[32m  paymentIntentId    String?[m
+[32m+[m[32m  paymentStatus      String                   @default("pending")[m
+[32m+[m[32m  cost               Float?[m
+[32m+[m[32m  status             String                   @default("draft")[m
+[32m+[m[32m  description        String?[m
+[32m+[m[32m  metadata           Json?[m
+[32m+[m[32m  file               File?                    @relation(fields: [fileId], references: [id])[m
+[32m+[m[32m  recipientAddress   MailAddress              @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])[m
+[32m+[m[32m  senderAddress      MailAddress              @relation("MailPieceSender", fields: [senderAddressId], references: [id])[m
+[32m+[m[32m  user               User                     @relation(fields: [userId], references: [id])[m
+[32m+[m[32m  statusHistory      MailPieceStatusHistory[][m
+ [m
+[31m-  // File relationship[m
+[31m-  file              File?    @relation(fields: [fileId], references: [id])[m
+[31m-  fileId            String?[m
+[31m-[m
+[31m-  // Lob integration[m
+[31m-  lobId             String?  // Lob's internal mail piece ID[m
+[31m-  lobStatus         String?  // Current status from Lob API[m
+[31m-  lobTrackingNumber String?  // Tracking number from Lob[m
+[31m-  [m
+[31m-  // Payment information[m
+[31m-  paymentIntentId   String?  // Stripe payment intent ID[m
+[31m-  paymentStatus     String   @default("pending") // 'pending', 'paid', 'failed', 'refunded'[m
+[31m-  cost              Float?   // Final cost in USD[m
+[31m-  [m
+[31m-  // Mail piece status[m
+[31m-  status            String   @default("draft") // 'draft', 'pending_payment', 'paid', 'submitted', 'in_transit', 'delivered', 'returned', 'failed'[m
+[31m-  [m
+[31m-  // Additional metadata[m
+[31m-  description       String?  // User description of the mail piece[m
+[31m-  metadata          Json?    // Additional Lob-specific metadata[m
+[31m-  [m
+[31m-  // Status history relationship[m
+[31m-  statusHistory     MailPieceStatusHistory[][m
+[31m-[m
+[31m-  // Indexes for performance[m
+   @@index([userId, status])[m
+   @@index([userId, createdAt])[m
+   @@index([lobId])[m
+[36m@@ -242,23 +187,43 @@[m [mmodel MailPiece {[m
+ }[m
+ [m
+ model MailPieceStatusHistory {[m
+[31m-  id                String   @id @default(uuid())[m
+[31m-  createdAt         DateTime @default(now())[m
+[32m+[m[32m  id             String    @id @default(uuid())[m
+[32m+[m[32m  createdAt      DateTime  @default(now())[m
+[32m+[m[32m  mailPieceId    String[m
+[32m+[m[32m  status         String[m
+[32m+[m[32m  previousStatus String?[m
+[32m+[m[32m  description    String?[m
+[32m+[m[32m  source         String    @default("system")[m
+[32m+[m[32m  lobData        Json?[m
+[32m+[m[32m  mailPiece      MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)[m
+ [m
+[31m-  // Mail piece relationship[m
+[31m-  mailPiece         MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)[m
+[31m-  mailPieceId       String[m
+[31m-[m
+[31m-  // Status information[m
+[31m-  status            String   // Status at this point in time[m
+[31m-  previousStatus    String?  // Previous status for context[m
+[31m-  description       String?  // Description of the status change[m
+[31m-  source            String   @default("system") // 'system', 'user', 'lob', 'webhook'[m
+[31m-  [m
+[31m-  // Lob-specific data[m
+[31m-  lobData           Json?    // Additional data from Lob API[m
+[31m-  [m
+[31m-  // Indexes for performance[m
+   @@index([mailPieceId, createdAt])[m
+   @@index([status])[m
+ }[m
+[32m+[m
+[32m+[m[32mmodel Auth {[m
+[32m+[m[32m  id           String         @id[m
+[32m+[m[32m  userId       String?        @unique[m
+[32m+[m[32m  User         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  AuthIdentity AuthIdentity[][m
+[32m+[m[32m  Session      Session[][m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel AuthIdentity {[m
+[32m+[m[32m  providerName   String[m
+[32m+[m[32m  providerUserId String[m
+[32m+[m[32m  providerData   String @default("{}")[m
+[32m+[m[32m  authId         String[m
+[32m+[m[32m  Auth           Auth   @relation(fields: [authId], references: [id], onDelete: Cascade)[m
+[32m+[m
+[32m+[m[32m  @@id([providerName, providerUserId])[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mmodel Session {[m
+[32m+[m[32m  id        String   @id @unique[m
+[32m+[m[32m  expiresAt DateTime[m
+[32m+[m[32m  userId    String[m
+[32m+[m[32m  Auth      Auth     @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m
+[32m+[m[32m  @@index([userId])[m
+[32m+[m[32m}[m
