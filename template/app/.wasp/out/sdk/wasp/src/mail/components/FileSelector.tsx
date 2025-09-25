@@ -39,12 +39,13 @@ interface FileValidationResult {
 const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 const MAIL_TYPE_REQUIREMENTS = {
-  'postcard': { maxPages: 1, minPages: 1 },
   'letter': { maxPages: 6, minPages: 1 },
-  'check': { maxPages: 1, minPages: 1 },
-  'self_mailer': { maxPages: 4, minPages: 1 },
-  'catalog': { maxPages: 50, minPages: 2 },
-  'booklet': { maxPages: 20, minPages: 2 }
+  // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+  // 'postcard': { maxPages: 1, minPages: 1 },
+  // 'check': { maxPages: 1, minPages: 1 },
+  // 'self_mailer': { maxPages: 4, minPages: 1 },
+  // 'catalog': { maxPages: 50, minPages: 2 },
+  // 'booklet': { maxPages: 20, minPages: 2 }
 } as const;
 
 /**

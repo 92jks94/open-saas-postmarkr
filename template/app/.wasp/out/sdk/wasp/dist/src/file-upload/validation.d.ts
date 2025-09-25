@@ -3,41 +3,11 @@ export declare const ALLOWED_FILE_TYPES: readonly ["application/pdf"];
 export declare const MAIL_MAX_FILE_SIZE_BYTES: number;
 export declare const MAIL_ALLOWED_FILE_TYPES: readonly ["application/pdf"];
 export declare const MAIL_TYPE_REQUIREMENTS: {
-    readonly postcard: {
-        readonly maxPages: 1;
-        readonly minPages: 1;
-        readonly allowedOrientations: readonly ["portrait", "landscape"];
-        readonly recommendedSizes: readonly ["4x6"];
-    };
     readonly letter: {
         readonly maxPages: 6;
         readonly minPages: 1;
         readonly allowedOrientations: readonly ["portrait"];
-        readonly recommendedSizes: readonly ["6x9", "6x11"];
-    };
-    readonly check: {
-        readonly maxPages: 1;
-        readonly minPages: 1;
-        readonly allowedOrientations: readonly ["portrait"];
-        readonly recommendedSizes: readonly ["6x9"];
-    };
-    readonly self_mailer: {
-        readonly maxPages: 4;
-        readonly minPages: 1;
-        readonly allowedOrientations: readonly ["portrait", "landscape"];
-        readonly recommendedSizes: readonly ["6x9", "6x11", "6x18"];
-    };
-    readonly catalog: {
-        readonly maxPages: 50;
-        readonly minPages: 2;
-        readonly allowedOrientations: readonly ["portrait"];
-        readonly recommendedSizes: readonly ["9x12", "12x15", "12x18"];
-    };
-    readonly booklet: {
-        readonly maxPages: 20;
-        readonly minPages: 2;
-        readonly allowedOrientations: readonly ["portrait"];
-        readonly recommendedSizes: readonly ["6x9", "9x12"];
+        readonly recommendedSizes: readonly ["4x6"];
     };
 };
 export declare const MAIL_SIZE_DIMENSIONS: {

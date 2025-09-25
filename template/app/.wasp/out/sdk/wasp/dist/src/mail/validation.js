@@ -1,29 +1,32 @@
 import { z } from 'zod';
-// Mail type validation
+// Mail type validation - SIMPLIFIED FOR LAUNCH: Only letters
 export const mailTypeSchema = z.enum([
-    'postcard',
-    'letter',
-    'check',
-    'self_mailer',
-    'catalog',
-    'booklet'
+    'letter'
+    // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+    // 'postcard',
+    // 'check',
+    // 'self_mailer',
+    // 'catalog',
+    // 'booklet'
 ]);
-// Mail class validation
+// Mail class validation - SIMPLIFIED FOR LAUNCH: Only first class
 export const mailClassSchema = z.enum([
-    'usps_first_class',
-    'usps_standard',
-    'usps_express',
-    'usps_priority'
+    'usps_first_class'
+    // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+    // 'usps_standard', 
+    // 'usps_express',
+    // 'usps_priority'
 ]);
-// Mail size validation
+// Mail size validation - SIMPLIFIED FOR LAUNCH: Only #10 envelope
 export const mailSizeSchema = z.enum([
-    '4x6',
-    '6x9',
-    '6x11',
-    '6x18',
-    '9x12',
-    '12x15',
-    '12x18'
+    '4x6' // #10 envelope size
+    // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+    // '6x9',
+    // '6x11', 
+    // '6x18',
+    // '9x12',
+    // '12x15',
+    // '12x18'
 ]);
 // Status validation
 export const mailPieceStatusSchema = z.enum([

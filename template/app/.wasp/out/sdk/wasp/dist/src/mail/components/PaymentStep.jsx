@@ -56,21 +56,23 @@ const PaymentForm = ({ mailPiece, onPaymentSuccess, onPaymentCancel }) => {
     };
     const getMailTypeDisplay = (mailType) => {
         const types = {
-            'postcard': 'Postcard',
-            'letter': 'Letter',
-            'check': 'Check',
-            'self_mailer': 'Self Mailer',
-            'catalog': 'Catalog',
-            'booklet': 'Booklet'
+            'letter': 'Letter'
+            // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+            // 'postcard': 'Postcard',
+            // 'check': 'Check',
+            // 'self_mailer': 'Self Mailer',
+            // 'catalog': 'Catalog',
+            // 'booklet': 'Booklet'
         };
         return types[mailType] || mailType;
     };
     const getMailClassDisplay = (mailClass) => {
         const classes = {
-            'usps_first_class': 'First Class',
-            'usps_standard': 'Standard',
-            'usps_express': 'Express',
-            'usps_priority': 'Priority'
+            'usps_first_class': 'First Class'
+            // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+            // 'usps_standard': 'Standard',
+            // 'usps_express': 'Express',
+            // 'usps_priority': 'Priority'
         };
         return classes[mailClass] || mailClass;
     };

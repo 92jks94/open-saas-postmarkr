@@ -9,44 +9,45 @@ export const ALLOWED_FILE_TYPES = [
 export const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB for mail
 export const MAIL_ALLOWED_FILE_TYPES = ['application/pdf'] as const;
 
-// Mail type requirements
+// Mail type requirements - SIMPLIFIED FOR LAUNCH: Only letters
 export const MAIL_TYPE_REQUIREMENTS = {
-  'postcard': {
-    maxPages: 1,
-    minPages: 1,
-    allowedOrientations: ['portrait', 'landscape'],
-    recommendedSizes: ['4x6']
-  },
   'letter': {
     maxPages: 6,
     minPages: 1,
     allowedOrientations: ['portrait'],
-    recommendedSizes: ['6x9', '6x11']
-  },
-  'check': {
-    maxPages: 1,
-    minPages: 1,
-    allowedOrientations: ['portrait'],
-    recommendedSizes: ['6x9']
-  },
-  'self_mailer': {
-    maxPages: 4,
-    minPages: 1,
-    allowedOrientations: ['portrait', 'landscape'],
-    recommendedSizes: ['6x9', '6x11', '6x18']
-  },
-  'catalog': {
-    maxPages: 50,
-    minPages: 2,
-    allowedOrientations: ['portrait'],
-    recommendedSizes: ['9x12', '12x15', '12x18']
-  },
-  'booklet': {
-    maxPages: 20,
-    minPages: 2,
-    allowedOrientations: ['portrait'],
-    recommendedSizes: ['6x9', '9x12']
+    recommendedSizes: ['4x6'] // #10 envelope
   }
+  // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+  // 'postcard': {
+  //   maxPages: 1,
+  //   minPages: 1,
+  //   allowedOrientations: ['portrait', 'landscape'],
+  //   recommendedSizes: ['4x6']
+  // },
+  // 'check': {
+  //   maxPages: 1,
+  //   minPages: 1,
+  //   allowedOrientations: ['portrait'],
+  //   recommendedSizes: ['6x9']
+  // },
+  // 'self_mailer': {
+  //   maxPages: 4,
+  //   minPages: 1,
+  //   allowedOrientations: ['portrait', 'landscape'],
+  //   recommendedSizes: ['6x9', '6x11', '6x18']
+  // },
+  // 'catalog': {
+  //   maxPages: 50,
+  //   minPages: 2,
+  //   allowedOrientations: ['portrait'],
+  //   recommendedSizes: ['9x12', '12x15', '12x18']
+  // },
+  // 'booklet': {
+  //   maxPages: 20,
+  //   minPages: 2,
+  //   allowedOrientations: ['portrait'],
+  //   recommendedSizes: ['6x9', '9x12']
+  // }
 } as const;
 
 // Mail size dimensions (in inches)

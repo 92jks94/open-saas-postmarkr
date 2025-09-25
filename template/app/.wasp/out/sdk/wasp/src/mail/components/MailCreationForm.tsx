@@ -44,33 +44,37 @@ interface FormData {
   description: string;
 }
 
-// Mail size options based on mail type - moved outside component to prevent recreation
+// Mail size options based on mail type - SIMPLIFIED FOR LAUNCH: Only #10 envelope
 const getMailSizeOptions = (mailType: string) => {
   const sizeOptions: Record<string, Array<{ value: string; label: string; description: string }>> = {
-    'postcard': [
-      { value: '4x6', label: '4" × 6"', description: 'Standard postcard size' }
-    ],
     'letter': [
-      { value: '6x9', label: '6" × 9"', description: 'Standard letter size' },
-      { value: '6x11', label: '6" × 11"', description: 'Legal size letter' }
+      { value: '4x6', label: '#10 Envelope', description: 'Standard #10 business envelope (4⅛" × 9½")' }
     ],
-    'check': [
-      { value: '6x9', label: '6" × 9"', description: 'Standard check size' }
-    ],
-    'self_mailer': [
-      { value: '6x9', label: '6" × 9"', description: 'Standard self mailer' },
-      { value: '6x11', label: '6" × 11"', description: 'Legal size self mailer' },
-      { value: '6x18', label: '6" × 18"', description: 'Large self mailer' }
-    ],
-    'catalog': [
-      { value: '9x12', label: '9" × 12"', description: 'Standard catalog size' },
-      { value: '12x15', label: '12" × 15"', description: 'Large catalog' },
-      { value: '12x18', label: '12" × 18"', description: 'Extra large catalog' }
-    ],
-    'booklet': [
-      { value: '6x9', label: '6" × 9"', description: 'Standard booklet' },
-      { value: '9x12', label: '9" × 12"', description: 'Large booklet' }
-    ]
+    // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+    // 'postcard': [
+    //   { value: '4x6', label: '4" × 6"', description: 'Standard postcard size' }
+    // ],
+    // 'letter': [
+    //   { value: '6x9', label: '6" × 9"', description: 'Standard letter size' },
+    //   { value: '6x11', label: '6" × 11"', description: 'Legal size letter' }
+    // ],
+    // 'check': [
+    //   { value: '6x9', label: '6" × 9"', description: 'Standard check size' }
+    // ],
+    // 'self_mailer': [
+    //   { value: '6x9', label: '6" × 9"', description: 'Standard self mailer' },
+    //   { value: '6x11', label: '6" × 11"', description: 'Legal size self mailer' },
+    //   { value: '6x18', label: '6" × 18"', description: 'Large self mailer' }
+    // ],
+    // 'catalog': [
+    //   { value: '9x12', label: '9" × 12"', description: 'Standard catalog size' },
+    //   { value: '12x15', label: '12" × 15"', description: 'Large catalog' },
+    //   { value: '12x18', label: '12" × 18"', description: 'Extra large catalog' }
+    // ],
+    // 'booklet': [
+    //   { value: '6x9', label: '6" × 9"', description: 'Standard booklet' },
+    //   { value: '9x12', label: '9" × 12"', description: 'Large booklet' }
+    // ]
   };
 
   return sizeOptions[mailType] || sizeOptions['letter'];
@@ -83,7 +87,7 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   const [formData, setFormData] = useState<FormData>({
     mailType: 'letter',
     mailClass: 'usps_first_class',
-    mailSize: '6x9',
+    mailSize: '4x6', // #10 envelope size
     senderAddressId: null,
     recipientAddressId: null,
     fileId: null,
@@ -104,22 +108,24 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
 
   // Direct action call - no useAction hook needed
 
-  // Mail type options
+  // Mail type options - SIMPLIFIED FOR LAUNCH: Only letters
   const mailTypeOptions = [
-    { value: 'postcard', label: 'Postcard', description: 'Single-sided mail piece' },
     { value: 'letter', label: 'Letter', description: 'Standard letter format' },
-    { value: 'check', label: 'Check', description: 'Check or payment document' },
-    { value: 'self_mailer', label: 'Self Mailer', description: 'Self-contained mail piece' },
-    { value: 'catalog', label: 'Catalog', description: 'Multi-page catalog' },
-    { value: 'booklet', label: 'Booklet', description: 'Bound booklet format' }
+    // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+    // { value: 'postcard', label: 'Postcard', description: 'Single-sided mail piece' },
+    // { value: 'check', label: 'Check', description: 'Check or payment document' },
+    // { value: 'self_mailer', label: 'Self Mailer', description: 'Self-contained mail piece' },
+    // { value: 'catalog', label: 'Catalog', description: 'Multi-page catalog' },
+    // { value: 'booklet', label: 'Booklet', description: 'Bound booklet format' }
   ];
 
-  // Mail class options
+  // Mail class options - SIMPLIFIED FOR LAUNCH: Only first class
   const mailClassOptions = [
     { value: 'usps_first_class', label: 'First Class', description: 'Fastest delivery, highest priority' },
-    { value: 'usps_standard', label: 'Standard', description: 'Economical option for bulk mail' },
-    { value: 'usps_express', label: 'Express', description: 'Overnight delivery' },
-    { value: 'usps_priority', label: 'Priority', description: '1-3 business days' }
+    // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
+    // { value: 'usps_standard', label: 'Standard', description: 'Economical option for bulk mail' },
+    // { value: 'usps_express', label: 'Express', description: 'Overnight delivery' },
+    // { value: 'usps_priority', label: 'Priority', description: '1-3 business days' }
   ];
 
 

@@ -1,96 +1,96 @@
 import { z } from 'zod';
-export declare const mailTypeSchema: z.ZodEnum<["postcard", "letter", "check", "self_mailer", "catalog", "booklet"]>;
-export declare const mailClassSchema: z.ZodEnum<["usps_first_class", "usps_standard", "usps_express", "usps_priority"]>;
-export declare const mailSizeSchema: z.ZodEnum<["4x6", "6x9", "6x11", "6x18", "9x12", "12x15", "12x18"]>;
+export declare const mailTypeSchema: z.ZodEnum<["letter"]>;
+export declare const mailClassSchema: z.ZodEnum<["usps_first_class"]>;
+export declare const mailSizeSchema: z.ZodEnum<["4x6"]>;
 export declare const mailPieceStatusSchema: z.ZodEnum<["draft", "pending_payment", "paid", "submitted", "in_transit", "delivered", "returned", "failed"]>;
 export declare const paymentStatusSchema: z.ZodEnum<["pending", "paid", "failed", "refunded"]>;
 export declare const statusSourceSchema: z.ZodEnum<["system", "user", "lob", "webhook", "manual"]>;
 export declare const createMailPieceSchema: z.ZodEffects<z.ZodObject<{
-    mailType: z.ZodEnum<["postcard", "letter", "check", "self_mailer", "catalog", "booklet"]>;
-    mailClass: z.ZodEnum<["usps_first_class", "usps_standard", "usps_express", "usps_priority"]>;
-    mailSize: z.ZodEnum<["4x6", "6x9", "6x11", "6x18", "9x12", "12x15", "12x18"]>;
+    mailType: z.ZodEnum<["letter"]>;
+    mailClass: z.ZodEnum<["usps_first_class"]>;
+    mailSize: z.ZodEnum<["4x6"]>;
     senderAddressId: z.ZodString;
     recipientAddressId: z.ZodString;
     fileId: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    mailType: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet";
-    mailClass: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority";
-    mailSize: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18";
+    mailType: "letter";
+    mailClass: "usps_first_class";
+    mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    description?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }, {
-    mailType: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet";
-    mailClass: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority";
-    mailSize: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18";
+    mailType: "letter";
+    mailClass: "usps_first_class";
+    mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    description?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }>, {
-    mailType: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet";
-    mailClass: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority";
-    mailSize: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18";
+    mailType: "letter";
+    mailClass: "usps_first_class";
+    mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    description?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }, {
-    mailType: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet";
-    mailClass: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority";
-    mailSize: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18";
+    mailType: "letter";
+    mailClass: "usps_first_class";
+    mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    description?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }>;
 export declare const updateMailPieceSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
-    mailType: z.ZodOptional<z.ZodEnum<["postcard", "letter", "check", "self_mailer", "catalog", "booklet"]>>;
-    mailClass: z.ZodOptional<z.ZodEnum<["usps_first_class", "usps_standard", "usps_express", "usps_priority"]>>;
-    mailSize: z.ZodOptional<z.ZodEnum<["4x6", "6x9", "6x11", "6x18", "9x12", "12x15", "12x18"]>>;
+    mailType: z.ZodOptional<z.ZodEnum<["letter"]>>;
+    mailClass: z.ZodOptional<z.ZodEnum<["usps_first_class"]>>;
+    mailSize: z.ZodOptional<z.ZodEnum<["4x6"]>>;
     senderAddressId: z.ZodOptional<z.ZodString>;
     recipientAddressId: z.ZodOptional<z.ZodString>;
     fileId: z.ZodOptional<z.ZodString>;
     description: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     id: string;
-    description?: string | undefined;
-    mailType?: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet" | undefined;
-    mailClass?: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority" | undefined;
-    mailSize?: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18" | undefined;
+    mailType?: "letter" | undefined;
+    mailClass?: "usps_first_class" | undefined;
+    mailSize?: "4x6" | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }, {
     id: string;
-    description?: string | undefined;
-    mailType?: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet" | undefined;
-    mailClass?: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority" | undefined;
-    mailSize?: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18" | undefined;
+    mailType?: "letter" | undefined;
+    mailClass?: "usps_first_class" | undefined;
+    mailSize?: "4x6" | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }>, {
     id: string;
-    description?: string | undefined;
-    mailType?: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet" | undefined;
-    mailClass?: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority" | undefined;
-    mailSize?: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18" | undefined;
+    mailType?: "letter" | undefined;
+    mailClass?: "usps_first_class" | undefined;
+    mailSize?: "4x6" | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }, {
     id: string;
-    description?: string | undefined;
-    mailType?: "postcard" | "letter" | "check" | "self_mailer" | "catalog" | "booklet" | undefined;
-    mailClass?: "usps_first_class" | "usps_standard" | "usps_express" | "usps_priority" | undefined;
-    mailSize?: "4x6" | "6x9" | "6x11" | "6x18" | "9x12" | "12x15" | "12x18" | undefined;
+    mailType?: "letter" | undefined;
+    mailClass?: "usps_first_class" | undefined;
+    mailSize?: "4x6" | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
+    description?: string | undefined;
 }>;
 export declare const updateMailPieceStatusSchema: z.ZodObject<{
     id: z.ZodString;
@@ -98,15 +98,15 @@ export declare const updateMailPieceStatusSchema: z.ZodObject<{
     description: z.ZodOptional<z.ZodString>;
     source: z.ZodDefault<z.ZodEnum<["system", "user", "lob", "webhook", "manual"]>>;
 }, "strip", z.ZodTypeAny, {
-    status: "paid" | "pending_payment" | "failed" | "draft" | "submitted" | "in_transit" | "delivered" | "returned";
+    status: "draft" | "pending_payment" | "paid" | "submitted" | "in_transit" | "delivered" | "returned" | "failed";
     id: string;
-    source: "user" | "system" | "webhook" | "lob" | "manual";
+    source: "system" | "user" | "lob" | "webhook" | "manual";
     description?: string | undefined;
 }, {
-    status: "paid" | "pending_payment" | "failed" | "draft" | "submitted" | "in_transit" | "delivered" | "returned";
+    status: "draft" | "pending_payment" | "paid" | "submitted" | "in_transit" | "delivered" | "returned" | "failed";
     id: string;
     description?: string | undefined;
-    source?: "user" | "system" | "webhook" | "lob" | "manual" | undefined;
+    source?: "system" | "user" | "lob" | "webhook" | "manual" | undefined;
 }>;
 export declare const lobWebhookStatusSchema: z.ZodObject<{
     lobId: z.ZodString;

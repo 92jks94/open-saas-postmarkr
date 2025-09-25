@@ -1537,7 +1537,7 @@
             "file",
             "../out/sdk/wasp/src/file-upload/validation.ts"
         ],
-        "267aebf3690865a2db85f298a3c2a7db3a1f4a6040a7441cd472406909bcfd36"
+        "de424ca43ff47424f315fda30bef0d41d2fa12d7d435123772311801898cf8e5"
     ],
     [
         [
@@ -1705,21 +1705,21 @@
             "file",
             "../out/sdk/wasp/src/mail/components/FileSelector.tsx"
         ],
-        "ee519fd885a6f40625ae9915f07451b843e10294943010c71a166c04b44e1f31"
+        "bd61b7aaa4b6fa3622f50c3102408be04c9c3c9d9b1ce43d8fbc71ede9434b67"
     ],
     [
         [
             "file",
             "../out/sdk/wasp/src/mail/components/MailCreationForm.tsx"
         ],
-        "bf804a525341061e9693d23b6d33859356c938edb73069df840463b41391cc15"
+        "33ee9a1e156d40ea7d7d22dd07663f3038c02e4126d5510ac74e66417c537da7"
     ],
     [
         [
             "file",
             "../out/sdk/wasp/src/mail/components/PaymentStep.tsx"
         ],
-        "8e5007466b7aea27c3bcb72a8f781946159747ad50e3e845a4c51e929a26de65"
+        "df46ee36048628f0c641233fc9a02169e17e6a4624418a1b4d4b80bb23d2d531"
     ],
     [
         [
@@ -1740,7 +1740,7 @@
             "file",
             "../out/sdk/wasp/src/mail/validation.ts"
         ],
-        "ca75fe12a24aa6f902c07d5cf28ce0da8e346df40ee7ef0bcaeeb7fa3536989b"
+        "81f65a49cef5327553e3de7a44f07a17c6850696a1b03dde92f178032c72eb1d"
     ],
     [
         [

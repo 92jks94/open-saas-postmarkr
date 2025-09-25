@@ -78,6 +78,7 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         addressType?: "sender" | "recipient" | "both" | undefined;
     }>;
 }, "strip", z.ZodTypeAny, {
+    id: string;
     data: {
         contactName?: string | undefined;
         companyName?: string | undefined;
@@ -90,8 +91,8 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         label?: string | undefined;
         addressType?: "sender" | "recipient" | "both" | undefined;
     };
-    id: string;
 }, {
+    id: string;
     data: {
         contactName?: string | undefined;
         companyName?: string | undefined;
@@ -104,7 +105,6 @@ declare const updateMailAddressInputSchema: z.ZodObject<{
         label?: string | undefined;
         addressType?: "sender" | "recipient" | "both" | undefined;
     };
-    id: string;
 }>;
 type UpdateMailAddressInput = z.infer<typeof updateMailAddressInputSchema>;
 export declare const updateMailAddress: UpdateMailAddress<UpdateMailAddressInput, MailAddress>;

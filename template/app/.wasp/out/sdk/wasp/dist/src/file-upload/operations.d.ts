@@ -5,11 +5,11 @@ declare const createFileInputSchema: z.ZodObject<{
     fileType: z.ZodEnum<["application/pdf"]>;
     fileName: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    fileName: string;
     fileType: "application/pdf";
+    fileName: string;
 }, {
-    fileName: string;
     fileType: "application/pdf";
+    fileName: string;
 }>;
 type CreateFileInput = z.infer<typeof createFileInputSchema>;
 export declare const createFile: CreateFile<CreateFileInput, {
