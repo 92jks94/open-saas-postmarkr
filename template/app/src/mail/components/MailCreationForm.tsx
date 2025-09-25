@@ -42,6 +42,9 @@ export interface FormData {
   fileId: string | null;
   /** Optional description text */
   description: string;
+  /** Printing preferences - for future use */
+  colorPrinting: boolean;
+  doubleSided: boolean;
 }
 
 // Mail size options based on mail type - SIMPLIFIED FOR LAUNCH: Only #10 envelope
@@ -91,7 +94,10 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     senderAddressId: null,
     recipientAddressId: null,
     fileId: null,
-    description: ''
+    description: '',
+    // Printing preferences - MVP defaults
+    colorPrinting: false, // Default to black & white for MVP
+    doubleSided: true,    // Default to double-sided for MVP
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -409,6 +415,36 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
           mailType={formData.mailType}
           mailSize={formData.mailSize}
         />
+
+        {/* TODO: Printing Preferences - Hidden for MVP, will be added in future update
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Printing Preferences</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="colorPrinting"
+                checked={formData.colorPrinting}
+                onChange={(e) => setFormData(prev => ({ ...prev, colorPrinting: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="colorPrinting">Color Printing (+$0.10 per page)</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="doubleSided"
+                checked={formData.doubleSided}
+                onChange={(e) => setFormData(prev => ({ ...prev, doubleSided: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="doubleSided">Double-sided printing</Label>
+            </div>
+          </CardContent>
+        </Card>
+        */}
 
         {/* Error Display */}
         {Object.keys(errors).length > 0 && (

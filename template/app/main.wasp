@@ -80,7 +80,7 @@ app OpenSaaS {
   },
 
   emailSender: {
-    provider: Dummy, // logs all email verification links/tokens to the server's console
+    provider: SMTP, // Use SMTP for production
     defaultFrom: {
       name: "Postmarkr",
       email: "nathan@postmarkr.com"
@@ -443,6 +443,21 @@ api healthCheck {
   httpRoute: (GET, "/health")
 }
 
+api webhookHealthCheck {
+  fn: import { webhookHealthCheck } from "@src/server/lob/webhook",
+  httpRoute: (GET, "/api/webhooks/health")
+}
+
+api webhookMetrics {
+  fn: import { webhookMetricsEndpoint } from "@src/server/lob/webhook",
+  httpRoute: (GET, "/api/webhooks/metrics")
+}
+
+api webhookEvents {
+  fn: import { webhookEventsEndpoint } from "@src/server/lob/webhook",
+  httpRoute: (GET, "/api/webhooks/events")
+}
+
 
 //#region Contact Form Messages
 // TODO:
@@ -452,5 +467,28 @@ route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }
 page AdminMessagesPage {
   authRequired: true,
   component: import AdminMessages from "@src/admin/dashboards/messages/MessagesPage"
+}
+//#endregion
+
+//#region Beta Access Management
+route UpgradeAccessRoute { path: "/upgrade", to: UpgradeAccessPage }
+page UpgradeAccessPage {
+  authRequired: true,
+  component: import UpgradeAccessPage from "@src/beta/UpgradeAccessPage"
+}
+
+action grantBetaAccess {
+  fn: import { grantBetaAccess } from "@src/beta/operations",
+  entities: [User]
+}
+
+action grantFullAccess {
+  fn: import { grantFullAccess } from "@src/beta/operations",
+  entities: [User]
+}
+
+query checkUserAccess {
+  fn: import { checkUserAccess } from "@src/beta/operations",
+  entities: [User]
 }
 //#endregion

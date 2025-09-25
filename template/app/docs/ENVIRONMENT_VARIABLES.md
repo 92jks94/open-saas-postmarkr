@@ -30,6 +30,14 @@ This document provides comprehensive information about all environment variables
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook endpoint secret | `whsec_your_stripe_webhook_secret_here` | ✅ |
 | `STRIPE_CUSTOMER_PORTAL_URL` | Stripe customer portal URL | `https://billing.stripe.com/p/login/...` | ✅ |
 
+### Page-Based Pricing Plans (Stripe)
+
+| Variable | Description | Example | Required |
+|----------|-------------|---------|----------|
+| `PAYMENTS_SMALL_BATCH_PLAN_ID` | Stripe price ID for small batch 1-5 pages ($2.50) | `price_1234567890` | ✅ |
+| `PAYMENTS_MEDIUM_BATCH_PLAN_ID` | Stripe price ID for medium batch 6-20 pages ($7.50) | `price_1234567891` | ✅ |
+| `PAYMENTS_LARGE_BATCH_PLAN_ID` | Stripe price ID for large batch 21-60 pages ($15.00) | `price_1234567892` | ✅ |
+
 ### Mail Service (Lob)
 
 | Variable | Description | Example | Required |

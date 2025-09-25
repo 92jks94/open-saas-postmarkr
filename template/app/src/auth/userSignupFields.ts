@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { defineUserSignupFields } from 'wasp/auth/providers/types';
 
 const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
+const betaEmails = process.env.BETA_EMAILS?.split(',') || [];
 
 const emailDataSchema = z.object({
   email: z.string(),
@@ -20,6 +21,11 @@ export const getEmailUserFields = defineUserSignupFields({
     const emailData = emailDataSchema.parse(data);
     return adminEmails.includes(emailData.email);
   },
+  hasBetaAccess: (data) => {
+    const emailData = emailDataSchema.parse(data);
+    return betaEmails.includes(emailData.email) || adminEmails.includes(emailData.email);
+  },
+  hasFullAccess: () => false, // No one gets full access initially
 });
 
 
@@ -46,6 +52,14 @@ export const getGoogleUserFields = defineUserSignupFields({
     }
     return adminEmails.includes(googleData.profile.email);
   },
+  hasBetaAccess: (data) => {
+    const googleData = googleDataSchema.parse(data);
+    if (!googleData.profile.email_verified) {
+      return false;
+    }
+    return betaEmails.includes(googleData.profile.email) || adminEmails.includes(googleData.profile.email);
+  },
+  hasFullAccess: () => false, // No one gets full access initially
 });
 
 export function getGoogleAuthConfig() {

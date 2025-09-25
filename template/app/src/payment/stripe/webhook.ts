@@ -271,12 +271,8 @@ function getPlanEffectPaymentDetails({
   numOfCreditsPurchased: number | undefined;
 } {
   switch (planEffect.kind) {
-    case 'subscription':
-      return { subscriptionPlan: planId, numOfCreditsPurchased: undefined };
-    case 'credits':
-      return { subscriptionPlan: undefined, numOfCreditsPurchased: planEffect.amount };
-    default:
-      assertUnreachable(planEffect);
+    case 'pages':
+      return { subscriptionPlan: undefined, numOfCreditsPurchased: undefined };
   }
 }
 

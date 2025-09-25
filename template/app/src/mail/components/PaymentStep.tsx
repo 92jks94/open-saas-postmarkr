@@ -56,10 +56,27 @@ const PaymentForm: React.FC<{
     const calculateCost = async () => {
       try {
         setIsLoadingCost(true);
-        // For now, use a simple cost calculation
-        // In a real implementation, this would call a cost calculation service
-        const estimatedCost = 60; // 60 cents as fallback
-        setCost(estimatedCost);
+        
+        // Calculate cost based on page count using the pricing tiers
+        if (mailPiece.file?.pageCount) {
+          const pageCount = mailPiece.file.pageCount;
+          let estimatedCost = 250; // Default to tier 1 ($2.50)
+          
+          if (pageCount <= 5) {
+            estimatedCost = 250; // $2.50
+          } else if (pageCount <= 20) {
+            estimatedCost = 750; // $7.50
+          } else if (pageCount <= 60) {
+            estimatedCost = 2000; // $20.00
+          } else {
+            throw new Error('Document too large for processing');
+          }
+          
+          setCost(estimatedCost);
+        } else {
+          // Fallback if no page count available
+          setCost(250); // $2.50 default
+        }
       } catch (error: any) {
         console.error('Failed to calculate cost:', error);
         setPaymentError('Failed to calculate cost. Please try again.');
@@ -69,7 +86,7 @@ const PaymentForm: React.FC<{
     };
 
     calculateCost();
-  }, [mailPiece.id]);
+  }, [mailPiece.id, mailPiece.file?.pageCount]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

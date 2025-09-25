@@ -30,8 +30,9 @@ import type {
   SubmitMailPieceToLob,
   SyncMailPieceStatus
 } from 'wasp/server/operations';
-import type { MailPiece, MailAddress, File, MailPieceStatusHistory } from 'wasp/entities';
+import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
 import type { MailPieceWithRelations } from './types';
+import { hasFullAccess } from '../beta/accessHelpers';
 import { 
   createMailPieceSchema, 
   updateMailPieceSchema, 
@@ -263,6 +264,9 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
         pricingTier: pricingTier,
         envelopeType: envelopeType,
         customerPrice: customerPrice,
+        // Set printing preferences with MVP defaults
+        colorPrinting: false, // Default to black & white for MVP
+        doubleSided: true,    // Default to double-sided for MVP
       },
     });
 
@@ -987,6 +991,8 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       fileUrl: mailPiece.file?.uploadUrl,
       description: mailPiece.description || `Mail piece created via Postmarkr - ${mailPiece.mailType}`,
       envelopeType: mailPiece.envelopeType || undefined,
+      colorPrinting: mailPiece.colorPrinting ?? false, // Default to black & white for MVP
+      doubleSided: mailPiece.doubleSided ?? true, // Default to double-sided for MVP
     };
 
     // Submit to Lob API

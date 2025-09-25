@@ -114,6 +114,7 @@ export async function calculateCost(mailSpecs: {
   toAddress: any;
   fromAddress: any;
   pageCount?: number;
+  envelopeType?: string;
 }) {
   try {
     // Validate page count is provided
@@ -129,7 +130,10 @@ export async function calculateCost(mailSpecs: {
     try {
       const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
       if (lobApiKey && lob) {
-        const lobPricingData = await getLobPricing(mailSpecs);
+        const lobPricingData = await getLobPricing({
+          ...mailSpecs,
+          envelopeType: mailSpecs.envelopeType,
+        });
         lobCost = lobPricingData.cost;
       } else {
         // Use fallback pricing for Lob cost estimation
@@ -198,8 +202,8 @@ async function getLobPricing(mailSpecs: {
     to: mapToLobAddress(normalizedToAddress),
     from: mapToLobAddress(normalizedFromAddress),
     description: 'Pricing calculation - test mailpiece',
-    color: true, // Default to color printing for accurate pricing
-    double_sided: false, // Default to single-sided for accurate pricing
+    color: false, // Default to black & white printing for MVP
+    double_sided: true, // Default to double-sided for MVP
   };
 
   // Add mail type specific fields
@@ -232,21 +236,43 @@ async function getLobPricing(mailSpecs: {
         front: 'https://s3.amazonaws.com/lob-assets/postcard-front.pdf', // Test template
         back: 'https://s3.amazonaws.com/lob-assets/postcard-back.pdf',   // Test template
         size: mailSpecs.mailSize === '4x6' ? '4x6' : '6x9',
+        // Add postcard-specific pricing fields
+        extra_service: mailSpecs.mailClass === 'usps_express' ? 'express' : undefined,
       }) as LobPostcardResponse;
     } else if (mailSpecs.mailType === 'letter') {
+      // Add envelope specifications for letters
+      const envelopeSpecs: any = {
+        color: true,
+        double_sided: false,
+      };
+
+      // Add envelope type specifications for accurate pricing
+      if (mailSpecs.envelopeType === 'standard_10_double_window') {
+        envelopeSpecs.extra_service = 'certified';
+      } else if (mailSpecs.envelopeType === 'flat_9x12_single_window') {
+        envelopeSpecs.extra_service = 'certified';
+      }
+
+      // Add mail class specific services
+      if (mailSpecs.mailClass === 'usps_express') {
+        envelopeSpecs.extra_service = 'express';
+      } else if (mailSpecs.mailClass === 'usps_priority') {
+        envelopeSpecs.extra_service = 'priority';
+      }
+
       pricingResponse = await (lob as any).letters.create({
         ...mailpieceData,
         file: '<html><body><h1>Test Letter</h1><p>This is a test letter for pricing calculation.</p></body></html>',
-        color: true,
-        double_sided: false,
+        ...envelopeSpecs,
       }) as LobLetterResponse;
     } else {
-      // For other mail types, use letter as fallback
+      // For other mail types, use letter as fallback with basic specs
       pricingResponse = await (lob as any).letters.create({
         ...mailpieceData,
         file: '<html><body><h1>Test Mail</h1><p>This is a test mailpiece for pricing calculation.</p></body></html>',
         color: true,
         double_sided: false,
+        extra_service: mailSpecs.mailClass === 'usps_express' ? 'express' : undefined,
       }) as LobLetterResponse;
     }
 
@@ -327,6 +353,8 @@ export async function createMailPiece(mailData: {
   fileUrl?: string;
   description?: string;
   envelopeType?: string;
+  colorPrinting?: boolean;
+  doubleSided?: boolean;
 }) {
   try {
     // Check if Lob API key is configured
@@ -344,26 +372,22 @@ export async function createMailPiece(mailData: {
       };
     }
 
-    // Prepare the mailpiece data for Lob API
+    // Normalize addresses to ensure consistent field names
+    const normalizedToAddress = normalizeAddress(mailData.to);
+    const normalizedFromAddress = normalizeAddress(mailData.from);
+
+    // Validate addresses before sending to Lob
+    if (!validateLobAddress(normalizedToAddress)) {
+      throw new HttpError(400, 'Invalid recipient address format');
+    }
+    if (!validateLobAddress(normalizedFromAddress)) {
+      throw new HttpError(400, 'Invalid sender address format');
+    }
+
+    // Prepare the mailpiece data for Lob API using standardized format
     const mailpieceData = {
-      to: {
-        name: mailData.to.contactName || mailData.to.name || 'Recipient',
-        address_line1: mailData.to.addressLine1 || mailData.to.address_line1,
-        address_line2: mailData.to.addressLine2 || mailData.to.address_line2,
-        city: mailData.to.city,
-        state: mailData.to.state,
-        zip_code: mailData.to.postalCode || mailData.to.zip_code,
-        country: mailData.to.country || 'US',
-      },
-      from: {
-        name: mailData.from.contactName || mailData.from.name || 'Sender',
-        address_line1: mailData.from.addressLine1 || mailData.from.address_line1,
-        address_line2: mailData.from.addressLine2 || mailData.from.address_line2,
-        city: mailData.from.city,
-        state: mailData.from.state,
-        zip_code: mailData.from.postalCode || mailData.from.zip_code,
-        country: mailData.from.country || 'US',
-      },
+      to: mapToLobAddress(normalizedToAddress),
+      from: mapToLobAddress(normalizedFromAddress),
       description: mailData.description || 'Mail piece created via Postmarkr',
     };
 
@@ -383,10 +407,10 @@ export async function createMailPiece(mailData: {
         ? await fetchFileContent(mailData.fileUrl)
         : '<html><body><h1>Mail Letter</h1><p>This is a mail letter created via Postmarkr.</p></body></html>';
       
-      // Prepare envelope specifications based on envelope type
+      // Prepare envelope specifications based on envelope type and printing preferences
       const envelopeSpecs: any = {
-        color: true,
-        double_sided: false,
+        color: mailData.colorPrinting ?? false, // Default to black & white for MVP
+        double_sided: mailData.doubleSided ?? true, // Default to double-sided for MVP
       };
 
       // Add envelope type specifications
@@ -396,6 +420,13 @@ export async function createMailPiece(mailData: {
       } else if (mailData.envelopeType === 'flat_9x12_single_window') {
         envelopeSpecs.extra_service = 'certified';
         // Note: Lob API will handle the envelope type based on content size
+      }
+
+      // Add mail class specific services
+      if (mailData.mailClass === 'usps_express') {
+        envelopeSpecs.extra_service = 'express';
+      } else if (mailData.mailClass === 'usps_priority') {
+        envelopeSpecs.extra_service = 'priority';
       }
       
       lobResponse = await (lob as any).letters.create({
@@ -412,8 +443,9 @@ export async function createMailPiece(mailData: {
       lobResponse = await (lob as any).letters.create({
         ...mailpieceData,
         file: fileContent,
-        color: true,
-        double_sided: false,
+        color: mailData.colorPrinting ?? false, // Default to black & white for MVP
+        double_sided: mailData.doubleSided ?? true, // Default to double-sided for MVP
+        extra_service: mailData.mailClass === 'usps_express' ? 'express' : undefined,
       });
     }
 
@@ -452,15 +484,51 @@ export async function createMailPiece(mailData: {
 
 /**
  * Fetch file content from URL for Lob API
+ * Supports both PDF files (returns URL) and HTML files (returns content)
  */
 async function fetchFileContent(fileUrl: string): Promise<string> {
   try {
-    // For now, return a simple HTML template
-    // In production, you might want to fetch and process the actual file
-    return '<html><body><h1>Mail Content</h1><p>This is the content of your mail piece.</p></body></html>';
+    // Check if it's a PDF file - Lob can handle PDF URLs directly
+    if (fileUrl.toLowerCase().endsWith('.pdf')) {
+      console.log('PDF file detected, using URL directly for Lob API');
+      return fileUrl; // Lob API can handle PDF URLs directly
+    }
+
+    // For HTML files or other text-based content, fetch the content
+    console.log('Fetching file content from URL:', fileUrl);
+    const response = await fetch(fileUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    
+    // If it's HTML content, return as-is
+    if (contentType.includes('text/html') || fileUrl.toLowerCase().endsWith('.html')) {
+      return await response.text();
+    }
+    
+    // If it's a PDF or other binary file, return the URL for Lob to handle
+    if (contentType.includes('application/pdf') || fileUrl.toLowerCase().endsWith('.pdf')) {
+      return fileUrl;
+    }
+
+    // For other text-based content, try to read as text
+    const content = await response.text();
+    
+    // If it looks like HTML, return as-is
+    if (content.trim().startsWith('<') && content.trim().endsWith('>')) {
+      return content;
+    }
+    
+    // Otherwise, wrap in basic HTML
+    return `<html><body><pre>${content}</pre></body></html>`;
+    
   } catch (error) {
     console.error('Error fetching file content:', error);
-    return '<html><body><h1>Mail Content</h1><p>This is the content of your mail piece.</p></body></html>';
+    // Return a fallback HTML template
+    return '<html><body><h1>Mail Content</h1><p>Unable to load the original file. This is a fallback content.</p></body></html>';
   }
 }
 

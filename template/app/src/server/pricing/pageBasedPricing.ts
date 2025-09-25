@@ -1,7 +1,8 @@
 /**
  * Page-based pricing system for MVP
  * - 1-5 pages: $2.50 (Standard #10 double-window envelope)
- * - 6-20 pages: $10.00 (9x12" flat single-window envelope)
+ * - 6-20 pages: $7.50 (9x12" flat single-window envelope)
+ * - 21-60 pages: $20.00 (9x12" flat single-window envelope)
  */
 
 export interface PageBasedPricingConfig {
@@ -26,9 +27,17 @@ export const PAGE_BASED_PRICING: PageBasedPricingConfig[] = [
     tier: 'tier_2',
     minPages: 6,
     maxPages: 20,
-    price: 1000, // $10.00
+    price: 750, // $7.50
     envelopeType: 'flat_9x12_single_window',
     description: '6-20 pages - 9x12" flat single-window envelope'
+  },
+  {
+    tier: 'tier_3',
+    minPages: 21,
+    maxPages: 60,
+    price: 2000, // $20.00
+    envelopeType: 'flat_9x12_single_window',
+    description: '21-60 pages - 9x12" flat single-window envelope'
   }
 ];
 
@@ -47,8 +56,8 @@ export function calculatePricingTier(pageCount: number): {
     throw new Error('Page count must be greater than 0');
   }
 
-  if (pageCount > 20) {
-    throw new Error('Documents with more than 20 pages are not supported');
+  if (pageCount > 60) {
+    throw new Error('Documents with more than 60 pages are not supported');
   }
 
   // Find the appropriate pricing tier
@@ -119,7 +128,7 @@ export function getAllPricingTiers(): PageBasedPricingConfig[] {
  * Check if page count is valid for processing
  */
 export function isPageCountValid(pageCount: number): boolean {
-  return pageCount > 0 && pageCount <= 20;
+  return pageCount > 0 && pageCount <= 60;
 }
 
 /**
@@ -129,8 +138,8 @@ export function getPageCountErrorMessage(pageCount: number): string {
   if (pageCount <= 0) {
     return 'Document must have at least 1 page';
   }
-  if (pageCount > 20) {
-    return 'Documents with more than 20 pages are not supported. Please split your document into smaller parts.';
+  if (pageCount > 60) {
+    return 'Documents with more than 60 pages are not supported. Please split your document into smaller parts.';
   }
   return '';
 }

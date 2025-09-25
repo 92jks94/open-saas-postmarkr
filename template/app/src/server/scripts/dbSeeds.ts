@@ -1,7 +1,7 @@
 import { type User } from 'wasp/entities';
 import { faker } from '@faker-js/faker';
 import type { PrismaClient } from '@prisma/client';
-import { getSubscriptionPaymentPlanIds, SubscriptionStatus } from '../../payment/plans';
+import { getPageBasedPaymentPlanIds, SubscriptionStatus } from '../../payment/plans';
 
 type MockUserData = Omit<User, 'id'>;
 
@@ -35,10 +35,12 @@ function generateMockUserData(): MockUserData {
     username: faker.internet.userName({ firstName, lastName }),
     createdAt,
     isAdmin: false,
+    hasBetaAccess: faker.datatype.boolean({ probability: 0.7 }), // 70% chance of beta access
+    hasFullAccess: faker.datatype.boolean({ probability: 0.3 }), // 30% chance of full access
     credits,
     subscriptionStatus,
     paymentProcessorUserId: hasUserPaidOnStripe ? `cus_test_${faker.string.uuid()}` : null,
     datePaid: hasUserPaidOnStripe ? faker.date.between({ from: createdAt, to: timePaid }) : null,
-    subscriptionPlan: subscriptionStatus ? faker.helpers.arrayElement(getSubscriptionPaymentPlanIds()) : null,
+    subscriptionPlan: subscriptionStatus ? faker.helpers.arrayElement(getPageBasedPaymentPlanIds()) : null,
   };
 }

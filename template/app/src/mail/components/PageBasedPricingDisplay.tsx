@@ -13,7 +13,7 @@ interface PageBasedPricingDisplayProps {
 export function PageBasedPricingDisplay({ pageCount, onPricingInfo }: PageBasedPricingDisplayProps) {
   const getPricingInfo = (pages: number) => {
     if (pages <= 0) return null;
-    if (pages > 20) return null;
+    if (pages > 60) return null;
     
     if (pages <= 5) {
       return {
@@ -22,12 +22,19 @@ export function PageBasedPricingDisplay({ pageCount, onPricingInfo }: PageBasedP
         envelopeType: 'standard_10_double_window',
         description: '1-5 pages - Standard #10 double-window envelope'
       };
-    } else {
+    } else if (pages <= 20) {
       return {
         tier: 'tier_2',
-        price: 10.00,
+        price: 7.50,
         envelopeType: 'flat_9x12_single_window',
         description: '6-20 pages - 9x12" flat single-window envelope'
+      };
+    } else {
+      return {
+        tier: 'tier_3',
+        price: 20.00,
+        envelopeType: 'flat_9x12_single_window',
+        description: '21-60 pages - 9x12" flat single-window envelope'
       };
     }
   };
@@ -48,7 +55,7 @@ export function PageBasedPricingDisplay({ pageCount, onPricingInfo }: PageBasedP
     );
   }
 
-  if (pageCount > 20) {
+  if (pageCount > 60) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <div className="flex items-center">
@@ -62,7 +69,7 @@ export function PageBasedPricingDisplay({ pageCount, onPricingInfo }: PageBasedP
               Document too large
             </h3>
             <div className="mt-2 text-sm text-red-700">
-              <p>Documents with more than 20 pages are not supported. Please split your document into smaller parts.</p>
+              <p>Documents with more than 60 pages are not supported. Please split your document into smaller parts.</p>
             </div>
           </div>
         </div>

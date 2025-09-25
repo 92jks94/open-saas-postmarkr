@@ -28,6 +28,13 @@ const stripeEnvSchema = z.object({
   STRIPE_CUSTOMER_PORTAL_URL: z.string().url('STRIPE_CUSTOMER_PORTAL_URL must be a valid URL'),
 });
 
+// Page-based pricing plans (Stripe) environment variables
+const pricingPlansEnvSchema = z.object({
+  PAYMENTS_SMALL_BATCH_PLAN_ID: z.string().min(1, 'PAYMENTS_SMALL_BATCH_PLAN_ID is required'),
+  PAYMENTS_MEDIUM_BATCH_PLAN_ID: z.string().min(1, 'PAYMENTS_MEDIUM_BATCH_PLAN_ID is required'),
+  PAYMENTS_LARGE_BATCH_PLAN_ID: z.string().min(1, 'PAYMENTS_LARGE_BATCH_PLAN_ID is required'),
+});
+
 // Mail service (Lob) environment variables
 const lobEnvSchema = z.object({
   LOB_PROD_KEY: z.string().min(1, 'LOB_PROD_KEY is required for production'),
@@ -70,6 +77,7 @@ const envSchema = z.object({
   ...coreEnvSchema.shape,
   ...emailEnvSchema.shape,
   ...stripeEnvSchema.shape,
+  ...pricingPlansEnvSchema.shape,
   ...lobEnvSchema.shape,
   ...awsEnvSchema.shape,
   ...monitoringEnvSchema.shape,
@@ -114,6 +122,7 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       ...coreEnvSchema.shape,
       ...emailEnvSchema.shape,
       ...stripeEnvSchema.shape,
+      ...pricingPlansEnvSchema.shape,
       ...lobEnvSchema.shape,
       ...awsEnvSchema.shape,
       ...monitoringEnvSchema.shape,
@@ -127,6 +136,9 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       STRIPE_PUBLISHABLE_KEY: true,
       STRIPE_WEBHOOK_SECRET: true,
       STRIPE_CUSTOMER_PORTAL_URL: true,
+      PAYMENTS_SMALL_BATCH_PLAN_ID: true,
+      PAYMENTS_MEDIUM_BATCH_PLAN_ID: true,
+      PAYMENTS_LARGE_BATCH_PLAN_ID: true,
       LOB_PROD_KEY: true,
       LOB_ENVIRONMENT: true,
       LOB_WEBHOOK_SECRET: true,
@@ -228,6 +240,11 @@ export function getRequiredEnvironmentVariables(): string[] {
     'STRIPE_PUBLISHABLE_KEY',
     'STRIPE_WEBHOOK_SECRET',
     'STRIPE_CUSTOMER_PORTAL_URL',
+    
+    // Page-Based Pricing Plans (Stripe)
+    'PAYMENTS_SMALL_BATCH_PLAN_ID',
+    'PAYMENTS_MEDIUM_BATCH_PLAN_ID',
+    'PAYMENTS_LARGE_BATCH_PLAN_ID',
     
     // Mail (Lob)
     'LOB_PROD_KEY',

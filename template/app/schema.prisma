@@ -13,6 +13,8 @@ model User {
   email                         String?              @unique
   username                      String?              @unique
   isAdmin                       Boolean              @default(false)
+  hasBetaAccess                 Boolean              @default(false)  // Set by BETA_EMAILS env var
+  hasFullAccess                 Boolean              @default(false)  // Upgraded via code
   paymentProcessorUserId        String?              @unique
   subscriptionStatus            String?
   subscriptionPlan              String?
@@ -183,6 +185,9 @@ model MailPiece {
   serviceOptions     Json?
   signatureConfirmation Boolean              @default(false)
   trackingEnabled    Boolean                  @default(false)
+  // Printing preferences
+  colorPrinting      Boolean                  @default(false)  // false = black & white, true = color
+  doubleSided        Boolean                  @default(true)   // true = double-sided, false = single-sided
   file               File?                    @relation(fields: [fileId], references: [id])
   recipientAddress   MailAddress              @relation("MailPieceRecipient", fields: [recipientAddressId], references: [id])
   senderAddress      MailAddress              @relation("MailPieceSender", fields: [senderAddressId], references: [id])
@@ -252,3 +257,4 @@ model NotificationPreferences {
 
   @@index([userId])
 }
+

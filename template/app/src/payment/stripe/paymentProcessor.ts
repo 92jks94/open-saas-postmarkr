@@ -38,8 +38,7 @@ export const stripePaymentProcessor: PaymentProcessor = {
 
 function paymentPlanEffectToStripeMode(planEffect: PaymentPlanEffect): StripeMode {
   const effectToMode: Record<PaymentPlanEffect['kind'], StripeMode> = {
-    subscription: 'subscription',
-    credits: 'payment',
+    pages: 'payment', // Page-based pricing is one-time payment
   };
   return effectToMode[planEffect.kind];
 }

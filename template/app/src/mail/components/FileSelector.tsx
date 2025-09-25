@@ -39,7 +39,7 @@ interface FileValidationResult {
 const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 const MAIL_TYPE_REQUIREMENTS = {
-  'letter': { maxPages: 6, minPages: 1 },
+  'letter': { maxPages: 60, minPages: 1 },
   // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
   // 'postcard': { maxPages: 1, minPages: 1 },
   // 'check': { maxPages: 1, minPages: 1 },
