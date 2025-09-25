@@ -13,7 +13,7 @@ import type { MailPiece, MailAddress, File } from 'wasp/entities';
  * This page is shown after the user returns from Stripe Checkout.
  * It handles both success and cancel scenarios and provides appropriate feedback.
  */
-const MailCheckoutResultPage: React.FC = () => {
+export default function MailCheckoutResultPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [mailPiece, setMailPiece] = useState<MailPiece & {
@@ -228,4 +228,3 @@ const MailCheckoutResultPage: React.FC = () => {
   );
 };
 
-export default MailCheckoutResultPage;

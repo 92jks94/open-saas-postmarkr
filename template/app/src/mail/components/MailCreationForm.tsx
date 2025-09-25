@@ -17,7 +17,7 @@ import type { MailPiece, MailAddress, File } from 'wasp/entities';
 /**
  * Props for the MailCreationForm component
  */
-interface MailCreationFormProps {
+export interface MailCreationFormProps {
   /** Callback fired when mail piece is successfully created and paid */
   onSuccess?: (mailPieceId: string) => void;
   /** Optional CSS classes for styling */
@@ -27,7 +27,7 @@ interface MailCreationFormProps {
 /**
  * Form data structure for mail piece creation
  */
-interface FormData {
+export interface FormData {
   /** Type of mail piece (postcard, letter, check, etc.) */
   mailType: string;
   /** USPS mail class (first_class, standard, express, priority) */
@@ -199,8 +199,8 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
       } else {
         throw new Error('Failed to load mail piece details');
       }
-    } catch (error: any) {
-      setSubmitError(error.message || 'Failed to create mail piece');
+    } catch (error: unknown) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to create mail piece');
     } finally {
       setIsSubmitting(false);
     }

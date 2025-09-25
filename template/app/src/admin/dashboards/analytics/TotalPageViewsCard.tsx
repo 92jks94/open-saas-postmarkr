@@ -2,12 +2,12 @@ import { ArrowDown, ArrowUp, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../../../components/ui/card';
 import { cn } from '../../../lib/utils';
 
-type PageViewsStats = {
+export type PageViewsStats = {
   totalPageViews: number | undefined;
   prevDayViewsChangePercent: string | undefined;
 };
 
-const TotalPageViewsCard = ({ totalPageViews, prevDayViewsChangePercent }: PageViewsStats) => {
+export default function TotalPageViewsCard({ totalPageViews, prevDayViewsChangePercent }: PageViewsStats) {
   const prevDayViewsChangePercentValue = parseInt(prevDayViewsChangePercent || '');
   const isDeltaPositive = prevDayViewsChangePercentValue > 0;
 
@@ -46,4 +46,3 @@ const TotalPageViewsCard = ({ totalPageViews, prevDayViewsChangePercent }: PageV
   );
 };
 
-export default TotalPageViewsCard;

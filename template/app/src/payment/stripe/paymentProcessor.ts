@@ -23,7 +23,7 @@ export const stripePaymentProcessor: PaymentProcessor = {
         paymentProcessorUserId: customer.id
       }
     })
-    if (!stripeSession.url) throw new Error('Error creating Stripe Checkout Session');
+    if (!stripeSession.url) throw new Error('Failed to create Stripe Checkout Session');
     const session = {
       url: stripeSession.url,
       id: stripeSession.id,

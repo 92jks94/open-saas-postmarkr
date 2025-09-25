@@ -10,7 +10,7 @@ import { CheckCircle, XCircle, MapPin, Plus, AlertTriangle, Shield } from 'lucid
 /**
  * Props for the AddressSelector component
  */
-interface AddressSelectorProps {
+export interface AddressSelectorProps {
   /** Currently selected address ID */
   selectedAddressId: string | null;
   /** Callback when address selection changes */
@@ -24,7 +24,7 @@ interface AddressSelectorProps {
 /**
  * Result of address validation with Lob API
  */
-interface AddressValidationResult {
+export interface AddressValidationResult {
   /** Whether the address is valid according to Lob */
   isValid: boolean;
   /** Whether validation has been completed */
@@ -103,7 +103,7 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Validation failed: ${response.statusText}`);
+        throw new Error(`Address validation failed: ${response.statusText}`);
       }
 
       const result = await response.json();

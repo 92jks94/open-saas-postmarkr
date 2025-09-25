@@ -34,7 +34,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
  * - Simple status display
  * - Navigation to individual mail piece details
  */
-const MailHistoryPage: React.FC = () => {
+export default function MailHistoryPage() {
   const { data: user } = useAuth();
   const navigate = useNavigate();
 
@@ -288,4 +288,3 @@ const MailHistoryPage: React.FC = () => {
   );
 };
 
-export default MailHistoryPage;

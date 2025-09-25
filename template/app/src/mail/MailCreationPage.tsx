@@ -15,7 +15,7 @@ import MailCreationForm from './components/MailCreationForm';
  * - Provides navigation to created mail piece or history
  * - Shows success confirmation with next steps
  */
-const MailCreationPage: React.FC = () => {
+export default function MailCreationPage() {
   const { data: user } = useAuth();
   const navigate = useNavigate();
   const [createdMailPieceId, setCreatedMailPieceId] = useState<string | null>(null);
@@ -100,4 +100,3 @@ const MailCreationPage: React.FC = () => {
   );
 };
 
-export default MailCreationPage;

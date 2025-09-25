@@ -10,7 +10,7 @@ import { Textarea } from '../../../components/ui/textarea';
 import Breadcrumb from '../../layout/Breadcrumb';
 import DefaultLayout from '../../layout/DefaultLayout';
 
-const SettingsPage = ({ user }: { user: AuthUser }) => {
+export default function SettingsPage({ user }: { user: AuthUser }) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     // TODO add toast provider / wrapper
     event.preventDefault();
@@ -182,4 +182,3 @@ const SettingsPage = ({ user }: { user: AuthUser }) => {
   );
 };
 
-export default SettingsPage;

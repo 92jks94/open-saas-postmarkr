@@ -108,11 +108,11 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
     }
 
     console.table({ dailyStats });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error calculating daily stats: ', error);
     await context.entities.Logs.create({
       data: {
-        message: `Error calculating daily stats: ${error?.message}`,
+        message: `Error calculating daily stats: ${error instanceof Error ? error.message : 'Unknown error'}`,
         level: 'job-error',
       },
     });

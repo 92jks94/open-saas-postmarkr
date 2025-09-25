@@ -47,7 +47,7 @@ import { Separator } from '../components/ui/separator';
  * - Action buttons (edit, delete, refresh, submit to Lob)
  * - Real-time status updates and error handling
  */
-const MailDetailsPage: React.FC = () => {
+export default function MailDetailsPage() {
   const { data: user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -527,4 +527,3 @@ const MailDetailsPage: React.FC = () => {
   );
 };
 
-export default MailDetailsPage;

@@ -11,7 +11,7 @@ import { PaymentPlanId, paymentPlans, prettyPaymentPlanName, SubscriptionStatus 
 
 const bestDealPaymentPlanId: PaymentPlanId = PaymentPlanId.Pro;
 
-interface PaymentPlanCard {
+export interface PaymentPlanCard {
   name: string;
   price: string;
   description: string;
@@ -39,7 +39,7 @@ export const paymentPlanCards: Record<PaymentPlanId, PaymentPlanCard> = {
   },
 };
 
-const PricingPage = () => {
+export default function PricingPage() {
   const [isPaymentLoading, setIsPaymentLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -68,7 +68,7 @@ const PricingPage = () => {
       if (checkoutResults?.sessionUrl) {
         window.open(checkoutResults.sessionUrl, '_self');
       } else {
-        throw new Error('Error generating checkout session URL');
+        throw new Error('Failed to generate checkout session URL');
       }
     } catch (error: unknown) {
       console.error(error);
@@ -202,4 +202,3 @@ const PricingPage = () => {
   );
 };
 
-export default PricingPage;
