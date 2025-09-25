@@ -19,32 +19,32 @@ export declare const createMailPieceSchema: z.ZodEffects<z.ZodObject<{
     mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    fileId?: string | undefined;
     description?: string | undefined;
+    fileId?: string | undefined;
 }, {
     mailType: "letter";
     mailClass: "usps_first_class";
     mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    fileId?: string | undefined;
     description?: string | undefined;
+    fileId?: string | undefined;
 }>, {
     mailType: "letter";
     mailClass: "usps_first_class";
     mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    fileId?: string | undefined;
     description?: string | undefined;
+    fileId?: string | undefined;
 }, {
     mailType: "letter";
     mailClass: "usps_first_class";
     mailSize: "4x6";
     senderAddressId: string;
     recipientAddressId: string;
-    fileId?: string | undefined;
     description?: string | undefined;
+    fileId?: string | undefined;
 }>;
 export declare const updateMailPieceSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
@@ -60,37 +60,37 @@ export declare const updateMailPieceSchema: z.ZodEffects<z.ZodObject<{
     mailType?: "letter" | undefined;
     mailClass?: "usps_first_class" | undefined;
     mailSize?: "4x6" | undefined;
+    description?: string | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
-    description?: string | undefined;
 }, {
     id: string;
     mailType?: "letter" | undefined;
     mailClass?: "usps_first_class" | undefined;
     mailSize?: "4x6" | undefined;
+    description?: string | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
-    description?: string | undefined;
 }>, {
     id: string;
     mailType?: "letter" | undefined;
     mailClass?: "usps_first_class" | undefined;
     mailSize?: "4x6" | undefined;
+    description?: string | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
-    description?: string | undefined;
 }, {
     id: string;
     mailType?: "letter" | undefined;
     mailClass?: "usps_first_class" | undefined;
     mailSize?: "4x6" | undefined;
+    description?: string | undefined;
     senderAddressId?: string | undefined;
     recipientAddressId?: string | undefined;
     fileId?: string | undefined;
-    description?: string | undefined;
 }>;
 export declare const updateMailPieceStatusSchema: z.ZodObject<{
     id: z.ZodString;
@@ -98,15 +98,15 @@ export declare const updateMailPieceStatusSchema: z.ZodObject<{
     description: z.ZodOptional<z.ZodString>;
     source: z.ZodDefault<z.ZodEnum<["system", "user", "lob", "webhook", "manual"]>>;
 }, "strip", z.ZodTypeAny, {
-    status: "draft" | "pending_payment" | "paid" | "submitted" | "in_transit" | "delivered" | "returned" | "failed";
     id: string;
-    source: "system" | "user" | "lob" | "webhook" | "manual";
+    status: "paid" | "pending_payment" | "failed" | "draft" | "submitted" | "in_transit" | "delivered" | "returned";
+    source: "user" | "system" | "webhook" | "lob" | "manual";
     description?: string | undefined;
 }, {
-    status: "draft" | "pending_payment" | "paid" | "submitted" | "in_transit" | "delivered" | "returned" | "failed";
     id: string;
+    status: "paid" | "pending_payment" | "failed" | "draft" | "submitted" | "in_transit" | "delivered" | "returned";
     description?: string | undefined;
-    source?: "system" | "user" | "lob" | "webhook" | "manual" | undefined;
+    source?: "user" | "system" | "webhook" | "lob" | "manual" | undefined;
 }>;
 export declare const lobWebhookStatusSchema: z.ZodObject<{
     lobId: z.ZodString;

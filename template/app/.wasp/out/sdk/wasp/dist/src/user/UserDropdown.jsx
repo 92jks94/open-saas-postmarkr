@@ -4,7 +4,7 @@ import { logout } from 'wasp/client/auth';
 import { Link as WaspRouterLink } from 'wasp/client/router';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from '../components/ui/dropdown-menu';
 import { userMenuItems } from './constants';
-export function UserDropdown({ user }) {
+export default function UserDropdown({ user }) {
     const [open, setOpen] = useState(false);
     return (<DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>

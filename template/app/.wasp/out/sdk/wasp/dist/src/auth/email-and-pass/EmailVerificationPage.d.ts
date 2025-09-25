@@ -1,2 +1,2 @@
-export declare function EmailVerificationPage(): import("react").JSX.Element;
+export default function EmailVerificationPage(): import("react").JSX.Element;
 //# sourceMappingURL=EmailVerificationPage.d.ts.map

@@ -1,7 +1,7 @@
 import DarkModeSwitcher from '../../client/components/DarkModeSwitcher';
 import { cn } from '../../lib/utils';
 import MessageButton from '../dashboards/messages/MessageButton';
-import { UserDropdown } from '../../user/UserDropdown';
+import UserDropdown from '../../user/UserDropdown';
 const Header = (props) => {
     return (<header className='sticky top-0 z-10 flex w-full bg-background border-b border-border shadow-sm'>
       <div className='flex flex-grow items-center justify-between sm:justify-end sm:gap-5 px-8 py-5'>

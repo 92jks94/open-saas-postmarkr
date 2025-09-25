@@ -11,7 +11,7 @@ import {
 } from '../components/ui/dropdown-menu';
 import { userMenuItems } from './constants';
 
-export function UserDropdown({ user }: { user: Partial<UserEntity> }) {
+export default function UserDropdown({ user }: { user: Partial<UserEntity> }) {
   const [open, setOpen] = useState(false);
 
   return (

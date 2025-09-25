@@ -1,2 +1,2 @@
-export declare function Signup(): import("react").JSX.Element;
+export default function Signup(): import("react").JSX.Element;
 //# sourceMappingURL=SignupPage.d.ts.map

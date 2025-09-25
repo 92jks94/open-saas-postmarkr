@@ -44,7 +44,7 @@ This audit examines the Postmarkr application's implementation against the offic
   - Email verification and password reset configured
   - Admin role assignment via `ADMIN_EMAILS` environment variable
   - Proper use of Wasp auth components
-  - Social auth providers prepared (Google, GitHub, Discord)
+  - Social auth providers prepared (Google only)
 
 #### 4. Payment Integration (Stripe)
 - **Status**: ✅ **FULLY COMPLIANT**

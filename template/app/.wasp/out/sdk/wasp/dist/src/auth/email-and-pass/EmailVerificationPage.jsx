@@ -1,7 +1,7 @@
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { VerifyEmailForm } from 'wasp/client/auth';
-import { AuthPageLayout } from '../AuthPageLayout';
-export function EmailVerificationPage() {
+import AuthPageLayout from '../AuthPageLayout';
+export default function EmailVerificationPage() {
     return (<AuthPageLayout>
       <VerifyEmailForm />
       <br />

@@ -1,7 +1,7 @@
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { SignupForm } from 'wasp/client/auth';
-import { AuthPageLayout } from './AuthPageLayout';
-export function Signup() {
+import AuthPageLayout from './AuthPageLayout';
+export default function Signup() {
     return (<AuthPageLayout>
       <SignupForm />
       <br />

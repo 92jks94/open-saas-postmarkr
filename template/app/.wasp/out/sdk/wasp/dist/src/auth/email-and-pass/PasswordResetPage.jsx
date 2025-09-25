@@ -1,7 +1,7 @@
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { ResetPasswordForm } from 'wasp/client/auth';
-import { AuthPageLayout } from '../AuthPageLayout';
-export function PasswordResetPage() {
+import AuthPageLayout from '../AuthPageLayout';
+export default function PasswordResetPage() {
     return (<AuthPageLayout>
       <ResetPasswordForm />
       <br />
