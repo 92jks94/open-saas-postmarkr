@@ -5,26 +5,26 @@ import { Button } from '../../components/ui/button';
 
 export default function Hero() {
   return (
-    <div className='relative pt-14 w-full'>
+    <div className='relative pt-20 w-full'>
       <TopGradient />
       <BottomGradient />
       <div className='md:p-24'>
         <div className='mx-auto max-w-8xl px-6 lg:px-8'>
           <div className='lg:mb-18 mx-auto max-w-3xl text-center'>
             <h1 className='text-5xl font-bold text-foreground sm:text-6xl'>
-              Some <span className='italic'>cool</span> words about{' '}
-              <span className='text-gradient-primary'>your product</span>
+              Transform <span className='italic'>digital</span> documents into{' '}
+              <span className='text-gradient-primary'>professional mail</span>
             </h1>
             <p className='mt-6 mx-auto max-w-2xl text-lg leading-8 text-muted-foreground'>
-              With some more exciting words about your product!
+              Perfect for remote workers and home offices. Send important documents, contracts, and packages with tracking and delivery confirmation. No more trips to the post office.
             </p>
             <div className='mt-10 flex items-center justify-center gap-x-6'>
               <Button size='lg' variant='outline' asChild>
-                <WaspRouterLink to={routes.PricingPageRoute.to}>Learn More</WaspRouterLink>
+                <WaspRouterLink to={routes.PricingPageRoute.to}>View Pricing</WaspRouterLink>
               </Button>
               <Button size='lg' variant='default' asChild>
                 <WaspRouterLink to={routes.SignupRoute.to}>
-                  Get Started <span aria-hidden='true'>→</span>
+                  Start Sending Mail <span aria-hidden='true'>→</span>
                 </WaspRouterLink>
               </Button>
             </div>

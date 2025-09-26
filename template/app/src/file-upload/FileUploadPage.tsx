@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { getAllFilesByUser, getDownloadFileSignedURL, deleteFile, useQuery } from 'wasp/client/operations';
-import type { File } from 'wasp/entities';
+import type { File as FileEntity } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
@@ -17,7 +17,7 @@ import {
 import { ALLOWED_FILE_TYPES } from './validation';
 
 export default function FileUploadPage() {
-  const [fileKeyForS3, setFileKeyForS3] = useState<File['key']>('');
+  const [fileKeyForS3, setFileKeyForS3] = useState<FileEntity['key']>('');
   const [uploadProgressPercent, setUploadProgressPercent] = useState<number>(0);
   const [uploadError, setUploadError] = useState<FileUploadError | null>(null);
 
@@ -25,10 +25,10 @@ export default function FileUploadPage() {
     // Smart polling: only poll when there are files being processed
     refetchInterval: false, // We'll control this manually
     refetchIntervalInBackground: true, // Continue polling when tab is not active
-  });
+  }) as { data: FileEntity[] | undefined; isLoading: boolean; error: any; refetch: () => void };
 
   // Check if there are any files currently being processed
-  const hasProcessingFiles = allUserFiles.data?.some(file => file.validationStatus === 'processing');
+  const hasProcessingFiles = allUserFiles.data?.some((file: FileEntity) => file.validationStatus === 'processing');
 
   // Smart polling effect - only poll when there are files being processed
   useEffect(() => {
@@ -154,8 +154,13 @@ export default function FileUploadPage() {
                 />
               </div>
               <div className='space-y-2'>
-                <Button type='submit' disabled={uploadProgressPercent > 0} className='w-full'>
-                  {uploadProgressPercent > 0 ? `Uploading ${uploadProgressPercent}%` : 'Upload'}
+                <Button 
+                  type='submit' 
+                  isLoading={uploadProgressPercent > 0}
+                  loadingText={`Uploading ${uploadProgressPercent}%`}
+                  className='w-full'
+                >
+                  Upload
                 </Button>
                 {uploadProgressPercent > 0 && <Progress value={uploadProgressPercent} className='w-full' />}
               </div>
@@ -184,7 +189,7 @@ export default function FileUploadPage() {
               )}
               {!!allUserFiles.data && allUserFiles.data.length > 0 && !allUserFiles.isLoading ? (
                 <div className='space-y-3'>
-                  {allUserFiles.data.map((file: File) => (
+                  {allUserFiles.data.map((file: FileEntity) => (
                     <Card key={file.key} className='p-4'>
                       <div
                         className={cn(

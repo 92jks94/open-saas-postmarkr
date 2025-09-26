@@ -11,11 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Separator } from '../components/ui/separator';
 import { cn } from '../lib/utils';
 import { ADDRESS_TYPES, SUPPORTED_COUNTRIES } from './validation';
+import { SimpleAddressValidator } from '../shared/addressValidationSimple';
 
 export default function AddressManagementPage() {
   const [addressError, setAddressError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [selectedCountry, setSelectedCountry] = useState<string>('US');
   
   // Edit state management
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,38 +33,36 @@ export default function AddressManagementPage() {
     allUserAddresses.refetch();
   }, []);
 
-  // Simple form validation
-  const validateForm = (formData: FormData): Record<string, string> => {
-    const errors: Record<string, string> = {};
-    
-    const contactName = formData.get('contactName') as string;
-    const address_line1 = formData.get('address_line1') as string;
-    const address_city = formData.get('address_city') as string;
-    const address_state = formData.get('address_state') as string;
-    const address_zip = formData.get('address_zip') as string;
-    const address_country = formData.get('address_country') as string;
+  // Simple form validation using working validation utility
+  const validateForm = (formData: FormData): { isValid: boolean; errors: Record<string, string> } => {
+    const addressData = {
+      contactName: formData.get('contactName') as string || '',
+      companyName: formData.get('companyName') as string || '',
+      address_line1: formData.get('address_line1') as string || '',
+      address_line2: formData.get('address_line2') as string || '',
+      address_city: formData.get('address_city') as string || '',
+      address_state: formData.get('address_state') as string || '',
+      address_zip: formData.get('address_zip') as string || '',
+      address_country: formData.get('address_country') as string || '',
+      label: formData.get('label') as string || '',
+      addressType: formData.get('addressType') as string || 'both',
+    };
 
-    if (!contactName?.trim()) {
-      errors.contactName = 'Contact name is required';
-    }
-    if (!address_line1?.trim()) {
-      errors.address_line1 = 'Address line 1 is required';
-    }
-    if (!address_city?.trim()) {
-      errors.address_city = 'City is required';
-    }
-    if (!address_state?.trim()) {
-      errors.address_state = 'State is required';
-    }
-    if (!address_zip?.trim()) {
-      errors.address_zip = 'Postal code is required';
-    }
-    if (!address_country?.trim()) {
-      errors.address_country = 'Country is required';
-    }
-
-    return errors;
+    return SimpleAddressValidator.validateAddress(addressData);
   };
+
+  // Clear field error when user starts typing
+  const clearFieldError = (fieldName: string) => {
+    setFieldErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[fieldName];
+      return newErrors;
+    });
+    setAddressError(null);
+  };
+
+  // Get country-specific validation rules
+  const getCountryRules = () => SimpleAddressValidator.getCountryRules(selectedCountry);
 
   // Copy exact delete pattern from FileUploadPage
   const handleDelete = async (addressId: string) => {
@@ -126,10 +127,10 @@ export default function AddressManagementPage() {
 
       const formData = new FormData(formElement);
       
-      // Validate form
-      const errors = validateForm(formData);
-      if (Object.keys(errors).length > 0) {
-        setFormErrors(errors);
+      // Validate form using enhanced validation
+      const validationResult = validateForm(formData);
+      if (!validationResult.isValid) {
+        setFormErrors(validationResult.errors);
         setIsCreating(false);
         return;
       }
@@ -206,16 +207,11 @@ export default function AddressManagementPage() {
                         name='contactName'
                         placeholder='John Doe'
                         required
-                        onChange={() => {
-                          setAddressError(null);
-                          if (formErrors.contactName) {
-                            setFormErrors(prev => ({ ...prev, contactName: '' }));
-                          }
-                        }}
-                        className={cn('h-10', formErrors.contactName && 'border-red-500')}
+                        onChange={() => clearFieldError('contactName')}
+                        className={cn('h-10', (formErrors.contactName || fieldErrors.contactName) && 'border-red-500')}
                       />
-                      {formErrors.contactName && (
-                        <p className='text-sm text-red-600'>{formErrors.contactName}</p>
+                      {(formErrors.contactName || fieldErrors.contactName) && (
+                        <p className='text-sm text-red-600'>{formErrors.contactName || fieldErrors.contactName}</p>
                       )}
                     </div>
                     
@@ -225,9 +221,12 @@ export default function AddressManagementPage() {
                         id='companyName'
                         name='companyName'
                         placeholder='Acme Corp'
-                        onChange={() => setAddressError(null)}
-                        className='h-10'
+                        onChange={() => clearFieldError('companyName')}
+                        className={cn('h-10', fieldErrors.companyName && 'border-red-500')}
                       />
+                      {fieldErrors.companyName && (
+                        <p className='text-sm text-red-600'>{fieldErrors.companyName}</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -248,16 +247,11 @@ export default function AddressManagementPage() {
                         name='address_line1'
                         placeholder='123 Main St'
                         required
-                        onChange={() => {
-                          setAddressError(null);
-                          if (formErrors.address_line1) {
-                            setFormErrors(prev => ({ ...prev, address_line1: '' }));
-                          }
-                        }}
-                        className={cn('h-10', formErrors.address_line1 && 'border-red-500')}
+                        onChange={() => clearFieldError('address_line1')}
+                        className={cn('h-10', (formErrors.address_line1 || fieldErrors.address_line1) && 'border-red-500')}
                       />
-                      {formErrors.address_line1 && (
-                        <p className='text-sm text-red-600'>{formErrors.address_line1}</p>
+                      {(formErrors.address_line1 || fieldErrors.address_line1) && (
+                        <p className='text-sm text-red-600'>{formErrors.address_line1 || fieldErrors.address_line1}</p>
                       )}
                     </div>
 
@@ -267,9 +261,12 @@ export default function AddressManagementPage() {
                         id='address_line2'
                         name='address_line2'
                         placeholder='Suite 100, Apartment 2B'
-                        onChange={() => setAddressError(null)}
-                        className='h-10'
+                        onChange={() => clearFieldError('address_line2')}
+                        className={cn('h-10', fieldErrors.address_line2 && 'border-red-500')}
                       />
+                      {fieldErrors.address_line2 && (
+                        <p className='text-sm text-red-600'>{fieldErrors.address_line2}</p>
+                      )}
                     </div>
 
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
@@ -280,16 +277,11 @@ export default function AddressManagementPage() {
                           name='address_city'
                           placeholder='New York'
                           required
-                          onChange={() => {
-                            setAddressError(null);
-                            if (formErrors.address_city) {
-                              setFormErrors(prev => ({ ...prev, address_city: '' }));
-                            }
-                          }}
-                          className={cn('h-10', formErrors.address_city && 'border-red-500')}
+                          onChange={() => clearFieldError('address_city')}
+                          className={cn('h-10', (formErrors.address_city || fieldErrors.address_city) && 'border-red-500')}
                         />
-                        {formErrors.address_city && (
-                          <p className='text-sm text-red-600'>{formErrors.address_city}</p>
+                        {(formErrors.address_city || fieldErrors.address_city) && (
+                          <p className='text-sm text-red-600'>{formErrors.address_city || fieldErrors.address_city}</p>
                         )}
                       </div>
                       
@@ -298,18 +290,13 @@ export default function AddressManagementPage() {
                         <Input
                           id='address_state'
                           name='address_state'
-                          placeholder='NY'
+                          placeholder={getCountryRules().stateOptions.length > 0 ? 'Select state' : 'State/Province'}
                           required
-                          onChange={() => {
-                            setAddressError(null);
-                            if (formErrors.address_state) {
-                              setFormErrors(prev => ({ ...prev, address_state: '' }));
-                            }
-                          }}
-                          className={cn('h-10', formErrors.address_state && 'border-red-500')}
+                          onChange={() => clearFieldError('address_state')}
+                          className={cn('h-10', (formErrors.address_state || fieldErrors.address_state) && 'border-red-500')}
                         />
-                        {formErrors.address_state && (
-                          <p className='text-sm text-red-600'>{formErrors.address_state}</p>
+                        {(formErrors.address_state || fieldErrors.address_state) && (
+                          <p className='text-sm text-red-600'>{formErrors.address_state || fieldErrors.address_state}</p>
                         )}
                       </div>
                       
@@ -318,18 +305,13 @@ export default function AddressManagementPage() {
                         <Input
                           id='address_zip'
                           name='address_zip'
-                          placeholder='10001'
+                          placeholder={getCountryRules().postalCodePlaceholder}
                           required
-                          onChange={() => {
-                            setAddressError(null);
-                            if (formErrors.address_zip) {
-                              setFormErrors(prev => ({ ...prev, address_zip: '' }));
-                            }
-                          }}
-                          className={cn('h-10', formErrors.address_zip && 'border-red-500')}
+                          onChange={() => clearFieldError('address_zip')}
+                          className={cn('h-10', (formErrors.address_zip || fieldErrors.address_zip) && 'border-red-500')}
                         />
-                        {formErrors.address_zip && (
-                          <p className='text-sm text-red-600'>{formErrors.address_zip}</p>
+                        {(formErrors.address_zip || fieldErrors.address_zip) && (
+                          <p className='text-sm text-red-600'>{formErrors.address_zip || fieldErrors.address_zip}</p>
                         )}
                       </div>
                     </div>
@@ -350,14 +332,12 @@ export default function AddressManagementPage() {
                       <Select 
                         name='address_country' 
                         required
-                        onValueChange={() => {
-                          setAddressError(null);
-                          if (formErrors.address_country) {
-                            setFormErrors(prev => ({ ...prev, address_country: '' }));
-                          }
+                        onValueChange={(value) => {
+                          setSelectedCountry(value);
+                          clearFieldError('address_country');
                         }}
                       >
-                        <SelectTrigger className={cn('h-10', formErrors.address_country && 'border-red-500')}>
+                        <SelectTrigger className={cn('h-10', (formErrors.address_country || fieldErrors.address_country) && 'border-red-500')}>
                           <SelectValue placeholder='Select country' />
                         </SelectTrigger>
                         <SelectContent>
@@ -368,8 +348,8 @@ export default function AddressManagementPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {formErrors.address_country && (
-                        <p className='text-sm text-red-600'>{formErrors.address_country}</p>
+                      {(formErrors.address_country || fieldErrors.address_country) && (
+                        <p className='text-sm text-red-600'>{formErrors.address_country || fieldErrors.address_country}</p>
                       )}
                     </div>
                     
@@ -396,9 +376,12 @@ export default function AddressManagementPage() {
                       id='label'
                       name='label'
                       placeholder='Home, Office, Client ABC'
-                      onChange={() => setAddressError(null)}
-                      className='h-10'
+                      onChange={() => clearFieldError('label')}
+                      className={cn('h-10', fieldErrors.label && 'border-red-500')}
                     />
+                    {fieldErrors.label && (
+                      <p className='text-sm text-red-600'>{fieldErrors.label}</p>
+                    )}
                   </div>
                 </div>
 
@@ -406,11 +389,12 @@ export default function AddressManagementPage() {
                 <div className='pt-4'>
                   <Button 
                     type='submit' 
-                    disabled={isCreating} 
+                    isLoading={isCreating}
+                    loadingText="Creating Address..."
                     className='w-full h-11 text-base font-medium'
                     size='lg'
                   >
-                    {isCreating ? 'Creating Address...' : 'Create Address'}
+                    Create Address
                   </Button>
                 </div>
 
@@ -582,7 +566,12 @@ export default function AddressManagementPage() {
                             <Button onClick={handleEditCancel} variant='outline' size='sm'>
                               Cancel
                             </Button>
-                            <Button onClick={() => handleEditSave(address.id)} size='sm'>
+                            <Button 
+                              onClick={() => handleEditSave(address.id)} 
+                              size='sm'
+                              isLoading={editingId === address.id && isCreating}
+                              loadingText="Saving..."
+                            >
                               Save Changes
                             </Button>
                           </div>

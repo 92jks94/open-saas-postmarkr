@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'wasp/client/operations';
-import { getMailPiece } from 'wasp/client/operations';
+import { getMailPiece, deleteMailPiece, getDownloadFileSignedURL } from 'wasp/client/operations';
 import type { MailPieceWithRelations } from './types';
 import { 
   ArrowLeft, 
@@ -52,6 +52,9 @@ export default function MailDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: mailPiece, isLoading, error, refetch } = useQuery(getMailPiece, { id: id! }) as {
     data: MailPieceWithRelations | undefined;
@@ -66,6 +69,66 @@ export default function MailDetailsPage() {
     setIsRefreshing(true);
     await refetch();
     setIsRefreshing(false);
+  };
+
+  const handleDeleteMailPiece = async () => {
+    if (!mailPiece) return;
+    
+    if (!confirm('Are you sure you want to delete this mail piece? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      setActionError(null);
+      
+      await deleteMailPiece({ id: mailPiece.id });
+      
+      // Navigate back to history after successful deletion
+      navigate('/mail/history');
+    } catch (error) {
+      console.error('Error deleting mail piece:', error);
+      setActionError(error instanceof Error ? error.message : 'Failed to delete mail piece');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDownloadFile = async () => {
+    if (!mailPiece?.file) return;
+
+    try {
+      setIsDownloading(true);
+      setActionError(null);
+      
+      const result = await getDownloadFileSignedURL({ key: mailPiece.file.key });
+      
+      if (result) {
+        window.open(result, '_blank');
+      } else {
+        throw new Error('Failed to get download URL');
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      setActionError(error instanceof Error ? error.message : 'Failed to download file');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleEditMailPiece = () => {
+    if (!mailPiece) return;
+    
+    // Redirect to mail creation page with edit mode
+    navigate(`/mail/create?edit=${mailPiece.id}`);
+  };
+
+  const handleViewInLobDashboard = () => {
+    if (!mailPiece?.lobId) return;
+    
+    // Open Lob dashboard in new tab (this would be the actual Lob dashboard URL)
+    const lobDashboardUrl = `https://dashboard.lob.com/mail/${mailPiece.lobId}`;
+    window.open(lobDashboardUrl, '_blank');
   };
 
   const getStatusIcon = (status: string) => {
@@ -228,33 +291,48 @@ export default function MailDetailsPage() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   {mailPiece.status === 'draft' && (
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleEditMailPiece}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
                   )}
                   {mailPiece.file && (
-                    <DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={handleDownloadFile}
+                      disabled={isDownloading}
+                    >
                       <Download className="h-4 w-4 mr-2" />
-                      Download File
+                      {isDownloading ? 'Downloading...' : 'Download File'}
                     </DropdownMenuItem>
                   )}
                   {mailPiece.lobId && (
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleViewInLobDashboard}>
                       <ExternalLink className="h-4 w-4 mr-2" />
                       View in Lob Dashboard
                     </DropdownMenuItem>
                   )}
                   {mailPiece.status === 'draft' && (
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem 
+                      className="text-red-600"
+                      onClick={handleDeleteMailPiece}
+                      disabled={isDeleting}
+                    >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
+                      {isDeleting ? 'Deleting...' : 'Delete'}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
+
+          {/* Error Display */}
+          {actionError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{actionError}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Simplified Implementation Notice */}
           <Alert className="mb-6">

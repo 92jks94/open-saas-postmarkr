@@ -10,16 +10,13 @@ const staticNavigationItems: NavigationItem[] = [
 export const marketingNavigationItems: NavigationItem[] = [
   { name: 'Features', to: '/#features' },
   { name: 'Pricing', to: routes.PricingPageRoute.to },
-  ...staticNavigationItems,
+  { name: 'How It Works', to: '/#examples' },
+  { name: 'Sign In', to: routes.LoginRoute.to },
 ] as const;
 
 export const demoNavigationitems: NavigationItem[] = [
-  { name: 'AI Scheduler', to: routes.DemoAppRoute.to },
-  { name: 'File Upload', to: routes.FileUploadRoute.to },
-  { name: 'Addresses', to: routes.AddressManagementRoute.to },
-  { name: 'Create Mail', to: routes.MailCreationRoute.to },
+  { name: 'Send Mail', to: routes.MailCreationRoute.to },
   { name: 'Mail History', to: routes.MailHistoryRoute.to },
-  { name: 'Account', to: routes.AccountRoute.to },
-  { name: 'Pricing', to: routes.PricingPageRoute.to },
-  ...staticNavigationItems,
+  { name: 'Addresses', to: routes.AddressManagementRoute.to },
+  { name: 'Upload Files', to: routes.FileUploadRoute.to },
 ] as const;

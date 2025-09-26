@@ -17,14 +17,16 @@ export default function AccountPage({ user }: { user: User }) {
         </CardHeader>
         <CardContent className='p-0'>
           <div className='space-y-0'>
-            {!!user.email && (
-              <div className='py-4 px-6'>
-                <div className='grid grid-cols-1 sm:grid-cols-3 sm:gap-4'>
-                  <dt className='text-sm font-medium text-muted-foreground'>Email address</dt>
-                  <dd className='mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0'>{user.email}</dd>
-                </div>
+            <div className='py-4 px-6'>
+              <div className='grid grid-cols-1 sm:grid-cols-3 sm:gap-4'>
+                <dt className='text-sm font-medium text-muted-foreground'>Email address</dt>
+                <dd className='mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0'>
+                  {user.email || (
+                    <span className='text-red-600 font-medium'>No email set - this is likely the issue!</span>
+                  )}
+                </dd>
               </div>
-            )}
+            </div>
             {!!user.username && (
               <>
                 <Separator />
@@ -46,6 +48,30 @@ export default function AccountPage({ user }: { user: User }) {
                   datePaid={user.datePaid}
                   credits={user.credits}
                 />
+              </div>
+            </div>
+            <Separator />
+            <div className='py-4 px-6'>
+              <div className='grid grid-cols-1 sm:grid-cols-3 sm:gap-4'>
+                <dt className='text-sm font-medium text-muted-foreground'>Admin Status</dt>
+                <dd className='mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0'>
+                  {user.isAdmin ? (
+                    <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800'>
+                      Admin
+                    </span>
+                  ) : (
+                    <span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800'>
+                      Regular User
+                    </span>
+                  )}
+                </dd>
+              </div>
+            </div>
+            <Separator />
+            <div className='py-4 px-6'>
+              <div className='grid grid-cols-1 sm:grid-cols-3 sm:gap-4'>
+                <dt className='text-sm font-medium text-muted-foreground'>User ID</dt>
+                <dd className='mt-1 text-sm text-foreground sm:col-span-2 sm:mt-0 font-mono'>{user.id}</dd>
               </div>
             </div>
             <Separator />

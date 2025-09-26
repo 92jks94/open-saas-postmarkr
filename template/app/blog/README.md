@@ -1,15 +1,22 @@
-# Starlight Starter Kit: Basics
+# Postmarkr Blog
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+Professional blog and documentation site for Postmarkr, a modern mail service platform for remote workers, startups, and small businesses.
 
-```
-npm create astro@latest -- --template starlight
-```
+## About Postmarkr
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/starlight/tree/main/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/starlight/tree/main/examples/basics)
+Postmarkr simplifies mail operations for modern businesses by providing:
+- Digital-to-physical mail conversion
+- Address management and validation
+- Delivery tracking and confirmation
+- Professional mail services
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Blog Content
+
+This blog covers:
+- Mail service industry insights
+- Best practices for business mail operations
+- Technical guides for mail management
+- Company updates and feature announcements
 
 ## 🚀 Project Structure
 

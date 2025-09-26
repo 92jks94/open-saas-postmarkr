@@ -226,21 +226,16 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
 
       <Button
         type='button'
-        disabled={isPlanGenerating || tasks?.length === 0}
+        isLoading={isPlanGenerating}
+        loadingText="Generating..."
+        disabled={tasks?.length === 0}
         onClick={() => handleGeneratePlan()}
         variant='default'
         size='default'
         className='w-full'
         data-testid='generate-schedule-button'
       >
-        {isPlanGenerating ? (
-          <>
-            <Loader2 className='inline-block mr-2 animate-spin' />
-            Generating...
-          </>
-        ) : (
-          'Generate Schedule'
-        )}
+        Generate Schedule
       </Button>
 
       {!!response && (

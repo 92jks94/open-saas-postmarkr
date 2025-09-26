@@ -57,16 +57,32 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/react": "^18.0.37",
+    "@vitest/coverage-v8": "^2.0.0",
     "prisma": "5.19.1",
     "typescript": "5.8.2",
-    "vite": "^7.0.6"
+    "vite": "^7.0.6",
+    "vitest": "^2.0.0",
+    "msw": "^2.0.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^6.0.0"
   },
   "scripts": {
     "build": "wasp build",
     "start:ci": "wasp start",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run src/**/*.test.ts",
+    "test:integration": "vitest run src/**/*.integration.test.ts",
+    "test:critical": "vitest run src/test/critical/**/*.test.ts",
+    "test:performance": "vitest run src/test/performance/**/*.test.ts",
+    "test:watch": "vitest --watch",
+    "test:ci": "vitest run --coverage --reporter=verbose",
+    "test:all": "node src/test/run-tests.ts",
+    "test:critical-only": "vitest run src/test/critical/**/*.test.ts --reporter=verbose",
+    "test:integration-only": "vitest run src/test/integration/**/*.test.ts --reporter=verbose",
+    "test:performance-only": "vitest run src/test/performance/**/*.test.ts --reporter=verbose"
   },
   "overrides": {
     "form-data": "^4.0.0",

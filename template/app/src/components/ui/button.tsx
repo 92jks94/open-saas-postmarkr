@@ -51,12 +51,29 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** Show loading spinner and disable button */
+  isLoading?: boolean;
+  /** Loading text to display when isLoading is true */
+  loadingText?: string;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, isLoading = false, loadingText, children, disabled, ...props }, ref) => {
     const Comp = asChild ? Slot : 'button';
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+    
+    return (
+      <Comp 
+        className={cn(buttonVariants({ variant, size, className }))} 
+        ref={ref} 
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {isLoading && (
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2" />
+        )}
+        {isLoading && loadingText ? loadingText : children}
+      </Comp>
+    );
   }
 );
 Button.displayName = 'Button';

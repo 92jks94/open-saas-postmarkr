@@ -12,6 +12,37 @@ type MockUserData = Omit<User, 'id'>;
  */
 export async function seedMockUsers(prismaClient: PrismaClient) {
   await Promise.all(generateMockUsersData(50).map((data) => prismaClient.user.create({ data })));
+  
+  // Initialize default app settings
+  await seedAppSettings(prismaClient);
+}
+
+async function seedAppSettings(prismaClient: PrismaClient) {
+  const defaultSettings = [
+    {
+      key: 'beta_access_code',
+      value: '312',
+      description: 'Beta access code required for new user signups',
+    },
+    {
+      key: 'maintenance_mode',
+      value: 'false',
+      description: 'Enable/disable maintenance mode for the application',
+    },
+    {
+      key: 'max_file_size_mb',
+      value: '10',
+      description: 'Maximum file upload size in megabytes',
+    },
+  ];
+
+  for (const setting of defaultSettings) {
+    await prismaClient.appSettings.upsert({
+      where: { key: setting.key },
+      update: {},
+      create: setting,
+    });
+  }
 }
 
 function generateMockUsersData(numOfUsers: number): MockUserData[] {

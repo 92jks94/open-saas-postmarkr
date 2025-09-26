@@ -4,4 +4,194 @@
 [33m
 🐝 --- Compiling wasp project... --------------------------------------------------
 [0m
-wasp-bin: /home/nathah/Projects/open-saas-postmarkr/template/app/.wasp/out/.waspchecksums: openBinaryFile: does not exist (No such file or directory)
+[33m
+✅ --- Successfully completed npm install. ----------------------------------------
+[0m
+[33m
+🐝 --- Setting up database... -----------------------------------------------------
+[0m
+[33m
+✅ --- Database successfully set up. ----------------------------------------------
+[0m
+[33m
+🐝 --- Building SDK... ------------------------------------------------------------
+[0m
+
+[33m[[0m  [33mWasp[0m  [33m][0m > wasp@1.0.0 build
+[33m[[0m  [33mWasp[0m  [33m][0m > tsc && node ./scripts/copy-assets.js
+[33m[[0m  [33mWasp[0m  [33m][0m 
+[33m[[0m  [33mWasp[0m  [33m][0m client/config.ts(1,36): error TS2307: Cannot find module '../universal/url.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m client/config.ts(2,21): error TS2307: Cannot find module './env.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m client/index.ts(17,21): error TS2307: Cannot find module './env.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m client/test/vitest/helpers.tsx(8,23): error TS2307: Cannot find module 'wasp/client/operations/rpc' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m client/test/vitest/helpers.tsx(11,27): error TS2307: Cannot find module 'wasp/core/serialization' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/config.ts(1,21): error TS2307: Cannot find module './env.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/config.ts(2,36): error TS2307: Cannot find module '../universal/url.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/index.ts(8,36): error TS2307: Cannot find module './types/index.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/index.ts(12,36): error TS2307: Cannot find module './middleware/index.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/index.ts(14,21): error TS2307: Cannot find module './env.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(8,8): error TS2307: Cannot find module '../wrappers.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(9,72): error TS2307: Cannot find module 'wasp/src/auth/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(10,68): error TS2307: Cannot find module 'wasp/src/user/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(11,64): error TS2307: Cannot find module 'wasp/src/demo-ai-app/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(12,46): error TS2307: Cannot find module 'wasp/src/demo-ai-app/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(13,46): error TS2307: Cannot find module 'wasp/src/demo-ai-app/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(14,46): error TS2307: Cannot find module 'wasp/src/demo-ai-app/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(15,72): error TS2307: Cannot find module 'wasp/src/payment/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(16,46): error TS2307: Cannot find module 'wasp/src/file-upload/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(17,46): error TS2307: Cannot find module 'wasp/src/file-upload/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(18,60): error TS2307: Cannot find module 'wasp/src/address-management/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(19,60): error TS2307: Cannot find module 'wasp/src/address-management/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(20,60): error TS2307: Cannot find module 'wasp/src/address-management/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(21,60): error TS2307: Cannot find module 'wasp/src/address-management/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(22,56): error TS2307: Cannot find module 'wasp/src/address-management/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(23,56): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(24,56): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(25,56): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(26,68): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(27,72): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(28,76): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(29,62): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(30,60): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(31,66): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(32,64): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(33,66): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(34,56): error TS2307: Cannot find module 'wasp/src/beta/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/index.ts(35,56): error TS2307: Cannot find module 'wasp/src/beta/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/actions/types.ts(11,8): error TS2307: Cannot find module 'wasp/server/_types' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(8,8): error TS2307: Cannot find module '../wrappers.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(9,60): error TS2307: Cannot find module 'wasp/src/user/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(10,56): error TS2307: Cannot find module 'wasp/src/demo-ai-app/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(11,60): error TS2307: Cannot find module 'wasp/src/demo-ai-app/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(12,66): error TS2307: Cannot find module 'wasp/src/payment/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(13,60): error TS2307: Cannot find module 'wasp/src/file-upload/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(14,74): error TS2307: Cannot find module 'wasp/src/file-upload/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(15,70): error TS2307: Cannot find module 'wasp/src/address-management/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(16,52): error TS2307: Cannot find module 'wasp/src/analytics/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(17,52): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(18,50): error TS2307: Cannot find module 'wasp/src/mail/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/index.ts(19,56): error TS2307: Cannot find module 'wasp/src/beta/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/operations/queries/types.ts(13,8): error TS2307: Cannot find module 'wasp/server/_types' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m server/utils.ts(3,35): error TS2307: Cannot find module './auth/user.js' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(2,107): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(3,34): error TS2307: Cannot find module 'wasp/entities' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(4,41): error TS2307: Cannot find module '../components/ui/alert' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(6,46): error TS2307: Cannot find module '../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(7,80): error TS2307: Cannot find module '../components/ui/form' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(8,23): error TS2307: Cannot find module '../components/ui/input' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(9,23): error TS2307: Cannot find module '../components/ui/label' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(10,79): error TS2307: Cannot find module '../components/ui/select' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(11,27): error TS2307: Cannot find module '../components/ui/separator' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(12,20): error TS2307: Cannot find module '../lib/utils' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(13,52): error TS2307: Cannot find module './validation' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/address-management/AddressManagementPage.tsx(14,40): error TS2307: Cannot find module '../shared/addressValidationSimple' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/DropdownEditDelete.tsx(3,39): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/DropdownEditDelete.tsx(9,8): error TS2307: Cannot find module '../../../components/ui/dropdown-menu' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(3,25): error TS2307: Cannot find module 'wasp/client/auth' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(4,68): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(5,27): error TS2307: Cannot find module 'wasp/entities' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(6,25): error TS2307: Cannot find module '../../../client/hooks/useDebounce' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(8,26): error TS2307: Cannot find module '../../../components/ui/checkbox' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(9,23): error TS2307: Cannot find module '../../../components/ui/input' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(10,23): error TS2307: Cannot find module '../../../components/ui/label' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(11,79): error TS2307: Cannot find module '../../../components/ui/select' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(12,24): error TS2307: Cannot find module '../../../components/ui/switch' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(13,36): error TS2307: Cannot find module '../../../payment/plans' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(14,28): error TS2307: Cannot find module '../../layout/LoadingSpinner' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/admin/dashboards/users/UsersTable.tsx(142,32): error TS2322: Type 'unknown' is not assignable to type 'Key | null | undefined'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(4,25): error TS2307: Cannot find module 'wasp/client/auth' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(5,48): error TS2307: Cannot find module 'wasp/client/router' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(6,76): error TS2307: Cannot find module '../../components/ui/sheet' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(7,20): error TS2307: Cannot find module '../../lib/utils' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(8,48): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(9,26): error TS2307: Cannot find module '../../user/UserDropdown' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(10,31): error TS2307: Cannot find module '../../user/UserMenuItems' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(11,34): error TS2307: Cannot find module '../hooks/useIsLandingPage' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/NavBar.tsx(13,30): error TS2307: Cannot find module './Announcement' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/constants.ts(1,24): error TS2307: Cannot find module 'wasp/client/router' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/client/components/NavBar/constants.ts(2,34): error TS2307: Cannot find module '../../shared/common' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/components/ui/button.tsx(18,20): error TS2307: Cannot find module '../lib/utils' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(1,27): error TS2307: Cannot find module 'wasp/entities' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(2,25): error TS2307: Cannot find module 'wasp/client/auth' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(3,26): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(4,33): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(13,8): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(18,58): error TS2307: Cannot find module '../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(19,26): error TS2307: Cannot find module '../components/ui/checkbox' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(20,23): error TS2307: Cannot find module '../components/ui/input' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(21,23): error TS2307: Cannot find module '../components/ui/label' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(22,20): error TS2307: Cannot find module '../lib/utils' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/demo-ai-app/DemoAppPage.tsx(23,86): error TS2307: Cannot find module './schedule' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(2,83): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(3,41): error TS2307: Cannot find module 'wasp/entities' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(4,41): error TS2307: Cannot find module '../components/ui/alert' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(6,46): error TS2307: Cannot find module '../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(7,23): error TS2307: Cannot find module '../components/ui/input' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(8,23): error TS2307: Cannot find module '../components/ui/label' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(9,26): error TS2307: Cannot find module '../components/ui/progress' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(10,20): error TS2307: Cannot find module '../lib/utils' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(16,8): error TS2307: Cannot find module './fileUploading' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(17,36): error TS2307: Cannot find module './validation' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(193,37): error TS2339: Property 'key' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(198,48): error TS2339: Property 'key' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(205,35): error TS2339: Property 'validationStatus' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(214,35): error TS2339: Property 'pageCount' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(216,39): error TS2339: Property 'pageCount' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(219,35): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(219,62): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(219,111): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(221,51): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(221,108): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(224,35): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(224,62): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(224,109): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(224,130): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(226,59): error TS2339: Property 'pdfMetadata' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(233,65): error TS2339: Property 'key' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(234,44): error TS2339: Property 'key' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(238,35): error TS2339: Property 'key' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/file-upload/FileUploadPage.tsx(241,62): error TS2339: Property 'id' does not exist on type 'File'.
+[33m[[0m  [33mWasp[0m  [33m][0m src/landing-page/components/ExamplesCarousel.tsx(2,35): error TS2307: Cannot find module '../../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(2,25): error TS2307: Cannot find module 'wasp/client/auth' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(4,26): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(5,73): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(6,45): error TS2307: Cannot find module './types' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(28,23): error TS2307: Cannot find module '../components/ui/badge' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(29,58): error TS2307: Cannot find module '../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(30,41): error TS2307: Cannot find module '../components/ui/alert' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(36,8): error TS2307: Cannot find module '../components/ui/dropdown-menu' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailDetailsPage.tsx(37,27): error TS2307: Cannot find module '../components/ui/separator' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(2,25): error TS2307: Cannot find module 'wasp/client/auth' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(3,26): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(4,65): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(19,23): error TS2307: Cannot find module '../components/ui/badge' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(20,58): error TS2307: Cannot find module '../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(26,8): error TS2307: Cannot find module '../components/ui/dropdown-menu' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/MailHistoryPage.tsx(27,41): error TS2307: Cannot find module '../components/ui/alert' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(2,47): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(4,58): error TS2307: Cannot find module '../../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(5,23): error TS2307: Cannot find module '../../components/ui/input' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(6,23): error TS2307: Cannot find module '../../components/ui/label' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(7,79): error TS2307: Cannot find module '../../components/ui/select' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(8,26): error TS2307: Cannot find module '../../components/ui/textarea' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(9,41): error TS2307: Cannot find module '../../components/ui/alert' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(10,23): error TS2307: Cannot find module '../../components/ui/badge' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(12,26): error TS2307: Cannot find module './FileSelector' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(13,29): error TS2307: Cannot find module './AddressSelector' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(15,51): error TS2307: Cannot find module 'wasp/entities' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/MailCreationForm.tsx(16,40): error TS2307: Cannot find module '../../shared/addressValidationSimple' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/PaymentStep.tsx(2,43): error TS2307: Cannot find module 'wasp/client/operations' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/PaymentStep.tsx(4,58): error TS2307: Cannot find module '../../components/ui/card' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/PaymentStep.tsx(5,41): error TS2307: Cannot find module '../../components/ui/alert' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/PaymentStep.tsx(6,23): error TS2307: Cannot find module '../../components/ui/badge' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/PaymentStep.tsx(7,27): error TS2307: Cannot find module '../../components/ui/separator' or its corresponding type declarations.
+[33m[[0m  [33mWasp[0m  [33m][0m src/mail/components/PaymentStep.tsx(18,51): error TS2307: Cannot find module 'wasp/entities' or its corresponding type declarations.[31m
+
+❌ --- [Error] Your wasp project failed to compile: -------------------------------
+
+- SDK build failed with exit code: 2[0m
+[31m
+
+❌ --- [Error] Compilation of wasp project failed: --------------------------------
+
+1 errors found[0m

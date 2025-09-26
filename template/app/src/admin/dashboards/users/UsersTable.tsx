@@ -262,7 +262,11 @@ const UsersTable = () => {
                 </div>
               </div>
               <div className='col-span-1 flex items-center'>
-                <DropdownEditDelete />
+                <DropdownEditDelete 
+                  userId={user.id} 
+                  isAdmin={user.isAdmin} 
+                  userEmail={user.email || ''} 
+                />
               </div>
             </div>
           ))}

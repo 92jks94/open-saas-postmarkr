@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useQuery } from 'wasp/client/operations';
-import { getMailPieces } from 'wasp/client/operations';
+import { getMailPieces, deleteMailPiece, updateMailPiece } from 'wasp/client/operations';
 import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
@@ -37,6 +37,8 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 export default function MailHistoryPage() {
   const { data: user } = useAuth();
   const navigate = useNavigate();
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { data: mailData, isLoading, error } = useQuery(getMailPieces, {
     page: 1,
@@ -107,6 +109,33 @@ export default function MailHistoryPage() {
     }).format(amount);
   };
 
+  const handleDeleteMailPiece = async (mailPieceId: string) => {
+    if (!confirm('Are you sure you want to delete this mail piece? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(mailPieceId);
+      setDeleteError(null);
+      
+      await deleteMailPiece({ id: mailPieceId });
+      
+      // Refetch the data to update the list
+      window.location.reload(); // Simple refresh for now
+    } catch (error) {
+      console.error('Error deleting mail piece:', error);
+      setDeleteError(error instanceof Error ? error.message : 'Failed to delete mail piece');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleEditMailPiece = (mailPieceId: string) => {
+    // For now, redirect to mail creation page with the mail piece ID
+    // In a full implementation, this would open an edit modal or redirect to edit page
+    navigate(`/mail/create?edit=${mailPieceId}`);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -162,6 +191,14 @@ export default function MailHistoryPage() {
           </div>
         </div>
 
+
+        {/* Error Display */}
+        {deleteError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{deleteError}</AlertDescription>
+          </Alert>
+        )}
 
         {/* Mail Pieces List */}
         <div className="space-y-4">
@@ -256,15 +293,19 @@ export default function MailHistoryPage() {
                             View Details
                           </DropdownMenuItem>
                           {mailPiece.status === 'draft' && (
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditMailPiece(mailPiece.id)}>
                               <Package className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
                           )}
                           {mailPiece.status === 'draft' && (
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => handleDeleteMailPiece(mailPiece.id)}
+                              disabled={isDeleting === mailPiece.id}
+                            >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              {isDeleting === mailPiece.id ? 'Deleting...' : 'Delete'}
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

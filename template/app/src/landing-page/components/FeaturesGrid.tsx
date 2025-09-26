@@ -4,13 +4,16 @@ import { cn } from '../../lib/utils';
 import { Feature } from './Features';
 import SectionTitle from './SectionTitle';
 
-export interface GridFeature extends Omit<Feature, 'icon'> {
+export interface GridFeature {
+  name: string;
+  description: string;
   icon?: React.ReactNode;
   emoji?: string;
   direction?: 'col' | 'row' | 'col-reverse' | 'row-reverse';
   align?: 'center' | 'left';
   size: 'small' | 'medium' | 'large';
   fullWidthIcon?: boolean;
+  href?: string; // Make href optional for GridFeature
 }
 
 interface FeaturesGridProps {

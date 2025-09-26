@@ -13,6 +13,7 @@ import FileSelector from './FileSelector';
 import AddressSelector from './AddressSelector';
 import PaymentStep from './PaymentStep';
 import type { MailPiece, MailAddress, File } from 'wasp/entities';
+import { SimpleAddressValidator } from '../../shared/addressValidationSimple';
 
 /**
  * Props for the MailCreationForm component
@@ -135,33 +136,35 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   ];
 
 
-  // Memoize form validation to prevent unnecessary re-computation
+  // Simple form validation using working validation utility
   const formValidation = useMemo(() => {
-    const newErrors: Record<string, string> = {};
+    const mailCreationData = {
+      senderAddressId: formData.senderAddressId || '',
+      recipientAddressId: formData.recipientAddressId || '',
+      fileId: formData.fileId || '',
+      description: formData.description || '',
+    };
 
+    const validationResult = SimpleAddressValidator.validateMailCreation(mailCreationData);
+    
+    // Add additional validation for required fields
+    const additionalErrors: Record<string, string> = {};
+    
     if (!formData.senderAddressId) {
-      newErrors.senderAddressId = 'Please select a sender address';
+      additionalErrors.senderAddressId = 'Please select a sender address';
     }
 
     if (!formData.recipientAddressId) {
-      newErrors.recipientAddressId = 'Please select a recipient address';
-    }
-
-    if (formData.senderAddressId === formData.recipientAddressId) {
-      newErrors.recipientAddressId = 'Sender and recipient addresses must be different';
+      additionalErrors.recipientAddressId = 'Please select a recipient address';
     }
 
     if (!formData.fileId) {
-      newErrors.fileId = 'Please select a file to send';
-    }
-
-    if (formData.description && formData.description.length > 500) {
-      newErrors.description = 'Description must be less than 500 characters';
+      additionalErrors.fileId = 'Please select a file to send';
     }
 
     return {
-      errors: newErrors,
-      isValid: Object.keys(newErrors).length === 0
+      errors: { ...validationResult.errors, ...additionalErrors },
+      isValid: validationResult.isValid && Object.keys(additionalErrors).length === 0,
     };
   }, [formData.senderAddressId, formData.recipientAddressId, formData.fileId, formData.description]);
 
@@ -461,6 +464,7 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
           </Alert>
         )}
 
+
         {submitError && (
           <Alert>
             <AlertTriangle className="h-4 w-4" />
@@ -472,20 +476,13 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={!isFormValid || isSubmitting}
+            isLoading={isSubmitting}
+            loadingText="Creating..."
+            disabled={!isFormValid}
             className="min-w-[200px]"
           >
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Creating...
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-4 w-4 mr-2" />
-                Create & Pay
-              </>
-            )}
+            <CreditCard className="h-4 w-4 mr-2" />
+            Create & Pay
           </Button>
         </div>
 

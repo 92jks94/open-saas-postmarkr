@@ -51,7 +51,7 @@ app OpenSaaS {
           clientRoute: PasswordResetRoute,
           getEmailContentFn: import { getPasswordResetEmailContent } from "@src/auth/email-and-pass/emails",
         },
-        // userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
+        userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
       },
       // Uncomment to enable Google Auth (check https://wasp.sh/docs/auth/social-auth/google for setup instructions):
       // google: {
@@ -60,7 +60,7 @@ app OpenSaaS {
       // },
     },
     onAuthFailedRedirectTo: "/login",
-    onAuthSucceededRedirectTo: "/demo-app",
+    onAuthSucceededRedirectTo: "/email-verification",
   },
 
   db: {
@@ -117,6 +117,11 @@ page PasswordResetPage {
 route EmailVerificationRoute { path: "/email-verification", to: EmailVerificationPage }
 page EmailVerificationPage {
   component: import EmailVerificationPage from "@src/auth/email-and-pass/EmailVerificationPage",
+}
+
+action resendVerificationEmail {
+  fn: import { resendVerificationEmail } from "@src/auth/operations",
+  entities: [User]
 }
 //#endregion
 
@@ -324,6 +329,12 @@ page AdminSettingsPage {
   component: import AdminSettings from "@src/admin/elements/settings/SettingsPage"
 }
 
+route AdminAppSettingsRoute { path: "/admin/app-settings", to: AdminAppSettingsPage }
+page AdminAppSettingsPage {
+  authRequired: true,
+  component: import AdminAppSettings from "@src/admin/dashboards/settings/AppSettingsPage"
+}
+
 route AdminCalendarRoute { path: "/admin/calendar", to: AdminCalendarPage }
 page AdminCalendarPage {
   authRequired: true,
@@ -495,5 +506,15 @@ action grantFullAccess {
 query checkUserAccess {
   fn: import { checkUserAccess } from "@src/beta/operations",
   entities: [User]
+}
+
+query getAppSettings {
+  fn: import { getAppSettings } from "@src/admin/operations",
+  entities: [AppSettings]
+}
+
+action updateAppSetting {
+  fn: import { updateAppSetting } from "@src/admin/operations",
+  entities: [AppSettings]
 }
 //#endregion

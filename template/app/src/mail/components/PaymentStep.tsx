@@ -296,20 +296,13 @@ const PaymentForm: React.FC<{
             <div className="flex gap-3">
               <Button
                 type="submit"
-                disabled={isProcessing || isLoadingCost || cost === null}
+                isLoading={isProcessing}
+                loadingText="Processing Payment..."
+                disabled={isLoadingCost || cost === null}
                 className="flex-1"
               >
-                {isProcessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Pay {cost ? formatCost(cost) : ''}
-                  </>
-                )}
+                <CreditCard className="h-4 w-4 mr-2" />
+                Pay {cost ? formatCost(cost) : ''}
               </Button>
               
               <Button

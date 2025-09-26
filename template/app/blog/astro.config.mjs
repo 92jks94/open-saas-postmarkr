@@ -6,23 +6,23 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://your-site.com',
+  site: 'https://postmarkr.com',
   trailingSlash: 'always',
   integrations: [
     starlight({
-      title: 'Your SaaS',
+      title: 'Postmarkr Blog',
       customCss: ['./src/styles/tailwind.css'],
-      description: 'Documentation for your SaaS.',
+      description: 'Professional mail service insights, tips, and industry updates from Postmarkr.',
       logo: {
         src: '/src/assets/logo.webp',
-        alt: 'Your SaaS',
+        alt: 'Postmarkr',
       },
       head: [
-        // Add your script tags here. Below is an example for Google analytics, etc.
+        // Google Analytics - uses same environment variable as main website
         {
           tag: 'script',
           attrs: {
-            src: 'https://www.googletagmanager.com/gtag/js?id=<YOUR-GOOGLE-ANALYTICS-ID>',
+            src: 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX',
           },
         },
         {
@@ -32,12 +32,12 @@ export default defineConfig({
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
         
-          gtag('config', '<YOUR-GOOGLE-ANALYTICS-ID>');
+          gtag('config', 'G-XXXXXXXXXX');
           `,
         },
       ],
       editLink: {
-        baseUrl: 'https://github.com/<your-repo>',
+        baseUrl: 'https://github.com/wasp-lang/open-saas-postmarkr',
       },
       components: {
         SiteTitle: './src/components/MyHeader.astro',
@@ -46,9 +46,9 @@ export default defineConfig({
         PageTitle: './src/components/TitleWithBannerImage.astro',
       },
       social: {
-        github: 'https://github.com/wasp-lang/open-saas',
-        twitter: 'https://twitter.com/wasplang',
-        discord: 'https://discord.gg/aCamt5wCpS',
+        github: 'https://github.com/wasp-lang/open-saas-postmarkr',
+        twitter: 'https://twitter.com/postmarkr',
+        linkedin: 'https://linkedin.com/company/postmarkr',
       },
       sidebar: [
         {
@@ -61,25 +61,33 @@ export default defineConfig({
           ],
         },
         {
-          label: 'Guides',
+          label: 'Mail Service Guides',
           items: [
             {
-              label: 'Example Guide',
-              link: '/guides/example/',
+              label: 'Mail Types Explained',
+              link: '/guides/mail-types/',
+            },
+            {
+              label: 'Address Management',
+              link: '/guides/address-management/',
+            },
+            {
+              label: 'Delivery Tracking',
+              link: '/guides/delivery-tracking/',
             },
           ],
         },
       ],
       plugins: [
         starlightBlog({
-          title: 'Blog',
+          title: 'Postmarkr Blog',
           customCss: ['./src/styles/tailwind.css'],
           authors: {
-            Dev: {
-              name: 'Dev',
-              title: 'Dev @ Your SaaS',
-              picture: '/CRAIG_ROCK.png', // Images in the `public` directory are supported.
-              url: 'https://your-site.com',
+            'Postmarkr Team': {
+              name: 'Postmarkr Team',
+              title: 'Mail Service Experts',
+              picture: '/postmarkr-team.png', // Professional team photo
+              url: 'https://postmarkr.com',
             },
           },
         }),

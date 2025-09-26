@@ -8,9 +8,8 @@ import { cn } from '../../../lib/utils';
 import { throttleWithTrailingInvocation } from '../../../shared/utils';
 import UserDropdown from '../../../user/UserDropdown';
 import { UserMenuItems } from '../../../user/UserMenuItems';
-import { useIsLandingPage } from '../../hooks/useIsLandingPage';
+import { useIsLandingPage } from '../../../client/hooks/useIsLandingPage';
 import logo from '../../static/logo.webp';
-import DarkModeSwitcher from '../DarkModeSwitcher';
 import { Announcement } from './Announcement';
 
 export interface NavigationItem {
@@ -65,7 +64,7 @@ export default function NavBar({ navigationItems }: { navigationItems: Navigatio
                     'ml-2 text-xs': isScrolled,
                   })}
                 >
-                  Your SaaS
+                  Postmarkr
                 </span>
               </WaspRouterLink>
 
@@ -87,9 +86,6 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
 
   return (
     <div className='hidden lg:flex lg:flex-1 gap-3 justify-end items-center'>
-      <ul className='flex justify-center items-center gap-2 sm:gap-4'>
-        <DarkModeSwitcher />
-      </ul>
       {isUserLoading ? null : !user ? (
         <WaspRouterLink
           to={routes.LoginRoute.to}
@@ -152,7 +148,7 @@ function NavBarMobileMenu({
           <SheetHeader>
             <SheetTitle className='flex items-center'>
               <WaspRouterLink to={routes.LandingPageRoute.to}>
-                <span className='sr-only'>Your SaaS</span>
+                <span className='sr-only'>Postmarkr</span>
                 <NavLogo isScrolled={false} />
               </WaspRouterLink>
             </SheetTitle>
@@ -172,9 +168,6 @@ function NavBarMobileMenu({
                     <UserMenuItems user={user} onItemClick={() => setMobileMenuOpen(false)} />
                   </ul>
                 )}
-              </div>
-              <div className='py-6'>
-                <DarkModeSwitcher />
               </div>
             </div>
           </div>

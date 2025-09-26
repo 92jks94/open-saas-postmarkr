@@ -2,10 +2,17 @@ import { type DailyStats } from 'wasp/entities';
 import { type DailyStatsJob } from 'wasp/server/jobs';
 import Stripe from 'stripe';
 import { stripe } from '../payment/stripe/stripeClient';
-// Google Analytics disabled
-// import { getDailyPageViews, getSources } from './providers/googleAnalyticsUtils';
+import { getDailyPageViews, getSources } from './providers/googleAnalyticsUtils';
 import { paymentProcessor } from '../payment/paymentProcessor';
 import { SubscriptionStatus } from '../payment/plans';
+import { 
+  retryWithBackoff, 
+  getCachedGAData, 
+  setCachedGAData, 
+  validateGAData, 
+  calculateEnhancedSourceMetrics,
+  cleanupExpiredCache 
+} from './utils';
 
 export type DailyStatsProps = { dailyStats?: DailyStats; weeklyStats?: DailyStats[]; isLoading?: boolean };
 
@@ -15,6 +22,9 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
 
   const yesterdayUTC = new Date(nowUTC);
   yesterdayUTC.setUTCDate(yesterdayUTC.getUTCDate() - 1);
+
+  // Clean up expired cache entries
+  cleanupExpiredCache();
 
   try {
     const yesterdaysStats = await context.entities.DailyStats.findFirst({
@@ -43,9 +53,80 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
 
     const totalRevenue = await fetchTotalStripeRevenue();
 
-    // Google Analytics disabled - using fallback values
-    const totalViews = 0;
-    const prevDayViewsChangePercent = "0";
+    // Try to get cached Google Analytics data first
+    let cachedData = getCachedGAData(nowUTC);
+    let totalViews: number;
+    let prevDayViewsChangePercent: string;
+    let sources: Array<{ source: string; visitors: number }>;
+
+    if (cachedData) {
+      console.log('Using cached Google Analytics data');
+      totalViews = cachedData.data.totalViews;
+      prevDayViewsChangePercent = cachedData.data.prevDayViewsChangePercent;
+      sources = cachedData.data.sources;
+    } else {
+      console.log('Fetching fresh Google Analytics data');
+      try {
+        // Fetch GA data with retry logic and error handling
+        const gaData = await retryWithBackoff(async () => {
+          const [pageViewsData, sourcesData] = await Promise.all([
+            getDailyPageViews(),
+            getSources()
+          ]);
+          
+          return {
+            totalViews: pageViewsData.totalViews,
+            prevDayViewsChangePercent: pageViewsData.prevDayViewsChangePercent,
+            sources: sourcesData
+          };
+        });
+
+        // Validate the data
+        const validation = validateGAData(gaData);
+        if (!validation.isValid) {
+          console.warn('Invalid Google Analytics data:', validation.errors);
+          throw new Error(`Invalid GA data: ${validation.errors.join(', ')}`);
+        }
+
+        totalViews = gaData.totalViews;
+        prevDayViewsChangePercent = gaData.prevDayViewsChangePercent || "0";
+        sources = gaData.sources;
+
+        // Cache the data for future use
+        setCachedGAData(nowUTC, {
+          totalViews,
+          prevDayViewsChangePercent,
+          sources
+        });
+
+      } catch (error) {
+        console.error('Google Analytics API error:', error);
+        
+        // Fallback to previous day's data or default values
+        if (yesterdaysStats) {
+          totalViews = yesterdaysStats.totalViews;
+          prevDayViewsChangePercent = yesterdaysStats.prevDayViewsChangePercent || "0";
+          console.log('Using previous day\'s GA data as fallback');
+        } else {
+          totalViews = 0;
+          prevDayViewsChangePercent = "0";
+          console.log('Using default GA values as fallback');
+        }
+        
+        // Get sources from previous day or use empty array
+        const previousSources = await context.entities.PageViewSource.findMany({
+          where: {
+            date: yesterdayUTC,
+          },
+        });
+        
+        sources = previousSources.length > 0 
+          ? previousSources.map(s => ({ source: s.name, visitors: s.visitors }))
+          : [];
+          
+        console.log('Using previous day\'s sources data as fallback');
+      }
+    }
 
     let dailyStats = await context.entities.DailyStats.findUnique({
       where: {
@@ -84,32 +165,51 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
         },
       });
     }
-    // Google Analytics disabled - skipping sources data
-    // const sources = await getSources();
-    // 
-    // for (const source of sources) {
-    //   let visitors = source.visitors;
-    //   if (typeof source.visitors !== 'number') {
-    //     visitors = parseInt(source.visitors);
-    //   }
-    //   await context.entities.PageViewSource.upsert({
-    //     where: {
-    //       date_name: {
-    //         date: nowUTC,
-    //         name: source.source,
-    //       },
-    //     },
-    //     create: {
-    //       date: nowUTC,
-    //       name: source.source,
-    //       visitors,
-    //       dailyStatsId: dailyStats.id,
-    //     },
-    //     update: {
-    //       visitors,
-    //     },
-    //   });
-    // }
+
+    // Calculate enhanced source metrics
+    const enhancedSources = calculateEnhancedSourceMetrics(sources, totalRevenue, userCount);
+    
+    // Store enhanced source data
+    for (const source of enhancedSources) {
+      await context.entities.PageViewSource.upsert({
+        where: {
+          date_name: {
+            date: nowUTC,
+            name: source.source,
+          },
+        },
+        create: {
+          date: nowUTC,
+          name: source.source,
+          visitors: source.visitors,
+          conversionRate: source.conversionRate,
+          qualityScore: source.qualityScore,
+          revenuePerVisitor: source.revenuePerVisitor,
+          trendDirection: source.trendDirection,
+          trendPercentage: source.trendPercentage,
+          lastActivity: source.lastActivity,
+          dailyStatsId: dailyStats.id,
+        },
+        update: {
+          visitors: source.visitors,
+          conversionRate: source.conversionRate,
+          qualityScore: source.qualityScore,
+          revenuePerVisitor: source.revenuePerVisitor,
+          trendDirection: source.trendDirection,
+          trendPercentage: source.trendPercentage,
+          lastActivity: source.lastActivity,
+        },
+      });
+    }
+
+    // Log enhanced source metrics for monitoring
+    console.log('Enhanced source metrics:', enhancedSources.map(s => ({
+      source: s.source,
+      visitors: s.visitors,
+      conversionRate: `${s.conversionRate}%`,
+      qualityScore: s.qualityScore,
+      trend: s.trendDirection
+    })));
 
     console.table({ dailyStats });
   } catch (error: unknown) {

@@ -87,11 +87,17 @@ model DailyStats {
 }
 
 model PageViewSource {
-  name         String
-  date         DateTime    @default(now())
-  dailyStatsId Int?
-  visitors     Int
-  dailyStats   DailyStats? @relation(fields: [dailyStatsId], references: [id])
+  name                String
+  date                DateTime    @default(now())
+  dailyStatsId        Int?
+  visitors            Int
+  conversionRate      Float?      // Enhanced metric: conversion rate percentage
+  qualityScore        Float?      // Enhanced metric: quality score (0-10)
+  revenuePerVisitor   Float?      // Enhanced metric: revenue per visitor
+  trendDirection      String?     // Enhanced metric: 'up', 'down', 'stable'
+  trendPercentage     Float?      // Enhanced metric: trend percentage
+  lastActivity        DateTime?   // Enhanced metric: last activity timestamp
+  dailyStats          DailyStats? @relation(fields: [dailyStatsId], references: [id])
 
   @@id([date, name])
 }
@@ -256,5 +262,17 @@ model NotificationPreferences {
   user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model AppSettings {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  key         String   @unique
+  value       String
+  description String?
+  isPublic    Boolean  @default(false)
+
+  @@index([key])
 }
 

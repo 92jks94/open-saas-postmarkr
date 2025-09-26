@@ -106,12 +106,12 @@ export async function validateAddress(addressData: {
     });
     
     // Use correct Lob API field names according to documentation
+    // Note: US verification API doesn't accept 'country' parameter
     const verificationData: any = {
       primary_line: addressData.address_line1,
       city: addressData.address_city,
       state: addressData.address_state,
       zip_code: addressData.address_zip,
-      country: addressData.address_country,
     };
     
     // Only add secondary_line if it's not undefined
@@ -125,12 +125,20 @@ export async function validateAddress(addressData: {
 
     console.log('📮 Lob API response:', verification);
 
+    // Handle test environment - Lob test API always returns undeliverable unless using specific test values
+    const isTestEnvironment = lobApiKey.startsWith('test_');
+    
     // Map Lob deliverability statuses to user-friendly error messages
     const getDeliverabilityError = (status: string): string | null => {
       switch (status) {
         case 'deliverable':
           return null; // Valid address
         case 'undeliverable':
+          // In test environment, treat undeliverable as valid for demo purposes
+          if (isTestEnvironment) {
+            console.log('🎭 Test environment detected - treating undeliverable as valid for demo');
+            return null;
+          }
           return 'Address is not deliverable';
         case 'deliverable_unnecessary_unit':
           return 'Unit number is not necessary for this address';
@@ -147,7 +155,8 @@ export async function validateAddress(addressData: {
       }
     };
 
-    const isValid = verification.deliverability === 'deliverable';
+    const isValid = verification.deliverability === 'deliverable' || 
+                   (isTestEnvironment && verification.deliverability === 'undeliverable');
     const error = getDeliverabilityError(verification.deliverability);
     
     console.log('✅ Final validation result:', { isValid, error, deliverability: verification.deliverability });
