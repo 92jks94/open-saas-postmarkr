@@ -13,12 +13,12 @@ export type MailAddressDisplay = {
   id: string;
   contactName: string;
   companyName: string | null;
-  addressLine1: string;
-  addressLine2: string | null;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
+  address_line1: string;
+  address_line2: string | null;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+  address_country: string;
   label: string | null;
   isDefault: boolean;
   addressType: string;

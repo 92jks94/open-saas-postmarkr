@@ -6,6 +6,7 @@ import {
   type DeleteMailAddress,
   type GetMailAddressesByUser,
   type UpdateMailAddress,
+  type ValidateAddress,
 } from 'wasp/server/operations';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 
@@ -13,12 +14,12 @@ import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 const createMailAddressInputSchema = z.object({
   contactName: z.string().nonempty(),
   companyName: z.string().optional(),
-  addressLine1: z.string().nonempty(),
-  addressLine2: z.string().optional(),
-  city: z.string().nonempty(),
-  state: z.string().nonempty(),
-  postalCode: z.string().nonempty(),
-  country: z.string().nonempty(),
+  address_line1: z.string().nonempty(),
+  address_line2: z.string().optional(),
+  address_city: z.string().nonempty(),
+  address_state: z.string().nonempty(),
+  address_zip: z.string().nonempty(),
+  address_country: z.string().nonempty(),
   label: z.string().optional(),
   addressType: z.enum(['sender', 'recipient', 'both']).default('both'),
 });
@@ -32,7 +33,7 @@ export const createMailAddress: CreateMailAddress<CreateMailAddressInput, MailAd
 
   const data = ensureArgsSchemaOrThrowHttpError(createMailAddressInputSchema, rawArgs);
 
-  // Follow exact same pattern as createFile
+  // Create the address first
   const address = await context.entities.MailAddress.create({
     data: {
       ...data,
@@ -40,7 +41,60 @@ export const createMailAddress: CreateMailAddress<CreateMailAddressInput, MailAd
     },
   });
 
-  return address;
+  // Automatically trigger address verification after creation
+  try {
+    console.log('🔄 Starting address verification for creation...');
+    console.log('📍 Address data:', {
+      address_line1: address.address_line1,
+      address_line2: address.address_line2 || undefined,
+      address_city: address.address_city,
+      address_state: address.address_state,
+      address_zip: address.address_zip,
+      address_country: address.address_country,
+    });
+    
+    // Import the validation service
+    const { validateAddress: validateAddressService } = await import('../server/lob/services');
+    
+    // Call the Lob validation service with correct field names
+    const validationResult = await validateAddressService({
+      address_line1: address.address_line1,
+      address_line2: address.address_line2 || undefined,
+      address_city: address.address_city,
+      address_state: address.address_state,
+      address_zip: address.address_zip,
+      address_country: address.address_country,
+    });
+    
+    console.log('🔍 Validation result:', validationResult);
+
+    // Update the address with validation results
+    const finalAddress = await context.entities.MailAddress.update({
+      where: { id: address.id },
+      data: {
+        isValidated: validationResult.isValid,
+        validationDate: new Date(),
+        validationError: validationResult.error,
+        lobAddressId: validationResult.verifiedAddress?.id,
+      },
+    });
+
+    return finalAddress;
+  } catch (validationError) {
+    console.error('Address validation failed after creation:', validationError);
+    
+    // Update with validation error but don't fail the entire operation
+    const finalAddress = await context.entities.MailAddress.update({
+      where: { id: address.id },
+      data: {
+        isValidated: false,
+        validationDate: new Date(),
+        validationError: validationError instanceof Error ? validationError.message : 'Validation failed',
+      },
+    });
+
+    return finalAddress;
+  }
 };
 
 // Copy getAllFilesByUser pattern exactly
@@ -84,12 +138,12 @@ const updateMailAddressInputSchema = z.object({
   data: z.object({
     contactName: z.string().optional(),
     companyName: z.string().optional(),
-    addressLine1: z.string().optional(),
-    addressLine2: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-    postalCode: z.string().optional(),
-    country: z.string().optional(),
+    address_line1: z.string().optional(),
+    address_line2: z.string().optional(),
+    address_city: z.string().optional(),
+    address_state: z.string().optional(),
+    address_zip: z.string().optional(),
+    address_country: z.string().optional(),
     label: z.string().optional(),
     addressType: z.enum(['sender', 'recipient', 'both']).optional(),
   }),
@@ -98,13 +152,17 @@ const updateMailAddressInputSchema = z.object({
 type UpdateMailAddressInput = z.infer<typeof updateMailAddressInputSchema>;
 
 export const updateMailAddress: UpdateMailAddress<UpdateMailAddressInput, MailAddress> = async (rawArgs, context) => {
+  console.log('🔄 updateMailAddress operation called with:', rawArgs);
+  
   if (!context.user) {
     throw new HttpError(401);
   }
 
   const { id, data } = ensureArgsSchemaOrThrowHttpError(updateMailAddressInputSchema, rawArgs);
+  console.log('📋 Parsed update data:', { id, data });
 
-  return context.entities.MailAddress.update({
+  // Update the address first
+  const updatedAddress = await context.entities.MailAddress.update({
     where: {
       id,
       user: {
@@ -113,6 +171,61 @@ export const updateMailAddress: UpdateMailAddress<UpdateMailAddressInput, MailAd
     },
     data,
   });
+
+  // Automatically trigger address verification after update
+  try {
+    console.log('🔄 Starting address verification for update...');
+    console.log('📍 Address data:', {
+      address_line1: updatedAddress.address_line1,
+      address_line2: updatedAddress.address_line2 === null ? undefined : updatedAddress.address_line2,
+      address_city: updatedAddress.address_city,
+      address_state: updatedAddress.address_state,
+      address_zip: updatedAddress.address_zip,
+      address_country: updatedAddress.address_country,
+    });
+    
+    // Import the validation service
+    const { validateAddress: validateAddressService } = await import('../server/lob/services');
+    
+    // Call the Lob validation service with correct field names
+    const validationResult = await validateAddressService({
+      address_line1: updatedAddress.address_line1,
+      address_line2: updatedAddress.address_line2 || undefined,
+      address_city: updatedAddress.address_city,
+      address_state: updatedAddress.address_state,
+      address_zip: updatedAddress.address_zip,
+      address_country: updatedAddress.address_country,
+    });
+    
+    console.log('🔍 Validation result:', validationResult);
+
+    // Update the address with validation results
+    const finalAddress = await context.entities.MailAddress.update({
+      where: { id },
+      data: {
+        isValidated: validationResult.isValid,
+        validationDate: new Date(),
+        validationError: validationResult.error,
+        lobAddressId: validationResult.verifiedAddress?.id,
+      },
+    });
+
+    return finalAddress;
+  } catch (validationError) {
+    console.error('Address validation failed after update:', validationError);
+    
+    // Update with validation error but don't fail the entire operation
+    const finalAddress = await context.entities.MailAddress.update({
+      where: { id },
+      data: {
+        isValidated: false,
+        validationDate: new Date(),
+        validationError: validationError instanceof Error ? validationError.message : 'Validation failed',
+      },
+    });
+
+    return finalAddress;
+  }
 };
 
 // Set default address operation
@@ -146,4 +259,78 @@ export const setDefaultAddress: UpdateMailAddress<{id: string}, MailAddress> = a
       isDefault: true,
     },
   });
+};
+
+// Validate address operation
+const validateAddressInputSchema = z.object({
+  addressId: z.string().nonempty(),
+});
+
+type ValidateAddressInput = z.infer<typeof validateAddressInputSchema>;
+
+export const validateAddress: ValidateAddress<ValidateAddressInput, { address: MailAddress; isValid: boolean; error: string | null; lobAddressId?: string }> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { addressId } = ensureArgsSchemaOrThrowHttpError(validateAddressInputSchema, rawArgs);
+
+  // Get the address from database
+  const address = await context.entities.MailAddress.findFirst({
+    where: {
+      id: addressId,
+      userId: context.user.id,
+    },
+  });
+
+  if (!address) {
+    throw new HttpError(404, 'Address not found');
+  }
+
+  try {
+    // Import the validation service
+    const { validateAddress: validateAddressService } = await import('../server/lob/services');
+    
+    // Call the Lob validation service with correct field names
+    const validationResult = await validateAddressService({
+      address_line1: address.address_line1,
+      address_line2: address.address_line2 || undefined,
+      address_city: address.address_city,
+      address_state: address.address_state,
+      address_zip: address.address_zip,
+      address_country: address.address_country,
+    });
+
+    // Update the address with validation results
+    const updatedAddress = await context.entities.MailAddress.update({
+      where: { id: addressId },
+      data: {
+        isValidated: validationResult.isValid,
+        validationDate: new Date(),
+        validationError: validationResult.error,
+        lobAddressId: validationResult.verifiedAddress?.id,
+      },
+    });
+
+    return {
+      address: updatedAddress,
+      isValid: validationResult.isValid,
+      error: validationResult.error,
+      lobAddressId: validationResult.verifiedAddress?.id,
+    };
+  } catch (error) {
+    console.error('Address validation error:', error);
+    
+    // Update address with validation failure
+    await context.entities.MailAddress.update({
+      where: { id: addressId },
+      data: {
+        isValidated: false,
+        validationDate: new Date(),
+        validationError: 'Validation service unavailable',
+      },
+    });
+
+    throw new HttpError(500, 'Failed to validate address');
+  }
 };

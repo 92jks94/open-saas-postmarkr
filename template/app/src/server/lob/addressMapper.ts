@@ -10,15 +10,12 @@ export interface InternalAddress {
   name?: string;
   companyName?: string;
   company?: string;
-  addressLine1?: string;
-  address_line1?: string;
-  addressLine2?: string;
-  address_line2?: string;
-  city: string;
-  state: string;
-  postalCode?: string;
-  zip_code?: string;
-  country: string;
+  address_line1: string;  // Now matches Lob API exactly
+  address_line2?: string; // Now matches Lob API exactly
+  address_city: string;   // Now matches Lob API exactly
+  address_state: string;  // Now matches Lob API exactly
+  address_zip: string;    // Now matches Lob API exactly
+  address_country: string; // Now matches Lob API exactly
 }
 
 export interface LobAddress {
@@ -42,12 +39,12 @@ export function mapToLobAddress(internalAddress: InternalAddress): LobAddress {
   return {
     name: internalAddress.contactName || internalAddress.name || 'Recipient',
     company: internalAddress.companyName || internalAddress.company,
-    address_line1: internalAddress.addressLine1 || internalAddress.address_line1 || '',
-    address_line2: internalAddress.addressLine2 || internalAddress.address_line2,
-    address_city: internalAddress.city,
-    address_state: internalAddress.state,
-    address_zip: internalAddress.postalCode || internalAddress.zip_code || '',
-    address_country: internalAddress.country || 'US',
+    address_line1: internalAddress.address_line1,
+    address_line2: internalAddress.address_line2,
+    address_city: internalAddress.address_city,
+    address_state: internalAddress.address_state,
+    address_zip: internalAddress.address_zip,
+    address_country: internalAddress.address_country,
   };
 }
 
@@ -61,12 +58,12 @@ export function mapFromLobAddress(lobAddress: LobAddress): InternalAddress {
   return {
     contactName: lobAddress.name,
     companyName: lobAddress.company,
-    addressLine1: lobAddress.address_line1,
-    addressLine2: lobAddress.address_line2,
-    city: lobAddress.address_city,
-    state: lobAddress.address_state,
-    postalCode: lobAddress.address_zip,
-    country: lobAddress.address_country,
+    address_line1: lobAddress.address_line1,
+    address_line2: lobAddress.address_line2,
+    address_city: lobAddress.address_city,
+    address_state: lobAddress.address_state,
+    address_zip: lobAddress.address_zip,
+    address_country: lobAddress.address_country,
   };
 }
 
@@ -77,13 +74,24 @@ export function mapFromLobAddress(lobAddress: LobAddress): InternalAddress {
  * @returns True if address is valid for Lob API
  */
 export function validateLobAddress(address: InternalAddress): boolean {
-  return !!(
-    address.addressLine1 || address.address_line1 &&
-    address.city &&
-    address.state &&
-    (address.postalCode || address.zip_code) &&
-    address.country
+  const checks = {
+    address_line1: !!address.address_line1,
+    address_city: !!address.address_city,
+    address_state: !!address.address_state,
+    address_zip: !!address.address_zip,
+    address_country: !!address.address_country,
+  };
+  
+  const isValid = !!(
+    checks.address_line1 &&
+    checks.address_city &&
+    checks.address_state &&
+    checks.address_zip &&
+    checks.address_country
   );
+  
+  console.log('🔍 Address validation checks:', { ...checks, isValid });
+  return isValid;
 }
 
 /**
@@ -94,14 +102,17 @@ export function validateLobAddress(address: InternalAddress): boolean {
  * @returns Standardized internal address format
  */
 export function normalizeAddress(address: any): InternalAddress {
-  return {
+  const normalized = {
     contactName: address.contactName || address.name,
     companyName: address.companyName || address.company,
-    addressLine1: address.addressLine1 || address.address_line1,
-    addressLine2: address.addressLine2 || address.address_line2,
-    city: address.city,
-    state: address.state,
-    postalCode: address.postalCode || address.zip_code,
-    country: address.country || 'US',
+    address_line1: address.address_line1 || address.addressLine1 || address.primary_line,
+    address_line2: address.address_line2 ?? address.addressLine2 ?? address.secondary_line,
+    address_city: address.address_city || address.city,
+    address_state: address.address_state || address.state,
+    address_zip: address.address_zip || address.postalCode || address.zip_code,
+    address_country: address.address_country || address.country || 'US',
   };
+  
+  console.log('🔄 Address normalization:', { input: address, output: normalized });
+  return normalized;
 }

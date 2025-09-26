@@ -1,4 +1,6 @@
 import { validateEnvironmentOnStartup, isProduction, isDevelopment } from './envValidation';
+import { runAllConnectivityTests, runCriticalConnectivityTests } from './apiConnectivityTests';
+import { alertManager, runMonitoringChecks } from './monitoringAlerts';
 
 /**
  * Server startup validation
@@ -9,16 +11,31 @@ import { validateEnvironmentOnStartup, isProduction, isDevelopment } from './env
  * Validates the server environment on startup
  * This should be called early in the server initialization process
  */
-export function validateServerStartup(): void {
-  console.log('🚀 Starting server startup validation...');
+export async function validateServerStartup(): Promise<void> {
+  console.log('🚀 Starting comprehensive server startup validation...');
   
   try {
-    // Validate environment variables
+    // Phase 1: Environment variable validation
+    console.log('📋 Phase 1: Environment variable validation...');
     validateEnvironmentOnStartup();
     
-    // Additional startup validations can be added here
+    // Phase 2: Database connection validation
+    console.log('🗄️ Phase 2: Database connection validation...');
     validateDatabaseConnection();
+    
+    // Phase 3: External service configuration validation
+    console.log('🔗 Phase 3: External service configuration validation...');
     validateExternalServices();
+    
+    // Phase 4: API connectivity tests (production only)
+    if (isProduction()) {
+      console.log('🧪 Phase 4: API connectivity tests...');
+      await validateApiConnectivity();
+    }
+    
+    // Phase 5: Monitoring setup and initial health check
+    console.log('📊 Phase 5: Monitoring setup and health check...');
+    await setupMonitoring();
     
     console.log('✅ Server startup validation completed successfully');
   } catch (error) {
@@ -57,6 +74,8 @@ function validateExternalServices(): void {
     validateLobConfiguration();
     validateAwsConfiguration();
     validateSentryConfiguration();
+    validateOpenAIConfiguration();
+    validateGoogleAnalyticsConfiguration();
   } else {
     // In development, just log what's configured
     logServiceConfiguration();
@@ -152,6 +171,103 @@ function validateSentryConfiguration(): void {
 }
 
 /**
+ * Validates OpenAI configuration
+ */
+function validateOpenAIConfiguration(): void {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn('⚠️ OpenAI API key not configured - AI features will be disabled');
+    return;
+  }
+  
+  if (!apiKey.startsWith('sk-')) {
+    throw new Error('OpenAI API key format is invalid - must start with sk-');
+  }
+  
+  console.log('✅ OpenAI configuration validated');
+}
+
+/**
+ * Validates Google Analytics configuration
+ */
+function validateGoogleAnalyticsConfiguration(): void {
+  const clientEmail = process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL;
+  const privateKey = process.env.GOOGLE_ANALYTICS_PRIVATE_KEY;
+  const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+  
+  if (!clientEmail || !privateKey || !propertyId) {
+    console.warn('⚠️ Google Analytics not fully configured - analytics features will be limited');
+    return;
+  }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(clientEmail)) {
+    throw new Error('Google Analytics client email format is invalid');
+  }
+  
+  console.log('✅ Google Analytics configuration validated');
+}
+
+
+/**
+ * Validates API connectivity for critical services
+ */
+async function validateApiConnectivity(): Promise<void> {
+  console.log('🧪 Running critical API connectivity tests...');
+  
+  try {
+    const results = await runCriticalConnectivityTests();
+    
+    const failedTests = results.filter(result => result.status === 'unhealthy');
+    
+    if (failedTests.length > 0) {
+      console.error('❌ Critical API connectivity tests failed:');
+      failedTests.forEach(test => {
+        console.error(`   ${test.service}: ${test.error}`);
+      });
+      throw new Error(`${failedTests.length} critical API connectivity tests failed`);
+    }
+    
+    console.log('✅ All critical API connectivity tests passed');
+  } catch (error) {
+    console.error('❌ API connectivity validation failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sets up monitoring and runs initial health check
+ */
+async function setupMonitoring(): Promise<void> {
+  console.log('📊 Setting up monitoring system...');
+  
+  try {
+    // Run initial monitoring checks
+    const dashboard = await runMonitoringChecks();
+    
+    // Log monitoring status
+    console.log(`📊 Monitoring Status: ${dashboard.status.toUpperCase()}`);
+    console.log(`   Active alerts: ${dashboard.alerts.filter(a => !a.resolved).length}`);
+    console.log(`   Missing env vars: ${dashboard.environmentVariables.missing.length}`);
+    console.log(`   Healthy services: ${dashboard.services.healthy.length}`);
+    console.log(`   Unhealthy services: ${dashboard.services.unhealthy.length}`);
+    
+    // If there are critical alerts, warn but don't fail startup
+    const criticalAlerts = dashboard.alerts.filter(a => a.level === 'critical' && !a.resolved);
+    if (criticalAlerts.length > 0) {
+      console.warn(`⚠️ ${criticalAlerts.length} critical alerts detected - check configuration`);
+    }
+    
+    console.log('✅ Monitoring setup completed');
+  } catch (error) {
+    console.error('❌ Monitoring setup failed:', error);
+    // Don't fail startup for monitoring issues
+    console.warn('⚠️ Continuing startup despite monitoring setup failure');
+  }
+}
+
+/**
  * Logs service configuration status (for development)
  */
 function logServiceConfiguration(): void {
@@ -161,6 +277,8 @@ function logServiceConfiguration(): void {
     { name: 'Lob', configured: !!(process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY) },
     { name: 'AWS S3', configured: !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) },
     { name: 'Sentry', configured: !!process.env.SENTRY_DSN },
+    { name: 'OpenAI', configured: !!process.env.OPENAI_API_KEY },
+    { name: 'Google Analytics', configured: !!(process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL && process.env.GOOGLE_ANALYTICS_PRIVATE_KEY) },
   ];
   
   console.log('📋 Service configuration status:');
@@ -208,6 +326,20 @@ export function getServiceHealthStatus(): Record<string, { status: 'healthy' | '
     status: process.env.SENTRY_DSN ? 'healthy' : 'unhealthy',
     message: process.env.SENTRY_DSN ? undefined : 'Sentry DSN not configured'
   };
+  
+  // Check OpenAI
+  services.openai = {
+    status: process.env.OPENAI_API_KEY ? 'healthy' : 'unknown',
+    message: process.env.OPENAI_API_KEY ? undefined : 'OpenAI API key not configured (optional)'
+  };
+  
+  // Check Google Analytics
+  const gaConfigured = !!(process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL && process.env.GOOGLE_ANALYTICS_PRIVATE_KEY);
+  services.googleAnalytics = {
+    status: gaConfigured ? 'healthy' : 'unknown',
+    message: gaConfigured ? undefined : 'Google Analytics not configured (optional)'
+  };
+  
   
   return services;
 }

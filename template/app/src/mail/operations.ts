@@ -32,7 +32,7 @@ import type {
 } from 'wasp/server/operations';
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
 import type { MailPieceWithRelations } from './types';
-import { hasFullAccess } from '../beta/accessHelpers';
+import { hasFullAccess, hasBetaAccess } from '../beta/accessHelpers';
 import { 
   createMailPieceSchema, 
   updateMailPieceSchema, 
@@ -190,6 +190,11 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
     // Authentication check
     if (!context.user) {
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+
+    // Beta access check
+    if (!hasBetaAccess(context.user)) {
+      throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
     }
 
     // Input validation using Zod schema
@@ -731,6 +736,11 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
     }
 
+    // Beta access check
+    if (!hasBetaAccess(context.user)) {
+      throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
+    }
+
     // Find the mail piece and verify ownership
     const mailPiece = await context.entities.MailPiece.findFirst({
       where: { id: args.mailPieceId, userId: context.user.id },
@@ -749,6 +759,11 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(400, 'Checkout can only be created for draft mail pieces');
     }
 
+    // Validate page count is available for pricing calculation
+    if (!mailPiece.pageCount) {
+      throw new HttpError(400, 'Page count is required for pricing calculation');
+    }
+
     // Calculate cost using existing service
     const costData = await createMailPaymentIntentService({
       mailType: mailPiece.mailType,
@@ -756,6 +771,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       mailSize: mailPiece.mailSize,
       toAddress: mailPiece.recipientAddress,
       fromAddress: mailPiece.senderAddress,
+      pageCount: mailPiece.pageCount,
     }, context.user.id, context);
 
     // Create Stripe Checkout Session
@@ -955,6 +971,11 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     // Authentication check
     if (!context.user) {
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+
+    // Beta access check
+    if (!hasBetaAccess(context.user)) {
+      throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
     }
 
     // Find the mail piece and verify ownership

@@ -1,4 +1,8 @@
 import { type Task } from 'wasp/entities';
+import { useAuth } from 'wasp/client/auth';
+import { useQuery } from 'wasp/client/operations';
+import { checkUserAccess } from 'wasp/client/operations';
+import { Navigate } from 'react-router-dom';
 
 import {
   createTask,
@@ -6,7 +10,6 @@ import {
   generateGptResponse,
   getAllTasksByUser,
   updateTask,
-  useQuery,
 } from 'wasp/client/operations';
 
 import { Loader2, Trash2 } from 'lucide-react';
@@ -20,6 +23,23 @@ import { cn } from '../lib/utils';
 import type { GeneratedSchedule, Task as ScheduleTask, TaskItem, TaskPriority } from './schedule';
 
 export default function DemoAppPage() {
+  const { data: user } = useAuth();
+  const { data: accessData, isLoading: accessLoading } = useQuery(checkUserAccess);
+
+  // Show loading while checking access
+  if (accessLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // Redirect to upgrade page if user doesn't have beta access
+  if (user && !accessData?.hasBetaAccess) {
+    return <Navigate to="/upgrade" replace />;
+  }
+
   return (
     <div className='py-10 lg:mt-10'>
       <div className='mx-auto max-w-7xl px-6 lg:px-8'>

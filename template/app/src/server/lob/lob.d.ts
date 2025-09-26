@@ -32,8 +32,8 @@ declare module 'lob' {
   }
 
   interface VerificationRequest {
-    address_line1: string;
-    address_line2?: string;
+    primary_line: string;
+    secondary_line?: string;
     city: string;
     state: string;
     zip_code: string;

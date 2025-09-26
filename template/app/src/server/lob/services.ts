@@ -43,21 +43,28 @@ interface LobLetterResponse {
 export async function validateAddress(addressData: {
   address_line1: string;
   address_line2?: string;
-  city: string;
-  state: string;
-  zip_code: string;
-  country: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+  address_country: string;
 }): Promise<{
   isValid: boolean;
   verifiedAddress: any;
   error: string | null;
 }> {
   try {
+    console.log('🔍 Address validation started with data:', addressData);
+    
     // Normalize the address data to internal format
     const normalizedAddress = normalizeAddress(addressData);
+    console.log('📋 Normalized address:', normalizedAddress);
     
     // Validate required fields
-    if (!validateLobAddress(normalizedAddress)) {
+    const isValidFormat = validateLobAddress(normalizedAddress);
+    console.log('✅ Address format validation result:', isValidFormat);
+    
+    if (!isValidFormat) {
+      console.log('❌ Address validation failed: Missing required fields');
       return {
         isValid: false,
         verifiedAddress: null,
@@ -67,16 +74,20 @@ export async function validateAddress(addressData: {
 
     // Check if Lob API key is configured
     const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
+    console.log('🔑 Lob API key configured:', !!lobApiKey);
+    
     if (!lobApiKey) {
-      console.warn('Lob API key not configured, using simulation mode');
+      console.warn('⚠️ Lob API key not configured, using simulation mode');
       // Return simulated validation for development
+      const isSimulatedValid = Math.random() > 0.2; // 80% success rate for demo
+      console.log('🎲 Simulated validation result:', isSimulatedValid);
       return {
-        isValid: Math.random() > 0.2, // 80% success rate for demo
+        isValid: isSimulatedValid,
         verifiedAddress: {
           id: `sim_${Date.now()}`,
           ...mapToLobAddress(normalizedAddress)
         },
-        error: null,
+        error: isSimulatedValid ? null : 'Simulated validation failure (Lob API not configured)',
       };
     }
 
@@ -84,19 +95,67 @@ export async function validateAddress(addressData: {
       throw new Error('Lob client not initialized - API key missing');
     }
 
-    const verification = await lob!.usVerifications.verify({
-      address_line1: addressData.address_line1,
-      address_line2: addressData.address_line2,
-      city: addressData.city,
-      state: addressData.state,
-      zip_code: addressData.zip_code,
-      country: addressData.country,
+    console.log('🌐 Calling Lob API for address verification...');
+    console.log('📤 Sending data to Lob API:', {
+      primary_line: addressData.address_line1,
+      secondary_line: addressData.address_line2,
+      city: addressData.address_city,
+      state: addressData.address_state,
+      zip_code: addressData.address_zip,
+      country: addressData.address_country,
     });
+    
+    // Use correct Lob API field names according to documentation
+    const verificationData: any = {
+      primary_line: addressData.address_line1,
+      city: addressData.address_city,
+      state: addressData.address_state,
+      zip_code: addressData.address_zip,
+      country: addressData.address_country,
+    };
+    
+    // Only add secondary_line if it's not undefined
+    if (addressData.address_line2) {
+      verificationData.secondary_line = addressData.address_line2;
+    }
+    
+    console.log('📤 Final verification data:', verificationData);
+    
+    const verification = await lob!.usVerifications.verify(verificationData);
+
+    console.log('📮 Lob API response:', verification);
+
+    // Map Lob deliverability statuses to user-friendly error messages
+    const getDeliverabilityError = (status: string): string | null => {
+      switch (status) {
+        case 'deliverable':
+          return null; // Valid address
+        case 'undeliverable':
+          return 'Address is not deliverable';
+        case 'deliverable_unnecessary_unit':
+          return 'Unit number is not necessary for this address';
+        case 'deliverable_incorrect_unit':
+          return 'Unit number is incorrect for this address';
+        case 'deliverable_missing_unit':
+          return 'Unit number is missing but required for this address';
+        case 'deliverable_missing_unit_no_zip':
+          return 'Unit number and zip code are missing but required';
+        case 'deliverable_missing_unit_no_zip_no_street':
+          return 'Unit number, zip code, and street address are missing but required';
+        default:
+          return `Address validation failed: ${status}`;
+      }
+    };
+
+    const isValid = verification.deliverability === 'deliverable';
+    const error = getDeliverabilityError(verification.deliverability);
+    
+    console.log('✅ Final validation result:', { isValid, error, deliverability: verification.deliverability });
 
     return {
-      isValid: verification.deliverability === 'deliverable',
+      isValid,
       verifiedAddress: verification.address,
-      error: verification.deliverability === 'undeliverable' ? 'Address is not deliverable' : null,
+      error,
     };
   } catch (error) {
     console.error('Lob address validation error:', error);

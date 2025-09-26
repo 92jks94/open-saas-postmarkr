@@ -15,29 +15,49 @@ const coreEnvSchema = z.object({
 
 // Email service (SendGrid) environment variables
 const emailEnvSchema = z.object({
-  SENDGRID_API_KEY: z.string().min(1, 'SENDGRID_API_KEY is required'),
+  SENDGRID_API_KEY: z.string()
+    .min(1, 'SENDGRID_API_KEY is required')
+    .refine((key) => key.startsWith('SG.'), 'SendGrid API key must start with SG.'),
   SENDGRID_FROM_EMAIL: z.string().email('SENDGRID_FROM_EMAIL must be a valid email'),
   SENDGRID_FROM_NAME: z.string().min(1, 'SENDGRID_FROM_NAME is required'),
 });
 
 // Payment processing (Stripe) environment variables
 const stripeEnvSchema = z.object({
-  STRIPE_SECRET_KEY: z.string().min(1, 'STRIPE_SECRET_KEY is required'),
-  STRIPE_PUBLISHABLE_KEY: z.string().min(1, 'STRIPE_PUBLISHABLE_KEY is required'),
-  STRIPE_WEBHOOK_SECRET: z.string().min(1, 'STRIPE_WEBHOOK_SECRET is required'),
+  STRIPE_SECRET_KEY: z.string()
+    .min(1, 'STRIPE_SECRET_KEY is required')
+    .refine((key) => key.startsWith('sk_live_') || key.startsWith('sk_test_'), 
+      'Stripe secret key must start with sk_live_ or sk_test_'),
+  STRIPE_PUBLISHABLE_KEY: z.string()
+    .min(1, 'STRIPE_PUBLISHABLE_KEY is required')
+    .refine((key) => key.startsWith('pk_live_') || key.startsWith('pk_test_'), 
+      'Stripe publishable key must start with pk_live_ or pk_test_'),
+  STRIPE_WEBHOOK_SECRET: z.string()
+    .min(1, 'STRIPE_WEBHOOK_SECRET is required')
+    .refine((secret) => secret.startsWith('whsec_'), 
+      'Stripe webhook secret must start with whsec_'),
   STRIPE_CUSTOMER_PORTAL_URL: z.string().url('STRIPE_CUSTOMER_PORTAL_URL must be a valid URL'),
 });
 
 // Page-based pricing plans (Stripe) environment variables
 const pricingPlansEnvSchema = z.object({
-  PAYMENTS_SMALL_BATCH_PLAN_ID: z.string().min(1, 'PAYMENTS_SMALL_BATCH_PLAN_ID is required'),
-  PAYMENTS_MEDIUM_BATCH_PLAN_ID: z.string().min(1, 'PAYMENTS_MEDIUM_BATCH_PLAN_ID is required'),
-  PAYMENTS_LARGE_BATCH_PLAN_ID: z.string().min(1, 'PAYMENTS_LARGE_BATCH_PLAN_ID is required'),
+  PAYMENTS_SMALL_BATCH_PLAN_ID: z.string()
+    .min(1, 'PAYMENTS_SMALL_BATCH_PLAN_ID is required')
+    .refine((id) => id.startsWith('price_'), 'Stripe price ID must start with price_'),
+  PAYMENTS_MEDIUM_BATCH_PLAN_ID: z.string()
+    .min(1, 'PAYMENTS_MEDIUM_BATCH_PLAN_ID is required')
+    .refine((id) => id.startsWith('price_'), 'Stripe price ID must start with price_'),
+  PAYMENTS_LARGE_BATCH_PLAN_ID: z.string()
+    .min(1, 'PAYMENTS_LARGE_BATCH_PLAN_ID is required')
+    .refine((id) => id.startsWith('price_'), 'Stripe price ID must start with price_'),
 });
 
 // Mail service (Lob) environment variables
 const lobEnvSchema = z.object({
-  LOB_PROD_KEY: z.string().min(1, 'LOB_PROD_KEY is required for production'),
+  LOB_PROD_KEY: z.string()
+    .min(1, 'LOB_PROD_KEY is required for production')
+    .refine((key) => key.startsWith('live_') || key.startsWith('test_'), 
+      'Lob API key must start with live_ or test_'),
   LOB_ENVIRONMENT: z.enum(['test', 'live', 'prod'], {
     errorMap: () => ({ message: 'LOB_ENVIRONMENT must be one of: test, live, prod' })
   }),
@@ -59,11 +79,27 @@ const monitoringEnvSchema = z.object({
   SENTRY_SERVER_NAME: z.string().min(1, 'SENTRY_SERVER_NAME is required'),
 });
 
+// AI Service (OpenAI) environment variables
+const aiEnvSchema = z.object({
+  OPENAI_API_KEY: z.string()
+    .min(1, 'OPENAI_API_KEY is required for AI features')
+    .refine((key) => key.startsWith('sk-'), 'OpenAI API key must start with sk-')
+    .optional(),
+});
+
+// Analytics (Google Analytics) environment variables
+const analyticsEnvSchema = z.object({
+  GOOGLE_ANALYTICS_ID: z.string().optional(),
+  GOOGLE_ANALYTICS_CLIENT_EMAIL: z.string().email('GOOGLE_ANALYTICS_CLIENT_EMAIL must be a valid email').optional(),
+  GOOGLE_ANALYTICS_PRIVATE_KEY: z.string().min(1, 'GOOGLE_ANALYTICS_PRIVATE_KEY is required for Google Analytics').optional(),
+  GOOGLE_ANALYTICS_PROPERTY_ID: z.string().min(1, 'GOOGLE_ANALYTICS_PROPERTY_ID is required for Google Analytics').optional(),
+});
+
+
 // Optional environment variables (with defaults)
 const optionalEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().transform(Number).pipe(z.number().positive()).default('3000'),
-  GOOGLE_ANALYTICS_ID: z.string().optional(),
   LOB_TEST_KEY: z.string().optional(),
 });
 
@@ -81,6 +117,8 @@ const envSchema = z.object({
   ...lobEnvSchema.shape,
   ...awsEnvSchema.shape,
   ...monitoringEnvSchema.shape,
+  ...aiEnvSchema.shape,
+  ...analyticsEnvSchema.shape,
   ...optionalEnvSchema.shape,
 });
 
@@ -126,6 +164,8 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       ...lobEnvSchema.shape,
       ...awsEnvSchema.shape,
       ...monitoringEnvSchema.shape,
+      ...aiEnvSchema.shape,
+      ...analyticsEnvSchema.shape,
       ...optionalEnvSchema.shape,
     }).partial({
       // Make these optional in development
@@ -149,6 +189,10 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       SENTRY_DSN: true,
       SENTRY_RELEASE: true,
       SENTRY_SERVER_NAME: true,
+      OPENAI_API_KEY: true,
+      GOOGLE_ANALYTICS_CLIENT_EMAIL: true,
+      GOOGLE_ANALYTICS_PRIVATE_KEY: true,
+      GOOGLE_ANALYTICS_PROPERTY_ID: true,
     });
     
     try {
@@ -271,7 +315,11 @@ export function getOptionalEnvironmentVariables(): string[] {
   return [
     'NODE_ENV',
     'PORT',
-    'GOOGLE_ANALYTICS_ID',
     'LOB_TEST_KEY',
+    'OPENAI_API_KEY',
+    'GOOGLE_ANALYTICS_ID',
+    'GOOGLE_ANALYTICS_CLIENT_EMAIL',
+    'GOOGLE_ANALYTICS_PRIVATE_KEY',
+    'GOOGLE_ANALYTICS_PROPERTY_ID',
   ];
 }

@@ -7,7 +7,7 @@ import { performHealthCheck, simpleHealthCheck } from './healthCheck';
  * GET /health/simple - Returns simple health status
  */
 
-export function healthCheckEndpoint(req: Request, res: Response) {
+export async function healthCheckEndpoint(req: Request, res: Response) {
   try {
     const { path } = req;
     
@@ -17,7 +17,7 @@ export function healthCheckEndpoint(req: Request, res: Response) {
       res.status(health.status === 'ok' ? 200 : 500).json(health);
     } else {
       // Comprehensive health check
-      const health = performHealthCheck();
+      const health = await performHealthCheck();
       const statusCode = health.status === 'healthy' ? 200 : 
                         health.status === 'degraded' ? 200 : 500;
       res.status(statusCode).json(health);

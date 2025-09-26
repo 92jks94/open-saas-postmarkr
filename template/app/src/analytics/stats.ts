@@ -2,7 +2,8 @@ import { type DailyStats } from 'wasp/entities';
 import { type DailyStatsJob } from 'wasp/server/jobs';
 import Stripe from 'stripe';
 import { stripe } from '../payment/stripe/stripeClient';
-import { getDailyPageViews, getSources } from './providers/googleAnalyticsUtils';
+// Google Analytics disabled
+// import { getDailyPageViews, getSources } from './providers/googleAnalyticsUtils';
 import { paymentProcessor } from '../payment/paymentProcessor';
 import { SubscriptionStatus } from '../payment/plans';
 
@@ -42,7 +43,9 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
 
     const totalRevenue = await fetchTotalStripeRevenue();
 
-    const { totalViews, prevDayViewsChangePercent } = await getDailyPageViews();
+    // Google Analytics disabled - using fallback values
+    const totalViews = 0;
+    const prevDayViewsChangePercent = "0";
 
     let dailyStats = await context.entities.DailyStats.findUnique({
       where: {
@@ -81,31 +84,32 @@ export const calculateDailyStats: DailyStatsJob<never, void> = async (_args, con
         },
       });
     }
-    const sources = await getSources();
-
-    for (const source of sources) {
-      let visitors = source.visitors;
-      if (typeof source.visitors !== 'number') {
-        visitors = parseInt(source.visitors);
-      }
-      await context.entities.PageViewSource.upsert({
-        where: {
-          date_name: {
-            date: nowUTC,
-            name: source.source,
-          },
-        },
-        create: {
-          date: nowUTC,
-          name: source.source,
-          visitors,
-          dailyStatsId: dailyStats.id,
-        },
-        update: {
-          visitors,
-        },
-      });
-    }
+    // Google Analytics disabled - skipping sources data
+    // const sources = await getSources();
+    // 
+    // for (const source of sources) {
+    //   let visitors = source.visitors;
+    //   if (typeof source.visitors !== 'number') {
+    //     visitors = parseInt(source.visitors);
+    //   }
+    //   await context.entities.PageViewSource.upsert({
+    //     where: {
+    //       date_name: {
+    //         date: nowUTC,
+    //         name: source.source,
+    //       },
+    //     },
+    //     create: {
+    //       date: nowUTC,
+    //       name: source.source,
+    //       visitors,
+    //       dailyStatsId: dailyStats.id,
+    //     },
+    //     update: {
+    //       visitors,
+    //     },
+    //   });
+    // }
 
     console.table({ dailyStats });
   } catch (error: unknown) {

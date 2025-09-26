@@ -36,7 +36,7 @@ export default function FileUploadPage() {
 
     const interval = setInterval(() => {
       allUserFiles.refetch();
-    }, 3000); // Poll every 3 seconds
+    }, 1000); // Poll every 1 second
 
     return () => clearInterval(interval);
   }, [hasProcessingFiles, allUserFiles]);

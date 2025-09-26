@@ -51,7 +51,7 @@ app OpenSaaS {
           clientRoute: PasswordResetRoute,
           getEmailContentFn: import { getPasswordResetEmailContent } from "@src/auth/email-and-pass/emails",
         },
-        userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
+        // userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
       },
       // Uncomment to enable Google Auth (check https://wasp.sh/docs/auth/social-auth/google for setup instructions):
       // google: {
@@ -80,7 +80,7 @@ app OpenSaaS {
   },
 
   emailSender: {
-    provider: SMTP, // Use SMTP for production
+    provider: SendGrid, // Use SendGrid for production
     defaultFrom: {
       name: "Postmarkr",
       email: "nathan@postmarkr.com"
@@ -277,6 +277,11 @@ action deleteMailAddress {
 
 action setDefaultAddress {
   fn: import { setDefaultAddress } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+
+action validateAddress {
+  fn: import { validateAddress } from "@src/address-management/operations",
   entities: [User, MailAddress]
 }
 //#endregion

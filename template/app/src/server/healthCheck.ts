@@ -1,5 +1,7 @@
 import { getServiceHealthStatus } from './startupValidation';
 import { getRequiredEnvironmentVariables, getOptionalEnvironmentVariables } from './envValidation';
+import { runAllConnectivityTests } from './apiConnectivityTests';
+import { runMonitoringChecks, quickHealthCheck } from './monitoringAlerts';
 
 /**
  * Health check endpoint for monitoring environment variables and external services
@@ -16,12 +18,26 @@ export interface HealthCheckResponse {
     optional: Record<string, { configured: boolean; value?: string }>;
   };
   uptime: number;
+  connectivity?: {
+    overall: 'healthy' | 'unhealthy' | 'degraded';
+    tests: Array<{
+      service: string;
+      status: 'healthy' | 'unhealthy' | 'unknown';
+      responseTime?: number;
+      error?: string;
+    }>;
+  };
+  monitoring?: {
+    alerts: number;
+    criticalAlerts: number;
+    lastCheck: string;
+  };
 }
 
 /**
  * Performs a comprehensive health check
  */
-export function performHealthCheck(): HealthCheckResponse {
+export async function performHealthCheck(): Promise<HealthCheckResponse> {
   const startTime = process.hrtime();
   const uptime = process.uptime();
   
@@ -31,15 +47,56 @@ export function performHealthCheck(): HealthCheckResponse {
   // Check external services
   const services = getServiceHealthStatus();
   
+  // Run API connectivity tests (async)
+  let connectivityResults: HealthCheckResponse['connectivity'];
+  try {
+    const connectivityTests = await runAllConnectivityTests();
+    connectivityResults = {
+      overall: connectivityTests.overallStatus as 'healthy' | 'unhealthy' | 'degraded',
+      tests: connectivityTests.results.map(result => ({
+        service: result.service,
+        status: result.status as 'healthy' | 'unhealthy' | 'unknown',
+        responseTime: result.responseTime,
+        error: result.error
+      }))
+    };
+  } catch (error) {
+    connectivityResults = {
+      overall: 'unhealthy',
+      tests: [{
+        service: 'connectivity-tests',
+        status: 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
+        error: error instanceof Error ? error.message : 'Connectivity tests failed'
+      }]
+    };
+  }
+  
+  // Get monitoring status
+  let monitoringStatus;
+  try {
+    const quickCheck = quickHealthCheck();
+    monitoringStatus = {
+      alerts: quickCheck.alerts,
+      criticalAlerts: quickCheck.alerts, // Simplified for now
+      lastCheck: quickCheck.timestamp
+    };
+  } catch (error) {
+    monitoringStatus = {
+      alerts: 0,
+      criticalAlerts: 0,
+      lastCheck: new Date().toISOString()
+    };
+  }
+  
   // Determine overall status
   const serviceStatuses = Object.values(services);
   const hasUnhealthyServices = serviceStatuses.some(s => s.status === 'unhealthy');
   const hasUnknownServices = serviceStatuses.some(s => s.status === 'unknown');
   
   let overallStatus: 'healthy' | 'unhealthy' | 'degraded' = 'healthy';
-  if (hasUnhealthyServices) {
+  if (hasUnhealthyServices || connectivityResults.overall === 'unhealthy') {
     overallStatus = 'unhealthy';
-  } else if (hasUnknownServices) {
+  } else if (hasUnknownServices || connectivityResults.overall === 'degraded') {
     overallStatus = 'degraded';
   }
   
@@ -51,6 +108,8 @@ export function performHealthCheck(): HealthCheckResponse {
     services,
     environmentVariables: envStatus,
     uptime: Math.floor(uptime),
+    connectivity: connectivityResults,
+    monitoring: monitoringStatus,
   };
 }
 
@@ -142,9 +201,9 @@ export function simpleHealthCheck(): { status: 'ok' | 'error'; timestamp: string
 /**
  * Health check endpoint handler for Express routes
  */
-export function healthCheckEndpoint(req: any, res: any, context: any) {
+export async function healthCheckEndpoint(req: any, res: any, context: any) {
   try {
-    const healthData = performHealthCheck();
+    const healthData = await performHealthCheck();
     res.status(200).json(healthData);
   } catch (error) {
     res.status(500).json({

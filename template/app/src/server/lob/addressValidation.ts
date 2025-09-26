@@ -7,19 +7,19 @@ import { validateAddress } from './services';
  */
 export async function validateAddressEndpoint(req: any, res: any, context: any) {
   try {
-    const { address_line1, address_line2, city, state, zip_code, country } = req.body;
+    const { address_line1, address_line2, address_city, address_state, address_zip, address_country } = req.body;
 
-    if (!address_line1 || !city || !state || !zip_code || !country) {
+    if (!address_line1 || !address_city || !address_state || !address_zip || !address_country) {
       throw new HttpError(400, 'Missing required address fields');
     }
 
     const result = await validateAddress({
       address_line1,
       address_line2,
-      city,
-      state,
-      zip_code,
-      country,
+      address_city,
+      address_state,
+      address_zip,
+      address_country,
     });
 
     res.json({

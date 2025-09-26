@@ -156,13 +156,13 @@ const PaymentForm: React.FC<{
                 <div>
                   <p className="font-medium">{mailPiece.senderAddress.contactName}</p>
                   <p className="text-sm text-gray-600">
-                    {mailPiece.senderAddress.addressLine1}
-                    {mailPiece.senderAddress.addressLine2 && (
-                      <span>, {mailPiece.senderAddress.addressLine2}</span>
+                    {mailPiece.senderAddress.address_line1}
+                    {mailPiece.senderAddress.address_line2 && (
+                      <span>, {mailPiece.senderAddress.address_line2}</span>
                     )}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {mailPiece.senderAddress.city}, {mailPiece.senderAddress.state} {mailPiece.senderAddress.postalCode}
+                    {mailPiece.senderAddress.address_city}, {mailPiece.senderAddress.address_state} {mailPiece.senderAddress.address_zip}
                   </p>
                 </div>
               </div>
@@ -175,13 +175,13 @@ const PaymentForm: React.FC<{
                 <div>
                   <p className="font-medium">{mailPiece.recipientAddress.contactName}</p>
                   <p className="text-sm text-gray-600">
-                    {mailPiece.recipientAddress.addressLine1}
-                    {mailPiece.recipientAddress.addressLine2 && (
-                      <span>, {mailPiece.recipientAddress.addressLine2}</span>
+                    {mailPiece.recipientAddress.address_line1}
+                    {mailPiece.recipientAddress.address_line2 && (
+                      <span>, {mailPiece.recipientAddress.address_line2}</span>
                     )}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {mailPiece.recipientAddress.city}, {mailPiece.recipientAddress.state} {mailPiece.recipientAddress.postalCode}
+                    {mailPiece.recipientAddress.address_city}, {mailPiece.recipientAddress.address_state} {mailPiece.recipientAddress.address_zip}
                   </p>
                 </div>
               </div>

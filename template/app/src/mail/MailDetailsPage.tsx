@@ -343,14 +343,14 @@ export default function MailDetailsPage() {
                   {mailPiece.senderAddress ? (
                     <div className="space-y-2">
                       <p className="font-medium">{mailPiece.senderAddress.contactName}</p>
-                      <p className="text-sm text-gray-600">{mailPiece.senderAddress.addressLine1}</p>
-                      {mailPiece.senderAddress.addressLine2 && (
-                        <p className="text-sm text-gray-600">{mailPiece.senderAddress.addressLine2}</p>
+                      <p className="text-sm text-gray-600">{mailPiece.senderAddress.address_line1}</p>
+                      {mailPiece.senderAddress.address_line2 && (
+                        <p className="text-sm text-gray-600">{mailPiece.senderAddress.address_line2}</p>
                       )}
                       <p className="text-sm text-gray-600">
-                        {mailPiece.senderAddress.city}, {mailPiece.senderAddress.state} {mailPiece.senderAddress.postalCode}
+                        {mailPiece.senderAddress.address_city}, {mailPiece.senderAddress.address_state} {mailPiece.senderAddress.address_zip}
                       </p>
-                      <p className="text-sm text-gray-600">{mailPiece.senderAddress.country}</p>
+                      <p className="text-sm text-gray-600">{mailPiece.senderAddress.address_country}</p>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">No sender address</p>
@@ -370,14 +370,14 @@ export default function MailDetailsPage() {
                   {mailPiece.recipientAddress ? (
                     <div className="space-y-2">
                       <p className="font-medium">{mailPiece.recipientAddress.contactName}</p>
-                      <p className="text-sm text-gray-600">{mailPiece.recipientAddress.addressLine1}</p>
-                      {mailPiece.recipientAddress.addressLine2 && (
-                        <p className="text-sm text-gray-600">{mailPiece.recipientAddress.addressLine2}</p>
+                      <p className="text-sm text-gray-600">{mailPiece.recipientAddress.address_line1}</p>
+                      {mailPiece.recipientAddress.address_line2 && (
+                        <p className="text-sm text-gray-600">{mailPiece.recipientAddress.address_line2}</p>
                       )}
                       <p className="text-sm text-gray-600">
-                        {mailPiece.recipientAddress.city}, {mailPiece.recipientAddress.state} {mailPiece.recipientAddress.postalCode}
+                        {mailPiece.recipientAddress.address_city}, {mailPiece.recipientAddress.address_state} {mailPiece.recipientAddress.address_zip}
                       </p>
-                      <p className="text-sm text-gray-600">{mailPiece.recipientAddress.country}</p>
+                      <p className="text-sm text-gray-600">{mailPiece.recipientAddress.address_country}</p>
                     </div>
                   ) : (
                     <p className="text-sm text-gray-500">No recipient address</p>

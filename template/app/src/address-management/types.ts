@@ -8,12 +8,12 @@ import type { AddressType, SupportedCountry, USState, CanadianProvince } from '.
 export interface CreateAddressInput {
   contactName: string;
   companyName?: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: SupportedCountry;
+  address_line1: string;
+  address_line2?: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+  address_country: SupportedCountry;
   label?: string;
   addressType: AddressType;
 }
@@ -22,12 +22,12 @@ export interface CreateAddressInput {
 export interface UpdateAddressInput {
   contactName?: string;
   companyName?: string;
-  addressLine1?: string;
-  addressLine2?: string;
-  city?: string;
-  state?: string;
-  postalCode?: string;
-  country?: SupportedCountry;
+  address_line1?: string;
+  address_line2?: string;
+  address_city?: string;
+  address_state?: string;
+  address_zip?: string;
+  address_country?: SupportedCountry;
   label?: string;
   addressType?: AddressType;
 }
@@ -48,12 +48,12 @@ export interface AddressSearchFilters {
 export interface AddressValidationResult {
   isValid: boolean;
   standardizedAddress?: {
-    addressLine1: string;
-    addressLine2?: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
+    address_line1: string;
+    address_line2?: string;
+    address_city: string;
+    address_state: string;
+    address_zip: string;
+    address_country: string;
   };
   suggestions?: string[];
   errors?: string[];

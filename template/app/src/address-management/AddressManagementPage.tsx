@@ -35,29 +35,29 @@ export default function AddressManagementPage() {
     const errors: Record<string, string> = {};
     
     const contactName = formData.get('contactName') as string;
-    const addressLine1 = formData.get('addressLine1') as string;
-    const city = formData.get('city') as string;
-    const state = formData.get('state') as string;
-    const postalCode = formData.get('postalCode') as string;
-    const country = formData.get('country') as string;
+    const address_line1 = formData.get('address_line1') as string;
+    const address_city = formData.get('address_city') as string;
+    const address_state = formData.get('address_state') as string;
+    const address_zip = formData.get('address_zip') as string;
+    const address_country = formData.get('address_country') as string;
 
     if (!contactName?.trim()) {
       errors.contactName = 'Contact name is required';
     }
-    if (!addressLine1?.trim()) {
-      errors.addressLine1 = 'Address line 1 is required';
+    if (!address_line1?.trim()) {
+      errors.address_line1 = 'Address line 1 is required';
     }
-    if (!city?.trim()) {
-      errors.city = 'City is required';
+    if (!address_city?.trim()) {
+      errors.address_city = 'City is required';
     }
-    if (!state?.trim()) {
-      errors.state = 'State is required';
+    if (!address_state?.trim()) {
+      errors.address_state = 'State is required';
     }
-    if (!postalCode?.trim()) {
-      errors.postalCode = 'Postal code is required';
+    if (!address_zip?.trim()) {
+      errors.address_zip = 'Postal code is required';
     }
-    if (!country?.trim()) {
-      errors.country = 'Country is required';
+    if (!address_country?.trim()) {
+      errors.address_country = 'Country is required';
     }
 
     return errors;
@@ -82,12 +82,12 @@ export default function AddressManagementPage() {
     setEditFormData({
       contactName: address.contactName,
       companyName: address.companyName || '',
-      addressLine1: address.addressLine1,
-      addressLine2: address.addressLine2 || '',
-      city: address.city,
-      state: address.state,
-      postalCode: address.postalCode,
-      country: address.country,
+      address_line1: address.address_line1,
+      address_line2: address.address_line2 ?? '',
+      address_city: address.address_city,
+      address_state: address.address_state,
+      address_zip: address.address_zip,
+      address_country: address.address_country,
       label: address.label || '',
       addressType: address.addressType,
     });
@@ -143,12 +143,12 @@ export default function AddressManagementPage() {
       const addressData = {
         contactName: formData.get('contactName') as string,
         companyName: formData.get('companyName') as string || undefined,
-        addressLine1: formData.get('addressLine1') as string,
-        addressLine2: formData.get('addressLine2') as string || undefined,
-        city: formData.get('city') as string,
-        state: formData.get('state') as string,
-        postalCode: formData.get('postalCode') as string,
-        country: formData.get('country') as string,
+        address_line1: formData.get('address_line1') as string,
+        address_line2: formData.get('address_line2') as string ?? undefined,
+        address_city: formData.get('address_city') as string,
+        address_state: formData.get('address_state') as string,
+        address_zip: formData.get('address_zip') as string,
+        address_country: formData.get('address_country') as string,
         label: formData.get('label') as string || undefined,
         addressType,
       };
@@ -242,30 +242,30 @@ export default function AddressManagementPage() {
                   
                   <div className='space-y-4'>
                     <div className='space-y-2'>
-                      <Label htmlFor='addressLine1' className='text-sm font-medium'>Address Line 1 *</Label>
+                      <Label htmlFor='address_line1' className='text-sm font-medium'>Address Line 1 *</Label>
                       <Input
-                        id='addressLine1'
-                        name='addressLine1'
+                        id='address_line1'
+                        name='address_line1'
                         placeholder='123 Main St'
                         required
                         onChange={() => {
                           setAddressError(null);
-                          if (formErrors.addressLine1) {
-                            setFormErrors(prev => ({ ...prev, addressLine1: '' }));
+                          if (formErrors.address_line1) {
+                            setFormErrors(prev => ({ ...prev, address_line1: '' }));
                           }
                         }}
-                        className={cn('h-10', formErrors.addressLine1 && 'border-red-500')}
+                        className={cn('h-10', formErrors.address_line1 && 'border-red-500')}
                       />
-                      {formErrors.addressLine1 && (
-                        <p className='text-sm text-red-600'>{formErrors.addressLine1}</p>
+                      {formErrors.address_line1 && (
+                        <p className='text-sm text-red-600'>{formErrors.address_line1}</p>
                       )}
                     </div>
 
                     <div className='space-y-2'>
-                      <Label htmlFor='addressLine2' className='text-sm font-medium'>Address Line 2</Label>
+                      <Label htmlFor='address_line2' className='text-sm font-medium'>Address Line 2</Label>
                       <Input
-                        id='addressLine2'
-                        name='addressLine2'
+                        id='address_line2'
+                        name='address_line2'
                         placeholder='Suite 100, Apartment 2B'
                         onChange={() => setAddressError(null)}
                         className='h-10'
@@ -274,62 +274,62 @@ export default function AddressManagementPage() {
 
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                       <div className='space-y-2'>
-                        <Label htmlFor='city' className='text-sm font-medium'>City *</Label>
+                        <Label htmlFor='address_city' className='text-sm font-medium'>City *</Label>
                         <Input
-                          id='city'
-                          name='city'
+                          id='address_city'
+                          name='address_city'
                           placeholder='New York'
                           required
                           onChange={() => {
                             setAddressError(null);
-                            if (formErrors.city) {
-                              setFormErrors(prev => ({ ...prev, city: '' }));
+                            if (formErrors.address_city) {
+                              setFormErrors(prev => ({ ...prev, address_city: '' }));
                             }
                           }}
-                          className={cn('h-10', formErrors.city && 'border-red-500')}
+                          className={cn('h-10', formErrors.address_city && 'border-red-500')}
                         />
-                        {formErrors.city && (
-                          <p className='text-sm text-red-600'>{formErrors.city}</p>
+                        {formErrors.address_city && (
+                          <p className='text-sm text-red-600'>{formErrors.address_city}</p>
                         )}
                       </div>
                       
                       <div className='space-y-2'>
-                        <Label htmlFor='state' className='text-sm font-medium'>State *</Label>
+                        <Label htmlFor='address_state' className='text-sm font-medium'>State *</Label>
                         <Input
-                          id='state'
-                          name='state'
+                          id='address_state'
+                          name='address_state'
                           placeholder='NY'
                           required
                           onChange={() => {
                             setAddressError(null);
-                            if (formErrors.state) {
-                              setFormErrors(prev => ({ ...prev, state: '' }));
+                            if (formErrors.address_state) {
+                              setFormErrors(prev => ({ ...prev, address_state: '' }));
                             }
                           }}
-                          className={cn('h-10', formErrors.state && 'border-red-500')}
+                          className={cn('h-10', formErrors.address_state && 'border-red-500')}
                         />
-                        {formErrors.state && (
-                          <p className='text-sm text-red-600'>{formErrors.state}</p>
+                        {formErrors.address_state && (
+                          <p className='text-sm text-red-600'>{formErrors.address_state}</p>
                         )}
                       </div>
                       
                       <div className='space-y-2'>
-                        <Label htmlFor='postalCode' className='text-sm font-medium'>Postal Code *</Label>
+                        <Label htmlFor='address_zip' className='text-sm font-medium'>Postal Code *</Label>
                         <Input
-                          id='postalCode'
-                          name='postalCode'
+                          id='address_zip'
+                          name='address_zip'
                           placeholder='10001'
                           required
                           onChange={() => {
                             setAddressError(null);
-                            if (formErrors.postalCode) {
-                              setFormErrors(prev => ({ ...prev, postalCode: '' }));
+                            if (formErrors.address_zip) {
+                              setFormErrors(prev => ({ ...prev, address_zip: '' }));
                             }
                           }}
-                          className={cn('h-10', formErrors.postalCode && 'border-red-500')}
+                          className={cn('h-10', formErrors.address_zip && 'border-red-500')}
                         />
-                        {formErrors.postalCode && (
-                          <p className='text-sm text-red-600'>{formErrors.postalCode}</p>
+                        {formErrors.address_zip && (
+                          <p className='text-sm text-red-600'>{formErrors.address_zip}</p>
                         )}
                       </div>
                     </div>
@@ -346,18 +346,18 @@ export default function AddressManagementPage() {
                   
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                     <div className='space-y-2'>
-                      <Label htmlFor='country' className='text-sm font-medium'>Country *</Label>
+                      <Label htmlFor='address_country' className='text-sm font-medium'>Country *</Label>
                       <Select 
-                        name='country' 
+                        name='address_country' 
                         required
                         onValueChange={() => {
                           setAddressError(null);
-                          if (formErrors.country) {
-                            setFormErrors(prev => ({ ...prev, country: '' }));
+                          if (formErrors.address_country) {
+                            setFormErrors(prev => ({ ...prev, address_country: '' }));
                           }
                         }}
                       >
-                        <SelectTrigger className={cn('h-10', formErrors.country && 'border-red-500')}>
+                        <SelectTrigger className={cn('h-10', formErrors.address_country && 'border-red-500')}>
                           <SelectValue placeholder='Select country' />
                         </SelectTrigger>
                         <SelectContent>
@@ -368,8 +368,8 @@ export default function AddressManagementPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {formErrors.country && (
-                        <p className='text-sm text-red-600'>{formErrors.country}</p>
+                      {formErrors.address_country && (
+                        <p className='text-sm text-red-600'>{formErrors.address_country}</p>
                       )}
                     </div>
                     
@@ -479,50 +479,50 @@ export default function AddressManagementPage() {
                           </div>
                           
                           <div className='space-y-2'>
-                            <Label htmlFor={`edit-addressLine1-${address.id}`} className='text-sm font-medium'>Address Line 1 *</Label>
+                            <Label htmlFor={`edit-address_line1-${address.id}`} className='text-sm font-medium'>Address Line 1 *</Label>
                             <Input
-                              id={`edit-addressLine1-${address.id}`}
-                              value={editFormData.addressLine1}
-                              onChange={(e) => setEditFormData(prev => ({...prev, addressLine1: e.target.value}))}
+                              id={`edit-address_line1-${address.id}`}
+                              value={editFormData.address_line1}
+                              onChange={(e) => setEditFormData(prev => ({...prev, address_line1: e.target.value}))}
                               className='h-10'
                             />
                           </div>
                           
                           <div className='space-y-2'>
-                            <Label htmlFor={`edit-addressLine2-${address.id}`} className='text-sm font-medium'>Address Line 2</Label>
+                            <Label htmlFor={`edit-address_line2-${address.id}`} className='text-sm font-medium'>Address Line 2</Label>
                             <Input
-                              id={`edit-addressLine2-${address.id}`}
-                              value={editFormData.addressLine2}
-                              onChange={(e) => setEditFormData(prev => ({...prev, addressLine2: e.target.value}))}
+                              id={`edit-address_line2-${address.id}`}
+                              value={editFormData.address_line2}
+                              onChange={(e) => setEditFormData(prev => ({...prev, address_line2: e.target.value}))}
                               className='h-10'
                             />
                           </div>
                           
                           <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                             <div className='space-y-2'>
-                              <Label htmlFor={`edit-city-${address.id}`} className='text-sm font-medium'>City *</Label>
-                              <Input
-                                id={`edit-city-${address.id}`}
-                                value={editFormData.city}
-                                onChange={(e) => setEditFormData(prev => ({...prev, city: e.target.value}))}
+                            <Label htmlFor={`edit-address_city-${address.id}`} className='text-sm font-medium'>City *</Label>
+                            <Input
+                              id={`edit-address_city-${address.id}`}
+                              value={editFormData.address_city}
+                              onChange={(e) => setEditFormData(prev => ({...prev, address_city: e.target.value}))}
                                 className='h-10'
                               />
                             </div>
                             <div className='space-y-2'>
-                              <Label htmlFor={`edit-state-${address.id}`} className='text-sm font-medium'>State *</Label>
-                              <Input
-                                id={`edit-state-${address.id}`}
-                                value={editFormData.state}
-                                onChange={(e) => setEditFormData(prev => ({...prev, state: e.target.value}))}
+                            <Label htmlFor={`edit-address_state-${address.id}`} className='text-sm font-medium'>State *</Label>
+                            <Input
+                              id={`edit-address_state-${address.id}`}
+                              value={editFormData.address_state}
+                              onChange={(e) => setEditFormData(prev => ({...prev, address_state: e.target.value}))}
                                 className='h-10'
                               />
                             </div>
                             <div className='space-y-2'>
-                              <Label htmlFor={`edit-postalCode-${address.id}`} className='text-sm font-medium'>Postal Code *</Label>
-                              <Input
-                                id={`edit-postalCode-${address.id}`}
-                                value={editFormData.postalCode}
-                                onChange={(e) => setEditFormData(prev => ({...prev, postalCode: e.target.value}))}
+                            <Label htmlFor={`edit-address_zip-${address.id}`} className='text-sm font-medium'>Postal Code *</Label>
+                            <Input
+                              id={`edit-address_zip-${address.id}`}
+                              value={editFormData.address_zip}
+                              onChange={(e) => setEditFormData(prev => ({...prev, address_zip: e.target.value}))}
                                 className='h-10'
                               />
                             </div>
@@ -530,10 +530,10 @@ export default function AddressManagementPage() {
                           
                           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                             <div className='space-y-2'>
-                              <Label htmlFor={`edit-country-${address.id}`} className='text-sm font-medium'>Country *</Label>
-                              <Select
-                                value={editFormData.country}
-                                onValueChange={(value) => setEditFormData(prev => ({...prev, country: value}))}
+                            <Label htmlFor={`edit-address_country-${address.id}`} className='text-sm font-medium'>Country *</Label>
+                            <Select
+                              value={editFormData.address_country}
+                              onValueChange={(value) => setEditFormData(prev => ({...prev, address_country: value}))}
                               >
                                 <SelectTrigger className='h-10'>
                                   <SelectValue placeholder="Select country" />
@@ -612,11 +612,11 @@ export default function AddressManagementPage() {
                             {/* Address details */}
                             <div className='space-y-1'>
                               <p className='text-foreground'>
-                                {address.addressLine1}
-                                {address.addressLine2 && `, ${address.addressLine2}`}
+                                {address.address_line1}
+                                {address.address_line2 && `, ${address.address_line2}`}
                               </p>
                               <p className='text-foreground'>
-                                {address.city}, {address.state} {address.postalCode}, {address.country}
+                                {address.address_city}, {address.address_state} {address.address_zip}, {address.address_country}
                               </p>
                             </div>
                             

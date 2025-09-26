@@ -120,12 +120,12 @@ model MailAddress {
   userId              String
   contactName         String
   companyName         String?
-  addressLine1        String
-  addressLine2        String?
-  city                String
-  state               String
-  postalCode          String
-  country             String
+  address_line1       String      // Changed from addressLine1 to match Lob API
+  address_line2       String?     // Changed from addressLine2 to match Lob API
+  address_city        String      // Changed from city to match Lob API
+  address_state       String      // Changed from state to match Lob API
+  address_zip         String      // Changed from postalCode to match Lob API
+  address_country     String      // Changed from country to match Lob API
   label               String?
   isDefault           Boolean     @default(false)
   addressType         String      @default("both")
@@ -141,8 +141,8 @@ model MailAddress {
 
   @@index([userId, addressType])
   @@index([userId, isDefault])
-  @@index([postalCode])
-  @@index([country])
+  @@index([address_zip])
+  @@index([address_country])
 }
 
 model State {
