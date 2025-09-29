@@ -40,7 +40,7 @@ export const generateCheckoutSession: GenerateCheckoutSession<
 
   const paymentPlanId = ensureArgsSchemaOrThrowHttpError(generateCheckoutSessionSchema, rawPaymentPlanId);
   const userId = context.user.id;
-  const userEmail = context.user.identities.email?.email;
+  const userEmail = context.user.email;
   if (!userEmail) {
     // If using the usernameAndPassword Auth method, switch to an Auth method that provides an email.
     throw new HttpError(403, 'User needs an email to make a payment.');

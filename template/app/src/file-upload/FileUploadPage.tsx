@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getAllFilesByUser, getDownloadFileSignedURL, deleteFile, useQuery } from 'wasp/client/operations';
+import { getAllFilesByUser, getDownloadFileSignedURL, deleteFile, triggerPDFProcessing, useQuery } from 'wasp/client/operations';
 import type { File as FileEntity } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -97,7 +97,21 @@ export default function FileUploadPage() {
         return;
       }
 
-      await uploadFileWithProgress({ file: file as FileWithValidType, setUploadProgressPercent });
+      const { uploadResponse, createFileResult } = await uploadFileWithProgress({ 
+        file: file as FileWithValidType, 
+        setUploadProgressPercent 
+      });
+      
+      // If this is a PDF file, trigger processing now that upload is complete
+      if (file.type === 'application/pdf') {
+        try {
+          await triggerPDFProcessing({ fileId: createFileResult.fileId });
+        } catch (processingError) {
+          console.warn('Failed to trigger PDF processing:', processingError);
+          // Don't fail the upload if processing trigger fails
+        }
+      }
+      
       formElement.reset();
       allUserFiles.refetch();
     } catch (error) {

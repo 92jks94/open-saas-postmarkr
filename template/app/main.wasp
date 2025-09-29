@@ -80,7 +80,7 @@ app OpenSaaS {
   },
 
   emailSender: {
-    provider: SendGrid, // Use SendGrid for production
+    provider: Dummy, // Use Dummy for development (prints emails to console)
     defaultFrom: {
       name: "Postmarkr",
       email: "nathan@postmarkr.com"
@@ -241,6 +241,11 @@ query getDownloadFileSignedURL {
 
 action deleteFile {
   fn: import { deleteFile } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+action triggerPDFProcessing {
+  fn: import { triggerPDFProcessing } from "@src/file-upload/operations",
   entities: [User, File]
 }
 

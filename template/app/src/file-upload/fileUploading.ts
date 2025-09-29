@@ -10,11 +10,12 @@ interface FileUploadProgress {
 }
 
 export async function uploadFileWithProgress({ file, setUploadProgressPercent }: FileUploadProgress) {
-  const { s3UploadUrl, s3UploadFields } = await createFile({ fileType: file.type, fileName: file.name });
+  const createFileResult = await createFile({ fileType: file.type, fileName: file.name });
+  const { s3UploadUrl, s3UploadFields } = createFileResult;
 
   const formData = getFileUploadFormData(file, s3UploadFields);
 
-  return axios.post(s3UploadUrl, formData, {
+  const uploadResponse = await axios.post(s3UploadUrl, formData, {
     onUploadProgress: (progressEvent) => {
       if (progressEvent.total) {
         const percentage = Math.round((progressEvent.loaded / progressEvent.total) * 100);
@@ -22,6 +23,9 @@ export async function uploadFileWithProgress({ file, setUploadProgressPercent }:
       }
     },
   });
+
+  // Return both the upload response and file creation result for further processing
+  return { uploadResponse, createFileResult };
 }
 
 function getFileUploadFormData(file: File, s3UploadFields: Record<string, string>) {

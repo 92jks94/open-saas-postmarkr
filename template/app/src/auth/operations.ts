@@ -6,7 +6,20 @@ export const resendVerificationEmail: ResendVerificationEmail<void, { success: b
     throw new HttpError(401, 'Not authorized');
   }
 
-  // For now, just return success - the actual resend functionality would need
-  // to be implemented based on your specific auth setup and email verification flow
-  return { success: true, message: 'Please check your email or contact support if you need assistance.' };
+  // Check if user already has a verified email
+  const isEmailVerified = context.user.identities?.email?.isEmailVerified;
+  
+  if (isEmailVerified) {
+    return { 
+      success: false, 
+      message: 'Your email is already verified. You can proceed to login.' 
+    };
+  }
+
+  // Since Wasp handles email verification internally and we don't have direct access
+  // to regenerate verification tokens, we'll provide helpful guidance to users
+  return {
+    success: true,
+    message: 'Please check your spam/junk folder for the original verification email. If you still can\'t find it, try signing up again or contact support at nathan@postmarkr.com for assistance.'
+  };
 };

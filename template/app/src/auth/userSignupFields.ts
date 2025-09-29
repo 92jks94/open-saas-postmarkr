@@ -4,10 +4,13 @@ import { defineUserSignupFields } from 'wasp/auth/providers/types';
 const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
 const BETA_ACCESS_CODE = '312'; // Beta access code
 
-// Schema for standard signup form (email + password only)
+// Check if we're in development mode
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
+
+// Schema for extracting user entity fields from signup data
+// Note: password is handled internally by Wasp auth, not by userSignupFields
 const emailDataSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(1),
 });
 
 export const getEmailUserFields = defineUserSignupFields({

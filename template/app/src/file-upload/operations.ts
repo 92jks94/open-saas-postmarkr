@@ -7,6 +7,7 @@ import type {
   DeleteFile,
   GetAllFilesByUser,
   GetDownloadFileSignedURL,
+  TriggerPDFProcessing,
 } from 'wasp/server/operations';
 import type { File } from 'wasp/entities';
 import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
@@ -35,6 +36,7 @@ type CreateFileInput = z.infer<typeof createFileInputSchema>;
 export const createFile: CreateFile<
   CreateFileInput,
   {
+    fileId: string;
     s3UploadUrl: string;
     s3UploadFields: Record<string, string>;
   }
@@ -61,13 +63,10 @@ export const createFile: CreateFile<
     },
   });
 
-  // Trigger PDF metadata processing for PDF files
-  if (fileType === 'application/pdf') {
-    // Submit the PDF metadata processing job to run in background
-    await processPDFMetadataJob.submit({ fileId: file.id });
-  }
+  // Note: PDF metadata processing will be triggered by client after S3 upload completes
 
   return {
+    fileId: file.id,
     s3UploadUrl,
     s3UploadFields,
   };
@@ -140,10 +139,46 @@ export const deleteFile: DeleteFile<
   return file;
 };
 
+// Action to trigger PDF processing after successful upload
+const triggerPDFProcessingInputSchema = z.object({
+  fileId: z.string(),
+});
+
+type TriggerPDFProcessingInput = z.infer<typeof triggerPDFProcessingInputSchema>;
+
+export const triggerPDFProcessing: TriggerPDFProcessing<
+  TriggerPDFProcessingInput,
+  { success: boolean }
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { fileId } = ensureArgsSchemaOrThrowHttpError(triggerPDFProcessingInputSchema, rawArgs);
+
+  // Verify the file belongs to the user and is a PDF
+  const file = await context.entities.File.findFirst({
+    where: {
+      id: fileId,
+      userId: context.user.id,
+      type: 'application/pdf',
+    },
+  });
+
+  if (!file) {
+    throw new HttpError(404, 'PDF file not found');
+  }
+
+  // Submit the PDF metadata processing job to run in background
+  await processPDFMetadataJob.submit({ fileId: file.id });
+
+  return { success: true };
+};
 
 // Background Job for PDF Metadata Processing
 export const processPDFMetadata = async (args: { fileId: string }, context: any) => {
   const { fileId } = args;
+  
   try {
     // Get the file from database
     const file = await context.entities.File.findFirst({
@@ -173,9 +208,9 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
       data: { validationStatus: 'processing' }
     });
 
-    // Download PDF from S3
+    // Download PDF from S3 - use the same configuration as s3Utils
     const s3Client = new S3Client({
-      region: process.env.AWS_S3_REGION,
+      region: process.env.AWS_S3_REGION || 'us-east-2', // Default to us-east-2 based on bucket location
       credentials: {
         accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
         secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
@@ -187,6 +222,7 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
       Key: file.key,
     });
 
+    // File should be available since processing is triggered after successful upload
     const response = await s3Client.send(getObjectCommand);
     const pdfBuffer = Buffer.from(await response.Body!.transformToByteArray());
 

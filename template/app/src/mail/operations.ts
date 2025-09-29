@@ -804,7 +804,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
         mailSize: mailPiece.mailSize,
         type: 'mail_payment',
       },
-      customer_email: context.user.identities.email?.email ?? undefined,
+      customer_email: context.user.email ?? undefined,
     });
 
     if (!session.url) {

@@ -8,7 +8,7 @@ import { MAX_FILE_SIZE_BYTES } from './validation';
 import { getEnvVar } from '../server/envValidation';
 
 const s3Client = new S3Client({
-  region: getEnvVar('AWS_S3_REGION'),
+  region: getEnvVar('AWS_S3_REGION', 'us-east-2'), // Default to us-east-2 based on bucket location
   credentials: {
     accessKeyId: getEnvVar('AWS_S3_IAM_ACCESS_KEY'),
     secretAccessKey: getEnvVar('AWS_S3_IAM_SECRET_KEY'),

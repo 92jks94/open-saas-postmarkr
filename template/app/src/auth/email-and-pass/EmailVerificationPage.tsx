@@ -15,9 +15,14 @@ export default function EmailVerificationPage() {
     
     try {
       const result = await resendVerificationEmail();
-      setResendMessage(result?.message || 'Please check your email or contact support if you need assistance.');
+      if (result?.success) {
+        setResendMessage(result.message || 'Please check your spam folder or contact support for assistance.');
+      } else {
+        setResendMessage(result?.message || 'Please contact support directly at nathan@postmarkr.com for assistance.');
+      }
     } catch (error: any) {
-      setResendMessage(error.message || 'Failed to resend verification email');
+      console.error('Resend verification email error:', error);
+      setResendMessage(error.message || 'Please contact support directly at nathan@postmarkr.com for assistance.');
     } finally {
       setIsResending(false);
     }
@@ -47,10 +52,16 @@ export default function EmailVerificationPage() {
               disabled={isResending}
               className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg"
             >
-              {isResending ? 'Sending...' : 'Resend Verification Email'}
+{isResending ? 'Getting Help...' : 'Need Help?'}
             </Button>
             {resendMessage && (
-              <p className={`text-sm ${resendMessage.includes('successfully') ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-sm ${
+                resendMessage.includes('check your spam') || resendMessage.includes('try signing up again') 
+                  ? 'text-blue-600' 
+                  : resendMessage.includes('already verified') 
+                    ? 'text-green-600' 
+                    : 'text-red-600'
+              }`}>
                 {resendMessage}
               </p>
             )}
