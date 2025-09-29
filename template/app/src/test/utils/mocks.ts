@@ -61,47 +61,140 @@ export const mockSendGrid = {
   send: vi.fn(),
 };
 
+// Helper function to create field mocks
+const createFieldMocks = (fieldNames: string[]) => {
+  const fields: any = {};
+  fieldNames.forEach(fieldName => {
+    fields[fieldName] = {
+      name: fieldName,
+      typeName: 'String',
+      isList: false,
+      isRequired: true,
+      isId: fieldName === 'id',
+      isReadOnly: false,
+      isUnique: fieldName === 'id',
+      isUpdatedAt: fieldName === 'updatedAt',
+      kind: 'scalar',
+    };
+  });
+  return fields;
+};
+
 // Mock Prisma Client
 export const createMockPrismaClient = () => ({
-  user: {
+  User: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    findFirstOrThrow: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
+    createManyAndReturn: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     upsert: vi.fn(),
+    count: vi.fn(),
+    aggregate: vi.fn(),
+    groupBy: vi.fn(),
+    fields: createFieldMocks([
+      'id', 'createdAt', 'email', 'username', 'isAdmin', 'hasBetaAccess', 
+      'hasFullAccess', 'paymentProcessorUserId', 'subscriptionStatus', 
+      'subscriptionPlan', 'datePaid', 'credits'
+    ]),
   },
-  mailAddress: {
+  MailAddress: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    findFirstOrThrow: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
+    createManyAndReturn: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     upsert: vi.fn(),
+    count: vi.fn(),
+    aggregate: vi.fn(),
+    groupBy: vi.fn(),
+    fields: createFieldMocks([
+      'id', 'createdAt', 'updatedAt', 'userId', 'contactName', 'companyName',
+      'address_line1', 'address_line2', 'address_city', 'address_state', 
+      'address_zip', 'address_country', 'label', 'isDefault'
+    ]),
   },
-  mailPiece: {
+  MailPiece: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    findFirstOrThrow: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
+    createManyAndReturn: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     upsert: vi.fn(),
+    count: vi.fn(),
+    aggregate: vi.fn(),
+    groupBy: vi.fn(),
+    fields: createFieldMocks([
+      'id', 'createdAt', 'updatedAt', 'userId', 'senderAddressId', 'recipientAddressId',
+      'fileId', 'mailType', 'mailClass', 'mailSize', 'description', 'lobId', 'lobStatus',
+      'lobTrackingNumber', 'paymentIntentId', 'paymentStatus', 'cost', 'status',
+      'customerPrice', 'lobCost', 'markup', 'pageCount', 'pricingTier', 'envelopeType',
+      'returnReceipt', 'serviceOptions', 'metadata'
+    ]),
   },
-  file: {
+  File: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    findFirstOrThrow: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
+    createManyAndReturn: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     upsert: vi.fn(),
+    count: vi.fn(),
+    aggregate: vi.fn(),
+    groupBy: vi.fn(),
+    fields: createFieldMocks([
+      'id', 'createdAt', 'updatedAt', 'userId', 'name', 'type', 'size', 'url',
+      'pageCount', 'metadata'
+    ]),
   },
-  mailPieceStatusHistory: {
+  MailPieceStatusHistory: {
     findFirst: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    findFirstOrThrow: vi.fn(),
     create: vi.fn(),
+    createMany: vi.fn(),
+    createManyAndReturn: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     upsert: vi.fn(),
+    count: vi.fn(),
+    aggregate: vi.fn(),
+    groupBy: vi.fn(),
+    fields: createFieldMocks([
+      'id', 'createdAt', 'mailPieceId', 'status', 'previousStatus', 'source', 'notes'
+    ]),
   },
   $transaction: vi.fn(),
   $connect: vi.fn(),
@@ -109,53 +202,19 @@ export const createMockPrismaClient = () => ({
 });
 
 // Mock Wasp Context
-export const createMockWaspContext = (user?: User) => ({
+export const createMockWaspContext = (user?: any) => ({
   user: user || {
     id: 'test-user-id',
-    email: 'test@example.com',
-    username: 'testuser',
-    isAdmin: false,
-    hasBetaAccess: true,
-    hasFullAccess: false,
-    createdAt: new Date(),
-  },
-  entities: {
-    User: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    MailAddress: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    MailPiece: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    File: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
-    },
-    MailPieceStatusHistory: {
-      findFirst: vi.fn(),
-      findMany: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-      delete: vi.fn(),
+    identities: {
+      email: {
+        id: 'email-identity-id',
+        isEmailVerified: true,
+        emailVerificationSentAt: null,
+        passwordResetSentAt: null,
+      },
     },
   },
+  entities: createMockPrismaClient(),
 });
 
 // Mock HTTP Error

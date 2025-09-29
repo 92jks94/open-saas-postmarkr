@@ -22,6 +22,7 @@ import {
 } from '../utils/mocks';
 import {
   createUser,
+  createAuthUser,
   createMailPiece as createTestMailPiece,
   createMailAddress,
   createFile,
@@ -44,11 +45,12 @@ describe('Mail Operations - Critical Tests', () => {
     mockSuccessfulServiceCalls();
     
     testUser = createUser();
+    const authUser = createAuthUser({ id: testUser.id });
     testSenderAddress = createMailAddress(testUser.id);
     testRecipientAddress = createMailAddress(testUser.id);
     testFile = createFile(testUser.id, { pageCount: 5 });
     
-    mockContext = createMockWaspContext(testUser);
+    mockContext = createMockWaspContext(authUser);
   });
 
   describe('createMailPiece', () => {
@@ -227,9 +229,8 @@ describe('Mail Operations - Critical Tests', () => {
       // Act
       const result = await updateMailPieceStatus(
         {
-          mailPieceId: mailPiece.id,
-          status: 'pending_payment',
-          source: 'system',
+          lobId: mailPiece.lobId || 'test-lob-id',
+          lobStatus: 'pending_payment',
         },
         mockContext
       );
@@ -260,9 +261,8 @@ describe('Mail Operations - Critical Tests', () => {
       await expect(
         updateMailPieceStatus(
           {
-            mailPieceId: deliveredMailPiece.id,
-            status: 'draft', // Invalid transition from delivered to draft
-            source: 'system',
+            lobId: deliveredMailPiece.lobId || 'test-lob-id',
+            lobStatus: 'draft', // Invalid transition from delivered to draft
           },
           mockContext
         )
@@ -337,7 +337,7 @@ describe('Mail Operations - Critical Tests', () => {
       );
 
       // Assert
-      expect(result.status).toBe('submitted');
+      expect(result.success).toBe(true);
       expect(result.lobId).toBe('lob_123');
       expect(mockLob.letters.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -470,7 +470,7 @@ describe('Mail Operations - Critical Tests', () => {
 
       // Act
       const result = await getMailPiece(
-        { mailPieceId: mailPiece.id },
+        { id: mailPiece.id },
         mockContext
       );
 
@@ -485,7 +485,7 @@ describe('Mail Operations - Critical Tests', () => {
 
       // Act
       const result = await getMailPiece(
-        { mailPieceId: 'non-existent-id' },
+        { id: 'non-existent-id' },
         mockContext
       );
 
@@ -506,7 +506,7 @@ describe('Mail Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        getMailPiece({ mailPieceId: otherUserMailPiece.id }, mockContext)
+        getMailPiece({ id: otherUserMailPiece.id }, mockContext)
       ).rejects.toThrow(HttpError);
     });
   });
@@ -525,7 +525,7 @@ describe('Mail Operations - Critical Tests', () => {
 
       // Act
       const result = await deleteMailPiece(
-        { mailPieceId: draftMailPiece.id },
+        { id: draftMailPiece.id },
         mockContext
       );
 
@@ -548,7 +548,7 @@ describe('Mail Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        deleteMailPiece({ mailPieceId: submittedMailPiece.id }, mockContext)
+        deleteMailPiece({ id: submittedMailPiece.id }, mockContext)
       ).rejects.toThrow(HttpError);
     });
 
@@ -564,7 +564,7 @@ describe('Mail Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        deleteMailPiece({ mailPieceId: deliveredMailPiece.id }, mockContext)
+        deleteMailPiece({ id: deliveredMailPiece.id }, mockContext)
       ).rejects.toThrow(HttpError);
     });
   });
@@ -594,7 +594,7 @@ describe('Mail Operations - Critical Tests', () => {
 
     it('should validate user authentication for all operations', async () => {
       // Arrange
-      const unauthenticatedContext = createMockWaspContext(null);
+      const unauthenticatedContext = createMockWaspContext(undefined);
 
       // Act & Assert
       await expect(
@@ -606,7 +606,7 @@ describe('Mail Operations - Critical Tests', () => {
       ).rejects.toThrow(HttpError);
 
       await expect(
-        deleteMailPiece({ mailPieceId: 'test-id' }, unauthenticatedContext)
+        deleteMailPiece({ id: 'test-id' }, unauthenticatedContext)
       ).rejects.toThrow(HttpError);
     });
 
@@ -627,11 +627,11 @@ describe('Mail Operations - Critical Tests', () => {
       // Act - Simulate concurrent status updates
       const promises = [
         updateMailPieceStatus(
-          { mailPieceId: mailPiece.id, status: 'pending_payment', source: 'system' },
+          { lobId: mailPiece.lobId || 'test-lob-id', lobStatus: 'pending_payment' },
           mockContext
         ),
         updateMailPieceStatus(
-          { mailPieceId: mailPiece.id, status: 'pending_payment', source: 'user' },
+          { lobId: mailPiece.lobId || 'test-lob-id', lobStatus: 'pending_payment' },
           mockContext
         ),
       ];

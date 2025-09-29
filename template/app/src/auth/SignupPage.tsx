@@ -17,8 +17,8 @@ export default function Signup() {
 
   // Fetch the current beta access code from the database
   const { data: appSettings } = useQuery(getAppSettings, undefined, {
-    onSuccess: (settings) => {
-      const betaCodeSetting = settings?.find(setting => setting.key === 'beta_access_code');
+    onSuccess: (settings: any) => {
+      const betaCodeSetting = settings?.find((setting: any) => setting.key === 'beta_access_code');
       if (betaCodeSetting) {
         setCurrentBetaCode(betaCodeSetting.value);
       }

@@ -66,10 +66,10 @@ const lobEnvSchema = z.object({
 
 // File storage (AWS S3) environment variables
 const awsEnvSchema = z.object({
-  AWS_ACCESS_KEY_ID: z.string().min(1, 'AWS_ACCESS_KEY_ID is required'),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1, 'AWS_SECRET_ACCESS_KEY is required'),
-  AWS_REGION: z.string().min(1, 'AWS_REGION is required'),
-  AWS_S3_BUCKET: z.string().min(1, 'AWS_S3_BUCKET is required'),
+  AWS_S3_REGION: z.string().min(1, 'AWS_S3_REGION is required'),
+  AWS_S3_IAM_ACCESS_KEY: z.string().min(1, 'AWS_S3_IAM_ACCESS_KEY is required'),
+  AWS_S3_IAM_SECRET_KEY: z.string().min(1, 'AWS_S3_IAM_SECRET_KEY is required'),
+  AWS_S3_FILES_BUCKET: z.string().min(1, 'AWS_S3_FILES_BUCKET is required'),
 });
 
 // Monitoring & Analytics environment variables
@@ -182,10 +182,10 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       LOB_PROD_KEY: true,
       LOB_ENVIRONMENT: true,
       LOB_WEBHOOK_SECRET: true,
-      AWS_ACCESS_KEY_ID: true,
-      AWS_SECRET_ACCESS_KEY: true,
-      AWS_REGION: true,
-      AWS_S3_BUCKET: true,
+      AWS_S3_REGION: true,
+      AWS_S3_IAM_ACCESS_KEY: true,
+      AWS_S3_IAM_SECRET_KEY: true,
+      AWS_S3_FILES_BUCKET: true,
       SENTRY_DSN: true,
       SENTRY_RELEASE: true,
       SENTRY_SERVER_NAME: true,
@@ -296,10 +296,10 @@ export function getRequiredEnvironmentVariables(): string[] {
     'LOB_WEBHOOK_SECRET',
     
     // File Storage (AWS S3)
-    'AWS_ACCESS_KEY_ID',
-    'AWS_SECRET_ACCESS_KEY',
-    'AWS_REGION',
-    'AWS_S3_BUCKET',
+    'AWS_S3_REGION',
+    'AWS_S3_IAM_ACCESS_KEY',
+    'AWS_S3_IAM_SECRET_KEY',
+    'AWS_S3_FILES_BUCKET',
     
     // Monitoring (Sentry)
     'SENTRY_DSN',

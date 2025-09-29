@@ -24,7 +24,7 @@ export default function Hero() {
               </Button>
               <Button size='lg' variant='default' asChild>
                 <WaspRouterLink to={routes.SignupRoute.to}>
-                  Start Sending Mail <span aria-hidden='true'>→</span>
+                  <span>Start Sending Mail <span aria-hidden='true'>→</span></span>
                 </WaspRouterLink>
               </Button>
             </div>

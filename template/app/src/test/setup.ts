@@ -23,10 +23,10 @@ process.env.SENDGRID_FROM_NAME = 'Test App';
 process.env.LOB_PROD_KEY = 'test_lob_key';
 process.env.LOB_ENVIRONMENT = 'test';
 process.env.LOB_WEBHOOK_SECRET = 'test-webhook-secret';
-process.env.AWS_ACCESS_KEY_ID = 'test-aws-key';
-process.env.AWS_SECRET_ACCESS_KEY = 'test-aws-secret';
-process.env.AWS_REGION = 'us-east-1';
-process.env.AWS_S3_BUCKET = 'test-bucket';
+process.env.AWS_S3_REGION = 'us-east-1';
+process.env.AWS_S3_IAM_ACCESS_KEY = 'test-aws-key';
+process.env.AWS_S3_IAM_SECRET_KEY = 'test-aws-secret';
+process.env.AWS_S3_FILES_BUCKET = 'test-bucket';
 process.env.SENTRY_DSN = 'https://test@sentry.io/test';
 process.env.SENTRY_RELEASE = 'test-release';
 process.env.SENTRY_SERVER_NAME = 'test-server';
@@ -119,7 +119,7 @@ export const testUtils = {
     lobTrackingNumber: null,
     paymentIntentId: null,
     paymentStatus: 'pending',
-    cost: faker.number.float({ min: 0.5, max: 5.0, fractionDigits: 2 }),
+    cost: faker.number.float({ min: 0.5, max: 5.0, precision: 0.01 }),
     status: 'draft',
     description: faker.lorem.sentence(),
     createdAt: new Date(),

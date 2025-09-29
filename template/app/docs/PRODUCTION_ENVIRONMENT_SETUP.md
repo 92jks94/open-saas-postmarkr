@@ -44,10 +44,10 @@ LOB_WEBHOOK_SECRET="your_lob_webhook_secret_here"
 ### **File Storage (AWS S3)**
 ```bash
 # AWS S3 Configuration
-AWS_ACCESS_KEY_ID="your_aws_access_key_id"
-AWS_SECRET_ACCESS_KEY="your_aws_secret_access_key"
-AWS_REGION="us-east-1"
-AWS_S3_BUCKET="your-s3-bucket-name"
+AWS_S3_REGION="us-east-1"
+AWS_S3_IAM_ACCESS_KEY="your_aws_access_key_id"
+AWS_S3_IAM_SECRET_KEY="your_aws_secret_access_key"
+AWS_S3_FILES_BUCKET="your-s3-bucket-name"
 ```
 
 ### **Monitoring & Analytics**

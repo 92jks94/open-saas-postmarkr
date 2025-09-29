@@ -45,10 +45,10 @@ describe('Environment Validation', () => {
       'LOB_PROD_KEY',
       'LOB_ENVIRONMENT',
       'LOB_WEBHOOK_SECRET',
-      'AWS_ACCESS_KEY_ID',
-      'AWS_SECRET_ACCESS_KEY',
-      'AWS_REGION',
-      'AWS_S3_BUCKET',
+      'AWS_S3_REGION',
+      'AWS_S3_IAM_ACCESS_KEY',
+      'AWS_S3_IAM_SECRET_KEY',
+      'AWS_S3_FILES_BUCKET',
       'SENTRY_DSN',
       'SENTRY_RELEASE',
       'SENTRY_SERVER_NAME'
@@ -88,10 +88,10 @@ describe('Environment Validation', () => {
     process.env.LOB_PROD_KEY = 'test_123456789';
     process.env.LOB_ENVIRONMENT = 'test';
     process.env.LOB_WEBHOOK_SECRET = 'test-lob-webhook-secret';
-    process.env.AWS_ACCESS_KEY_ID = 'test-aws-key';
-    process.env.AWS_SECRET_ACCESS_KEY = 'test-aws-secret';
-    process.env.AWS_REGION = 'us-east-1';
-    process.env.AWS_S3_BUCKET = 'test-bucket';
+    process.env.AWS_S3_REGION = 'us-east-1';
+    process.env.AWS_S3_IAM_ACCESS_KEY = 'test-aws-key';
+    process.env.AWS_S3_IAM_SECRET_KEY = 'test-aws-secret';
+    process.env.AWS_S3_FILES_BUCKET = 'test-bucket';
     process.env.SENTRY_DSN = 'https://test@sentry.io/test';
     process.env.SENTRY_RELEASE = 'test-release';
     process.env.SENTRY_SERVER_NAME = 'test-server';

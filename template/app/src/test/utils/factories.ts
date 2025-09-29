@@ -23,6 +23,20 @@ export const createUser = (overrides: Partial<User> = {}): User => ({
   ...overrides,
 });
 
+// AuthUser Factory (for Wasp context)
+export const createAuthUser = (overrides: any = {}) => ({
+  id: faker.string.uuid(),
+  identities: {
+    email: {
+      id: faker.string.uuid(),
+      isEmailVerified: true,
+      emailVerificationSentAt: null,
+      passwordResetSentAt: null,
+    },
+  },
+  ...overrides,
+});
+
 export const createAdminUser = (overrides: Partial<User> = {}): User => 
   createUser({ isAdmin: true, hasBetaAccess: true, ...overrides });
 
@@ -128,13 +142,13 @@ export const createMailPiece = (
   lobTrackingNumber: null,
   paymentIntentId: null,
   paymentStatus: 'pending',
-  cost: faker.number.float({ min: 0.5, max: 5.0, fractionDigits: 2 }),
+  cost: faker.number.float({ min: 0.5, max: 5.0, precision: 0.01 }),
   status: 'draft',
   description: faker.lorem.sentence(),
   metadata: null,
-  customerPrice: faker.number.float({ min: 1.0, max: 10.0, fractionDigits: 2 }),
-  lobCost: faker.number.float({ min: 0.5, max: 5.0, fractionDigits: 2 }),
-  markup: faker.number.float({ min: 0.1, max: 2.0, fractionDigits: 2 }),
+  customerPrice: faker.number.float({ min: 1.0, max: 10.0, precision: 0.01 }),
+  lobCost: faker.number.float({ min: 0.5, max: 5.0, precision: 0.01 }),
+  markup: faker.number.float({ min: 0.1, max: 2.0, precision: 0.01 }),
   pageCount: faker.number.int({ min: 1, max: 20 }),
   pricingTier: 'tier_1',
   envelopeType: 'standard_10_double_window',

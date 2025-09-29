@@ -24,7 +24,7 @@ export const addressSchema = z.object({
 export const mailCreationSchema = z.object({
   senderAddressId: z.string().uuid('Invalid sender address ID'),
   recipientAddressId: z.string().uuid('Invalid recipient address ID'),
-  fileId: z.string().uuid('Invalid file ID').optional(),
+  fileId: z.string().uuid('Invalid file ID'),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
 }).refine(
   (data) => data.senderAddressId !== data.recipientAddressId,

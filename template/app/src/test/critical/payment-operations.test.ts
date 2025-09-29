@@ -19,6 +19,7 @@ import {
 } from '../utils/mocks';
 import {
   createUser,
+  createAuthUser,
   createMailPiece,
   createMailAddress,
   createFile,
@@ -38,6 +39,7 @@ describe('Payment Operations - Critical Tests', () => {
     mockSuccessfulServiceCalls();
     
     testUser = createUser();
+    const authUser = createAuthUser({ id: testUser.id });
     testSenderAddress = createMailAddress(testUser.id);
     testRecipientAddress = createMailAddress(testUser.id);
     testFile = createFile(testUser.id, { pageCount: 5 });
@@ -48,7 +50,7 @@ describe('Payment Operations - Critical Tests', () => {
       { fileId: testFile.id, pageCount: testFile.pageCount }
     );
     
-    mockContext = createMockWaspContext(testUser);
+    mockContext = createMockWaspContext(authUser);
   });
 
   describe('createMailPaymentIntent', () => {
@@ -218,7 +220,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act
       const result = await confirmMailPayment(
-        { paymentIntentId: 'pi_test_123' },
+        { mailPieceId: testMailPiece.id, paymentIntentId: 'pi_test_123' },
         mockContext
       );
 
@@ -239,7 +241,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        confirmMailPayment({ paymentIntentId: 'non-existent-pi' }, mockContext)
+        confirmMailPayment({ mailPieceId: testMailPiece.id, paymentIntentId: 'non-existent-pi' }, mockContext)
       ).rejects.toThrow(HttpError);
     });
 
@@ -257,7 +259,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        confirmMailPayment({ paymentIntentId: 'pi_test_123' }, mockContext)
+        confirmMailPayment({ mailPieceId: testMailPiece.id, paymentIntentId: 'pi_test_123' }, mockContext)
       ).rejects.toThrow();
     });
   });
@@ -284,7 +286,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act
       const result = await refundMailPayment(
-        { mailPieceId: failedMailPiece.id },
+        { mailPieceId: failedMailPiece.id, reason: 'mail_processing_failed' },
         mockContext
       );
 
@@ -314,7 +316,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        refundMailPayment({ mailPieceId: unpaidMailPiece.id }, mockContext)
+        refundMailPayment({ mailPieceId: unpaidMailPiece.id, reason: 'test_reason' }, mockContext)
       ).rejects.toThrow(HttpError);
     });
 
@@ -334,7 +336,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        refundMailPayment({ mailPieceId: refundedMailPiece.id }, mockContext)
+        refundMailPayment({ mailPieceId: refundedMailPiece.id, reason: 'test_reason' }, mockContext)
       ).rejects.toThrow(HttpError);
     });
 
@@ -355,7 +357,7 @@ describe('Payment Operations - Critical Tests', () => {
 
       // Act & Assert
       await expect(
-        refundMailPayment({ mailPieceId: failedMailPiece.id }, mockContext)
+        refundMailPayment({ mailPieceId: failedMailPiece.id, reason: 'test_reason' }, mockContext)
       ).rejects.toThrow();
     });
   });
@@ -390,7 +392,7 @@ describe('Payment Operations - Critical Tests', () => {
 
     it('should validate user authentication for all payment operations', async () => {
       // Arrange
-      const unauthenticatedContext = createMockWaspContext(null);
+      const unauthenticatedContext = createMockWaspContext(undefined);
 
       // Act & Assert
       await expect(
@@ -398,11 +400,11 @@ describe('Payment Operations - Critical Tests', () => {
       ).rejects.toThrow(HttpError);
 
       await expect(
-        confirmMailPayment({ paymentIntentId: 'test-pi' }, unauthenticatedContext)
+        confirmMailPayment({ mailPieceId: 'test-id', paymentIntentId: 'test-pi' }, unauthenticatedContext)
       ).rejects.toThrow(HttpError);
 
       await expect(
-        refundMailPayment({ mailPieceId: 'test-id' }, unauthenticatedContext)
+        refundMailPayment({ mailPieceId: 'test-id', reason: 'test_reason' }, unauthenticatedContext)
       ).rejects.toThrow(HttpError);
     });
 

@@ -142,10 +142,10 @@ function validateLobConfiguration(): void {
  * Validates AWS configuration
  */
 function validateAwsConfiguration(): void {
-  const awsAccessKey = process.env.AWS_ACCESS_KEY_ID;
-  const awsSecretKey = process.env.AWS_SECRET_ACCESS_KEY;
-  const awsRegion = process.env.AWS_REGION;
-  const awsBucket = process.env.AWS_S3_BUCKET;
+  const awsAccessKey = process.env.AWS_S3_IAM_ACCESS_KEY;
+  const awsSecretKey = process.env.AWS_S3_IAM_SECRET_KEY;
+  const awsRegion = process.env.AWS_S3_REGION;
+  const awsBucket = process.env.AWS_S3_FILES_BUCKET;
   
   if (!awsAccessKey || !awsSecretKey || !awsRegion || !awsBucket) {
     throw new Error('AWS configuration is incomplete in production');
@@ -275,7 +275,7 @@ function logServiceConfiguration(): void {
     { name: 'Stripe', configured: !!process.env.STRIPE_SECRET_KEY },
     { name: 'SendGrid', configured: !!process.env.SENDGRID_API_KEY },
     { name: 'Lob', configured: !!(process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY) },
-    { name: 'AWS S3', configured: !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) },
+    { name: 'AWS S3', configured: !!(process.env.AWS_S3_IAM_ACCESS_KEY && process.env.AWS_S3_IAM_SECRET_KEY) },
     { name: 'Sentry', configured: !!process.env.SENTRY_DSN },
     { name: 'OpenAI', configured: !!process.env.OPENAI_API_KEY },
     { name: 'Google Analytics', configured: !!(process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL && process.env.GOOGLE_ANALYTICS_PRIVATE_KEY) },

@@ -1,17 +1,25 @@
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
 const CLIENT_EMAIL = process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL;
-const PRIVATE_KEY = Buffer.from(process.env.GOOGLE_ANALYTICS_PRIVATE_KEY!, 'base64').toString('utf-8');
+const PRIVATE_KEY_RAW = process.env.GOOGLE_ANALYTICS_PRIVATE_KEY;
+const PRIVATE_KEY = PRIVATE_KEY_RAW ? Buffer.from(PRIVATE_KEY_RAW, 'base64').toString('utf-8') : undefined;
 const PROPERTY_ID = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
 
-const analyticsDataClient = new BetaAnalyticsDataClient({
-  credentials: {
-    client_email: CLIENT_EMAIL,
-    private_key: PRIVATE_KEY,
-  },
-});
+// Only initialize the client if all required environment variables are present
+const analyticsDataClient = (CLIENT_EMAIL && PRIVATE_KEY && PROPERTY_ID) 
+  ? new BetaAnalyticsDataClient({
+      credentials: {
+        client_email: CLIENT_EMAIL,
+        private_key: PRIVATE_KEY,
+      },
+    })
+  : null;
 
 export async function getSources() {
+  if (!analyticsDataClient) {
+    throw new Error('Google Analytics is not configured. Please set GOOGLE_ANALYTICS_CLIENT_EMAIL, GOOGLE_ANALYTICS_PRIVATE_KEY, and GOOGLE_ANALYTICS_PROPERTY_ID environment variables.');
+  }
+  
   const [response] = await analyticsDataClient.runReport({
     property: `properties/${PROPERTY_ID}`,
     dateRanges: [
@@ -61,6 +69,10 @@ export async function getDailyPageViews() {
 }
 
 async function getTotalPageViews() {
+  if (!analyticsDataClient) {
+    throw new Error('Google Analytics is not configured. Please set GOOGLE_ANALYTICS_CLIENT_EMAIL, GOOGLE_ANALYTICS_PRIVATE_KEY, and GOOGLE_ANALYTICS_PROPERTY_ID environment variables.');
+  }
+  
   const [response] = await analyticsDataClient.runReport({
     property: `properties/${PROPERTY_ID}`,
     dateRanges: [
@@ -86,6 +98,10 @@ async function getTotalPageViews() {
 }
 
 async function getPrevDayViewsChangePercent() {
+  if (!analyticsDataClient) {
+    throw new Error('Google Analytics is not configured. Please set GOOGLE_ANALYTICS_CLIENT_EMAIL, GOOGLE_ANALYTICS_PRIVATE_KEY, and GOOGLE_ANALYTICS_PROPERTY_ID environment variables.');
+  }
+  
   const [response] = await analyticsDataClient.runReport({
     property: `properties/${PROPERTY_ID}`,
 
