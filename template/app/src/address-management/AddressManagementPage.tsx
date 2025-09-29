@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getMailAddressesByUser, deleteMailAddress, createMailAddress, updateMailAddress, useQuery } from 'wasp/client/operations';
+import { getMailAddressesByUser, deleteMailAddress, createMailAddress, updateMailAddress, validateAddress, useQuery } from 'wasp/client/operations';
 import type { MailAddress } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -110,6 +110,17 @@ export default function AddressManagementPage() {
   const handleEditCancel = () => {
     setEditingId(null);
     setEditFormData({});
+  };
+
+  // Address validation handler
+  const handleValidateAddress = async (addressId: string) => {
+    try {
+      await validateAddress({ addressId });
+      allUserAddresses.refetch(); // Refresh to show updated validation status
+    } catch (error) {
+      console.error('Validation failed:', error);
+      setAddressError('Failed to validate address. Please try again.');
+    }
   };
 
   // Address creation handler
@@ -621,6 +632,22 @@ export default function AddressManagementPage() {
                                   📊 Used {address.usageCount} times
                                 </span>
                               )}
+                              {/* Validation Status Badge */}
+                              {address.isValidated === true && (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                                  ✅ Validated
+                                </span>
+                              )}
+                              {address.isValidated === false && (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                                  ❌ Invalid {address.validationError && `(${address.validationError})`}
+                                </span>
+                              )}
+                              {address.isValidated === null && (
+                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                  ⏳ Not Validated
+                                </span>
+                              )}
                             </div>
                           </div>
                           
@@ -633,6 +660,14 @@ export default function AddressManagementPage() {
                               onClick={() => handleEditClick(address)}
                             >
                               Edit
+                            </Button>
+                            <Button 
+                              variant='outline' 
+                              size='sm' 
+                              className='h-9'
+                              onClick={() => handleValidateAddress(address.id)}
+                            >
+                              Validate
                             </Button>
                             <Button
                               onClick={() => handleDelete(address.id)}

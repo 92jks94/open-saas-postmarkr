@@ -2,7 +2,7 @@
  * Page-based pricing system for MVP
  * - 1-5 pages: $2.50 (Standard #10 double-window envelope)
  * - 6-20 pages: $7.50 (9x12" flat single-window envelope)
- * - 21-60 pages: $20.00 (9x12" flat single-window envelope)
+ * - 21-60 pages: $15.00 (9x12" flat single-window envelope)
  */
 
 export interface PageBasedPricingConfig {
@@ -35,7 +35,7 @@ export const PAGE_BASED_PRICING: PageBasedPricingConfig[] = [
     tier: 'tier_3',
     minPages: 21,
     maxPages: 60,
-    price: 2000, // $20.00
+    price: 1500, // $15.00
     envelopeType: 'flat_9x12_single_window',
     description: '21-60 pages - 9x12" flat single-window envelope'
   }

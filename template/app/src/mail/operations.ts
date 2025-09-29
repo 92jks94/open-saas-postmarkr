@@ -54,7 +54,7 @@ import {
   validateAndCalculatePricing,
   getPageCountErrorMessage 
 } from '../server/pricing/pageBasedPricing';
-import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus } from '../server/lob/services';
+import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus, calculateCost } from '../server/lob/services';
 
 // ============================================================================
 // MAIL PIECE CRUD OPERATIONS
@@ -764,15 +764,15 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(400, 'Page count is required for pricing calculation');
     }
 
-    // Calculate cost using existing service
-    const costData = await createMailPaymentIntentService({
+    // Calculate cost using cost calculation service
+    const costData = await calculateCost({
       mailType: mailPiece.mailType,
       mailClass: mailPiece.mailClass,
       mailSize: mailPiece.mailSize,
       toAddress: mailPiece.recipientAddress,
       fromAddress: mailPiece.senderAddress,
       pageCount: mailPiece.pageCount,
-    }, context.user.id, context);
+    });
 
     // Create Stripe Checkout Session
     const stripe = require('../../payment/stripe/stripeClient').stripe;

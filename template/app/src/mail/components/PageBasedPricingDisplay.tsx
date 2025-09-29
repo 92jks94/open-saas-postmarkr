@@ -32,7 +32,7 @@ export function PageBasedPricingDisplay({ pageCount, onPricingInfo }: PageBasedP
     } else {
       return {
         tier: 'tier_3',
-        price: 20.00,
+        price: 15.00,
         envelopeType: 'flat_9x12_single_window',
         description: '21-60 pages - 9x12" flat single-window envelope'
       };
