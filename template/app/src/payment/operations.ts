@@ -40,7 +40,7 @@ export const generateCheckoutSession: GenerateCheckoutSession<
 
   const paymentPlanId = ensureArgsSchemaOrThrowHttpError(generateCheckoutSessionSchema, rawPaymentPlanId);
   const userId = context.user.id;
-  const userEmail = context.user.email;
+  const userEmail = context.user.identities.email?.email;
   if (!userEmail) {
     // If using the usernameAndPassword Auth method, switch to an Auth method that provides an email.
     throw new HttpError(403, 'User needs an email to make a payment.');
@@ -49,7 +49,7 @@ export const generateCheckoutSession: GenerateCheckoutSession<
   const paymentPlan = paymentPlans[paymentPlanId];
   const { session } = await paymentProcessor.createCheckoutSession({
     userId,
-    userEmail,
+    userEmail: userEmail as string, // userEmail is guaranteed to be string due to null check above
     paymentPlan,
     prismaUserDelegate: context.entities.User,
   });

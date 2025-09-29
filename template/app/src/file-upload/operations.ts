@@ -1,18 +1,29 @@
-import * as z from 'zod';
+// ============================================================================
+// WASP FRAMEWORK IMPORTS
+// ============================================================================
 import { HttpError } from 'wasp/server';
-import { type File } from 'wasp/entities';
-import {
-  type CreateFile,
-  type DeleteFile,
-  type GetAllFilesByUser,
-  type GetDownloadFileSignedURL,
+import type {
+  CreateFile,
+  DeleteFile,
+  GetAllFilesByUser,
+  GetDownloadFileSignedURL,
 } from 'wasp/server/operations';
+import type { File } from 'wasp/entities';
+import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
+
+// ============================================================================
+// LOCAL SERVICE/UTILITY IMPORTS
+// ============================================================================
 import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3, deleteFileFromS3 } from './s3Utils';
-import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
 import { extractPDFMetadataFromBuffer, isPDFBuffer, type PDFMetadata } from './pdfMetadata';
-import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
+
+// ============================================================================
+// EXTERNAL LIBRARY IMPORTS
+// ============================================================================
+import * as z from 'zod';
+import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
 const createFileInputSchema = z.object({
   fileType: z.enum(ALLOWED_FILE_TYPES),

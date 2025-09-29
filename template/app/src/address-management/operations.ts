@@ -1,14 +1,25 @@
-import * as z from 'zod';
+// ============================================================================
+// WASP FRAMEWORK IMPORTS
+// ============================================================================
 import { HttpError } from 'wasp/server';
-import { type MailAddress } from 'wasp/entities';
-import {
-  type CreateMailAddress,
-  type DeleteMailAddress,
-  type GetMailAddressesByUser,
-  type UpdateMailAddress,
-  type ValidateAddress,
+import type {
+  CreateMailAddress,
+  DeleteMailAddress,
+  GetMailAddressesByUser,
+  UpdateMailAddress,
+  ValidateAddress,
 } from 'wasp/server/operations';
+import type { MailAddress } from 'wasp/entities';
+
+// ============================================================================
+// LOCAL SERVICE/UTILITY IMPORTS
+// ============================================================================
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
+
+// ============================================================================
+// EXTERNAL LIBRARY IMPORTS
+// ============================================================================
+import * as z from 'zod';
 
 // Copy the exact validation pattern from file-upload
 const createMailAddressInputSchema = z.object({
