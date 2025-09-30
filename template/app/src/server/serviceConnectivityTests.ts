@@ -162,48 +162,46 @@ async function testSendGridConnectivity(): Promise<ConnectivityResult> {
 }
 
 /**
- * Tests Lob API connectivity
+ * Tests Lob API connectivity using the Lob SDK
  */
 async function testLobConnectivity(): Promise<ConnectivityResult> {
   const startTime = Date.now();
   
-  const lobKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
-  const lobEnvironment = process.env.LOB_TEST_KEY ? 'test' : 'production';
-  
-  if (!lobKey) {
-    return {
-      service: 'Lob',
-      status: 'unknown',
-      details: 'API key not configured'
-    };
-  }
-  
   try {
-    const response = await fetch('https://api.lob.com/v1/addresses?limit=1', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${Buffer.from(lobKey + ':').toString('base64')}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    // Import Lob client dynamically to avoid circular dependencies
+    const { lob } = await import('./lob/client');
+    
+    if (!lob) {
+      return {
+        service: 'Lob',
+        status: 'unknown',
+        details: 'Lob client not initialized - API key missing or invalid'
+      };
+    }
+
+    // Determine which environment key is being used
+    const lobKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
+    const lobEnvironment = process.env.LOB_TEST_KEY ? 'test' : 'production';
+    
+    if (!lobKey) {
+      return {
+        service: 'Lob',
+        status: 'unknown',
+        details: 'API key not configured'
+      };
+    }
+    
+    // Test API connectivity with a simple addresses list using Lob SDK
+    const addresses = await lob.addresses.list({ limit: 1 });
     
     const responseTime = Date.now() - startTime;
     
-    if (response.ok) {
-      return {
-        service: 'Lob',
-        status: 'healthy',
-        responseTime,
-        details: `Environment: ${lobEnvironment}`
-      };
-    } else {
-      return {
-        service: 'Lob',
-        status: 'unhealthy',
-        responseTime,
-        error: `HTTP ${response.status}: ${response.statusText}`
-      };
-    }
+    return {
+      service: 'Lob',
+      status: 'healthy',
+      responseTime,
+      details: `Environment: ${lobEnvironment}, Addresses found: ${addresses.data?.length || 0}`
+    };
   } catch (error) {
     return {
       service: 'Lob',

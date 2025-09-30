@@ -88,7 +88,7 @@ export const lobWebhook = async (request: express.Request, response: express.Res
     }
 
     // Get webhook secret from environment
-    const webhookSecret = process.env.LOB_WEBHOOK_SECRET || 'secret'; // Default for Lob debugger
+    const webhookSecret = requireNodeEnvVar('LOB_WEBHOOK_SECRET');
 
     // Verify signature
     if (!verifyLobSignature(rawBody, signature, webhookSecret, timestamp)) {

@@ -86,7 +86,8 @@
     "test:all": "node src/test/run-tests.ts",
     "test:critical-only": "vitest run src/test/critical/**/*.test.ts --reporter=verbose",
     "test:integration-only": "vitest run src/test/integration/**/*.test.ts --reporter=verbose",
-    "test:performance-only": "vitest run src/test/performance/**/*.test.ts --reporter=verbose"
+    "test:performance-only": "vitest run src/test/performance/**/*.test.ts --reporter=verbose",
+    "check:production": "tsx src/server/productionReadinessCheck.ts"
   },
   "overrides": {
     "form-data": "^4.0.0",

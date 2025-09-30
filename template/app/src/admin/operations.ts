@@ -15,11 +15,7 @@ export const updateAppSetting: UpdateAppSetting<UpdateAppSettingInput, AppSettin
   rawArgs,
   context
 ) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 
@@ -38,11 +34,7 @@ export const updateAppSetting: UpdateAppSetting<UpdateAppSettingInput, AppSettin
 };
 
 export const getAppSettings: GetAppSettings<void, AppSettings[]> = async (_args, context) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 
@@ -73,11 +65,7 @@ type AdminMailPiecesResult = {
 };
 
 export const debugMailPieces: DebugMailPieces<void, AdminMailPiecesResult> = async (_args, context) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 
@@ -134,11 +122,7 @@ type FixResult = {
 };
 
 export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount: number; results: FixResult[] }> = async (_args, context) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 

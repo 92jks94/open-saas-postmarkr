@@ -12,11 +12,7 @@ type DailyStatsValues = {
 };
 
 export const getDailyStats: GetDailyStats<void, DailyStatsValues | undefined> = async (_args, context) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 

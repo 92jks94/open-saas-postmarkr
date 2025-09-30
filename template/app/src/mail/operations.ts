@@ -56,6 +56,7 @@ import {
 } from '../server/pricing/pageBasedPricing';
 import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus, calculateCost } from '../server/lob/services';
 import { stripe } from '../payment/stripe/stripeClient';
+import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 
 // ============================================================================
 // MAIL PIECE CRUD OPERATIONS
@@ -197,6 +198,9 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
     if (!hasBetaAccess(context.user)) {
       throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
     }
+
+    // Rate limiting: 10 mail pieces per hour
+    checkOperationRateLimit('createMailPiece', 'mail', context.user.id);
 
     // Input validation using Zod schema
     const validatedInput = createMailPieceSchema.parse(args);
@@ -624,6 +628,9 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
     }
 
+    // Rate limiting: 5 payment requests per minute
+    checkOperationRateLimit('createMailPaymentIntent', 'payment', context.user.id);
+
     // Find the mail piece and verify ownership
     const mailPiece = await context.entities.MailPiece.findFirst({
       where: { id: args.mailPieceId, userId: context.user.id },
@@ -980,6 +987,9 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     if (!hasBetaAccess(context.user)) {
       throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
     }
+
+    // Rate limiting: 10 Lob submissions per hour
+    checkOperationRateLimit('submitMailPieceToLob', 'mail', context.user.id);
 
     // Find the mail piece and verify ownership
     const mailPiece = await context.entities.MailPiece.findFirst({

@@ -19,6 +19,7 @@ import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3, deleteFil
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
 import { extractPDFMetadataFromBuffer, isPDFBuffer, type PDFMetadata } from './pdfMetadata';
+import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 
 // ============================================================================
 // EXTERNAL LIBRARY IMPORTS
@@ -44,6 +45,9 @@ export const createFile: CreateFile<
   if (!context.user) {
     throw new HttpError(401);
   }
+
+  // Rate limiting: 10 file uploads per hour
+  checkOperationRateLimit('createFile', 'fileUpload', context.user.id);
 
   const { fileType, fileName } = ensureArgsSchemaOrThrowHttpError(createFileInputSchema, rawArgs);
 
@@ -114,6 +118,9 @@ export const deleteFile: DeleteFile<
     throw new HttpError(401);
   }
 
+  // Rate limiting: 10 file deletions per hour
+  checkOperationRateLimit('deleteFile', 'fileUpload', context.user.id);
+
   const { fileId } = ensureArgsSchemaOrThrowHttpError(deleteFileInputSchema, rawArgs);
 
   const file = await context.entities.File.delete({
@@ -153,6 +160,9 @@ export const triggerPDFProcessing: TriggerPDFProcessing<
   if (!context.user) {
     throw new HttpError(401);
   }
+
+  // Rate limiting: 10 PDF processing triggers per hour
+  checkOperationRateLimit('triggerPDFProcessing', 'fileUpload', context.user.id);
 
   const { fileId } = ensureArgsSchemaOrThrowHttpError(triggerPDFProcessingInputSchema, rawArgs);
 

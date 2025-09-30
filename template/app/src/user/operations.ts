@@ -17,15 +17,11 @@ export const updateIsUserAdminById: UpdateIsUserAdminById<UpdateUserAdminByIdInp
   rawArgs,
   context
 ) => {
-  const { id, isAdmin } = ensureArgsSchemaOrThrowHttpError(updateUserAdminByIdInputSchema, rawArgs);
-
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
+
+  const { id, isAdmin } = ensureArgsSchemaOrThrowHttpError(updateUserAdminByIdInputSchema, rawArgs);
 
   return context.entities.User.update({
     where: { id },
@@ -56,11 +52,7 @@ export const getPaginatedUsers: GetPaginatedUsers<GetPaginatedUsersInput, GetPag
   rawArgs,
   context
 ) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Only authenticated users are allowed to perform this operation');
-  }
-
-  if (!context.user.isAdmin) {
+  if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 

@@ -117,22 +117,29 @@ export async function testSendGridConnectivity(): Promise<ApiTestResult> {
 }
 
 /**
- * Tests Lob API connectivity
+ * Tests Lob API connectivity using the Lob SDK
  */
 export async function testLobConnectivity(): Promise<ApiTestResult> {
   const startTime = Date.now();
   
   try {
-    // Respect the LOB_ENVIRONMENT setting to choose the correct API key
-    const environment = process.env.LOB_ENVIRONMENT || 'test';
-    let apiKey: string | undefined;
+    // Import Lob client dynamically to avoid circular dependencies
+    const { lob } = await import('./lob/client');
     
-    if (environment === 'live' || environment === 'prod') {
-      apiKey = process.env.LOB_PROD_KEY;
-    } else {
-      apiKey = process.env.LOB_TEST_KEY;
+    if (!lob) {
+      return {
+        service: 'lob',
+        status: 'unhealthy',
+        error: 'Lob client not initialized - API key missing or invalid'
+      };
     }
-    
+
+    // Respect the LOB_ENVIRONMENT setting to determine which key is being used
+    const environment = process.env.LOB_ENVIRONMENT || 'test';
+    const apiKey = environment === 'live' || environment === 'prod' 
+      ? process.env.LOB_PROD_KEY 
+      : process.env.LOB_TEST_KEY;
+
     if (!apiKey) {
       return {
         service: 'lob',
@@ -141,19 +148,10 @@ export async function testLobConnectivity(): Promise<ApiTestResult> {
       };
     }
 
-    // Test API connectivity with a simple account retrieval
+    // Test API connectivity with a simple addresses list using Lob SDK
     console.log(`🔍 Testing Lob API with ${environment} key: ${apiKey.substring(0, 8)}...`);
     
-    const response = await fetch('https://api.lob.com/v1/accounts', {
-      headers: {
-        'Authorization': `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Lob API returned ${response.status}: ${response.statusText}`);
-    }
+    const addresses = await lob.addresses.list({ limit: 1 });
 
     const responseTime = Date.now() - startTime;
     
@@ -163,7 +161,8 @@ export async function testLobConnectivity(): Promise<ApiTestResult> {
       responseTime,
       details: {
         keyPrefix: apiKey.substring(0, 8) + '...',
-        environment: apiKey.startsWith('live_') ? 'production' : 'test'
+        environment: apiKey.startsWith('live_') ? 'production' : 'test',
+        addressesCount: addresses.data?.length || 0
       }
     };
   } catch (error: any) {
