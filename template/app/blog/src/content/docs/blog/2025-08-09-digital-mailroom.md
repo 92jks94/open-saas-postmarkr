@@ -1,9 +1,9 @@
 ---
 title: "The Digital Mailroom: How to Manage Physical Mail for Your Remote Business"
 date: 2025-08-09
-tags: ["digital mailroom", "virtual mailbox", "remote business", "mail automation"]
-subtitle: "Transform your business mail into a seamless digital workflow."
+description: Transform your business mail into a seamless digital workflow.
 authors: ["Postmarkr Team"]
+tags: ["digital mailroom", "virtual mailbox", "remote business", "mail automation"]
 ---
 
 ## Introduction

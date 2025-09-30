@@ -1,9 +1,9 @@
 ---
-title: "How to Forward Business Mail Without Losing Control"
+title: How to Forward Business Mail Without Losing Control
 date: 2025-02-11
-tags: ["mail forwarding", "virtual mailbox", "remote work", "digital mail"]
-subtitle: "A smarter, safer way to manage mail when your business (or you) are always on the move."
+description: A smarter, safer way to manage mail when your business (or you) are always on the move.
 authors: ["Postmarkr Team"]
+tags: ["mail forwarding", "virtual mailbox", "remote work", "digital mail"]
 ---
 
 ## Introduction

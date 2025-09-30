@@ -1,9 +1,9 @@
 ---
 title: "Bypass the Line: How to Send a Letter Without Ever Going to the Post Office"
 date: 2025-07-21
-tags: ["post office", "virtual print room", "remote business", "digital mail"]
-subtitle: "Save time, avoid lines, and keep your business moving with zero-touch mail."
+description: Save time, avoid lines, and keep your business moving with zero-touch mail.
 authors: ["Postmarkr Team"]
+tags: ["post office", "virtual print room", "remote business", "digital mail"]
 ---
 
 ## Introduction

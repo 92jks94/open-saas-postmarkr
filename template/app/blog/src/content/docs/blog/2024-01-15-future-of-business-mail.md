@@ -1,16 +1,16 @@
 ---
 title: The Future of Business Mail in a Remote-First World
 date: 2024-01-15
-tags: ["business", "remote-work", "mail-service", "industry-trends"]
-subtitle: How digital transformation is reshaping traditional mail services
+description: How digital transformation is reshaping traditional mail services
 authors: ["Postmarkr Team"]
+tags: ["business", "remote-work", "mail-service", "industry-trends"]
 ---
 
 ## The Remote Work Revolution
 
 The shift to remote work has fundamentally changed how businesses operate, and mail services are no exception. What was once a simple trip to the post office has become a complex challenge for distributed teams and remote workers.
 
-![Remote work mail challenges](/public-banner.webp)
+![Remote work mail challenges](/banner-images/default-banner.webp)
 
 ## Traditional Mail Challenges for Remote Teams
 

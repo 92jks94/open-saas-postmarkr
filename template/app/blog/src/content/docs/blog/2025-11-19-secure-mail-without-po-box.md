@@ -1,9 +1,9 @@
 ---
-title: "Securely Receive Mail at Home Without a P.O. Box"
+title: Securely Receive Mail at Home Without a P.O. Box
 date: 2025-11-19
-tags: ["mail security", "virtual mailbox", "home business", "compliance"]
-subtitle: "Protect sensitive information and maintain privacy with a Virtual Mailbox."
+description: Protect sensitive information and maintain privacy with a Virtual Mailbox.
 authors: ["Postmarkr Team"]
+tags: ["mail security", "virtual mailbox", "home business", "compliance"]
 ---
 
 ## Introduction

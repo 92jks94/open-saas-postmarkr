@@ -1,6 +1,8 @@
 import { validateEnvironmentOnStartup, isProduction, isDevelopment } from './envValidation';
 import { runAllConnectivityTests, runCriticalConnectivityTests } from './apiConnectivityTests';
 import { alertManager, runMonitoringChecks } from './monitoringAlerts';
+import { displayStartupBanner, displayProductionStatus } from './startupBanner';
+import { runServiceConnectivityTests } from './serviceConnectivityTests';
 
 /**
  * Server startup validation
@@ -12,20 +14,30 @@ import { alertManager, runMonitoringChecks } from './monitoringAlerts';
  * This should be called early in the server initialization process
  */
 export async function validateServerStartup(): Promise<void> {
-  console.log('🚀 Starting comprehensive server startup validation...');
+  const startTime = Date.now();
+  const criticalIssues: string[] = [];
   
   try {
     // Phase 1: Environment variable validation
     console.log('📋 Phase 1: Environment variable validation...');
     validateEnvironmentOnStartup();
+    const envIssues = extractEnvironmentIssues();
+    criticalIssues.push(...envIssues);
     
     // Phase 2: Database connection validation
     console.log('🗄️ Phase 2: Database connection validation...');
-    validateDatabaseConnection();
+    await validateDatabaseConnection();
     
     // Phase 3: External service configuration validation
     console.log('🔗 Phase 3: External service configuration validation...');
     validateExternalServices();
+    
+    // Phase 3.5: Real-time service connectivity tests (development only)
+    if (isDevelopment()) {
+      console.log('🧪 Phase 3.5: Real-time service connectivity tests...');
+      const connectivityIssues = await runServiceConnectivityTests();
+      criticalIssues.push(...connectivityIssues);
+    }
     
     // Phase 4: API connectivity tests (production only)
     if (isProduction()) {
@@ -35,7 +47,16 @@ export async function validateServerStartup(): Promise<void> {
     
     // Phase 5: Monitoring setup and initial health check
     console.log('📊 Phase 5: Monitoring setup and health check...');
-    await setupMonitoring();
+    const monitoringIssues = await setupMonitoring();
+    criticalIssues.push(...monitoringIssues);
+    
+    // Phase 6: Display startup banner
+    console.log('🎨 Phase 6: Displaying startup information...');
+    if (isDevelopment()) {
+      displayStartupBanner(startTime, criticalIssues);
+    } else {
+      displayProductionStatus();
+    }
     
     console.log('✅ Server startup validation completed successfully');
   } catch (error) {
@@ -45,19 +66,117 @@ export async function validateServerStartup(): Promise<void> {
 }
 
 /**
- * Validates database connection (placeholder for now)
- * In a real implementation, you would test the database connection here
+ * Validates database connection with real connectivity tests
  */
-function validateDatabaseConnection(): void {
+async function validateDatabaseConnection(): Promise<void> {
   console.log('📊 Validating database connection...');
   
-  // TODO: Add actual database connection validation
-  // This could involve:
-  // 1. Testing the connection string format
-  // 2. Attempting to connect to the database
-  // 3. Running a simple query to verify connectivity
+  try {
+    // Import Prisma client dynamically to avoid circular dependencies
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    // Test basic connectivity
+    const startTime = Date.now();
+    await prisma.$connect();
+    const connectionTime = Date.now() - startTime;
+    
+    // Test a simple query
+    const result = await prisma.$queryRaw`SELECT 1 as test`;
+    
+    // Get database info - try PostgreSQL first, then SQLite
+    let databaseInfo = 'Unknown Database';
+    try {
+      // Try PostgreSQL version query first
+      const pgInfo = await prisma.$queryRaw`SELECT version() as database_info` as any[];
+      databaseInfo = `PostgreSQL ${pgInfo[0]?.database_info || 'Unknown Version'}`;
+    } catch (error) {
+      try {
+        // Try SQLite version query
+        const sqliteInfo = await prisma.$queryRaw`SELECT sqlite_version() as database_info` as any[];
+        databaseInfo = `SQLite ${sqliteInfo[0]?.database_info || 'Unknown Version'}`;
+      } catch (sqliteError) {
+        // If both fail, try to determine from connection string
+        const dbUrl = process.env.DATABASE_URL || '';
+        if (dbUrl.includes('postgresql')) {
+          databaseInfo = 'PostgreSQL (version unknown)';
+        } else if (dbUrl.includes('sqlite')) {
+          databaseInfo = 'SQLite (version unknown)';
+        }
+      }
+    }
+    
+    console.log(`✅ Database connection successful (${connectionTime}ms)`);
+    console.log(`   Database: ${databaseInfo}`);
+    console.log(`   Connection String: ${maskDatabaseUrl(process.env.DATABASE_URL || '')}`);
+    
+    // Test database schema - try PostgreSQL first, then SQLite
+    try {
+      // Try PostgreSQL table count first
+      const pgTableCount = await prisma.$queryRaw`
+        SELECT COUNT(*) as count FROM information_schema.tables 
+        WHERE table_schema = 'public'
+      ` as any[];
+      console.log(`   Tables: ${pgTableCount[0]?.count || 'Unknown'} tables`);
+    } catch (error) {
+      try {
+        // Try SQLite table count
+        const sqliteTableCount = await prisma.$queryRaw`
+          SELECT COUNT(*) as count FROM sqlite_master WHERE type='table'
+        ` as any[];
+        console.log(`   Tables: ${sqliteTableCount[0]?.count || 'Unknown'} tables`);
+      } catch (sqliteError) {
+        console.log(`   Tables: Unable to determine table count`);
+      }
+    }
+    
+    await prisma.$disconnect();
+    
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    throw new Error(`Database connection validation failed: ${error}`);
+  }
+}
+
+/**
+ * Masks sensitive information in database URL for logging
+ */
+function maskDatabaseUrl(url: string): string {
+  if (!url) return 'Not configured';
   
-  console.log('✅ Database connection validation passed');
+  // Mask password in connection string
+  return url.replace(/(:\/\/[^:]+:)[^@]+(@)/, '$1***$2');
+}
+
+/**
+ * Extracts critical environment variable issues
+ */
+function extractEnvironmentIssues(): string[] {
+  const issues: string[] = [];
+  
+  // Check for missing required environment variables
+  if (!process.env.JWT_SECRET) {
+    issues.push('JWT_SECRET: Required environment variable missing');
+  }
+  
+  if (!process.env.WASP_WEB_CLIENT_URL) {
+    issues.push('WASP_WEB_CLIENT_URL: Required environment variable missing');
+  }
+  
+  if (!process.env.WASP_SERVER_URL) {
+    issues.push('WASP_SERVER_URL: Required environment variable missing');
+  }
+  
+  // Check for invalid API key formats
+  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
+    issues.push('STRIPE_SECRET_KEY: Invalid format (must start with sk_live_ or sk_test_)');
+  }
+  
+  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('sk-')) {
+    issues.push('OpenAI API Key: Invalid format (must start with sk-)');
+  }
+  
+  return issues;
 }
 
 /**
@@ -239,8 +358,9 @@ async function validateApiConnectivity(): Promise<void> {
 /**
  * Sets up monitoring and runs initial health check
  */
-async function setupMonitoring(): Promise<void> {
+async function setupMonitoring(): Promise<string[]> {
   console.log('📊 Setting up monitoring system...');
+  const criticalIssues: string[] = [];
   
   try {
     // Run initial monitoring checks
@@ -253,10 +373,13 @@ async function setupMonitoring(): Promise<void> {
     console.log(`   Healthy services: ${dashboard.services.healthy.length}`);
     console.log(`   Unhealthy services: ${dashboard.services.unhealthy.length}`);
     
-    // If there are critical alerts, warn but don't fail startup
+    // Collect critical alerts as issues
     const criticalAlerts = dashboard.alerts.filter(a => a.level === 'critical' && !a.resolved);
     if (criticalAlerts.length > 0) {
       console.warn(`⚠️ ${criticalAlerts.length} critical alerts detected - check configuration`);
+      criticalAlerts.forEach(alert => {
+        criticalIssues.push(`${alert.service}: ${alert.message}`);
+      });
     }
     
     console.log('✅ Monitoring setup completed');
@@ -264,7 +387,10 @@ async function setupMonitoring(): Promise<void> {
     console.error('❌ Monitoring setup failed:', error);
     // Don't fail startup for monitoring issues
     console.warn('⚠️ Continuing startup despite monitoring setup failure');
+    criticalIssues.push(`Monitoring setup failed: ${error}`);
   }
+  
+  return criticalIssues;
 }
 
 /**
@@ -272,19 +398,55 @@ async function setupMonitoring(): Promise<void> {
  */
 function logServiceConfiguration(): void {
   const services = [
-    { name: 'Stripe', configured: !!process.env.STRIPE_SECRET_KEY },
-    { name: 'SendGrid', configured: !!process.env.SENDGRID_API_KEY },
-    { name: 'Lob', configured: !!(process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY) },
-    { name: 'AWS S3', configured: !!(process.env.AWS_S3_IAM_ACCESS_KEY && process.env.AWS_S3_IAM_SECRET_KEY) },
-    { name: 'Sentry', configured: !!process.env.SENTRY_DSN },
-    { name: 'OpenAI', configured: !!process.env.OPENAI_API_KEY },
-    { name: 'Google Analytics', configured: !!(process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL && process.env.GOOGLE_ANALYTICS_PRIVATE_KEY) },
+    { 
+      name: 'Stripe', 
+      configured: !!process.env.STRIPE_SECRET_KEY,
+      details: process.env.STRIPE_SECRET_KEY ? 
+        `Mode: ${process.env.STRIPE_SECRET_KEY.startsWith('sk_test_') ? 'Test' : 'Live'}` : 
+        'Required for payment processing'
+    },
+    { 
+      name: 'SendGrid', 
+      configured: !!process.env.SENDGRID_API_KEY,
+      details: process.env.SENDGRID_API_KEY ? 'Email delivery configured' : 'Required for email sending'
+    },
+    { 
+      name: 'Lob', 
+      configured: !!(process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY),
+      details: process.env.LOB_TEST_KEY ? 'Test environment' : 
+               process.env.LOB_PROD_KEY ? 'Production environment' : 'Required for mail service'
+    },
+    { 
+      name: 'AWS S3', 
+      configured: !!(process.env.AWS_S3_IAM_ACCESS_KEY && process.env.AWS_S3_IAM_SECRET_KEY),
+      details: process.env.AWS_S3_IAM_ACCESS_KEY ? 
+        `Bucket: ${process.env.AWS_S3_FILES_BUCKET || 'Not specified'}, Region: ${process.env.AWS_S3_REGION || 'us-east-1'}` : 
+        'Required for file storage'
+    },
+    { 
+      name: 'Sentry', 
+      configured: !!process.env.SENTRY_DSN,
+      details: process.env.SENTRY_DSN ? 'Error tracking enabled' : 'Optional - error tracking disabled'
+    },
+    { 
+      name: 'OpenAI', 
+      configured: !!process.env.OPENAI_API_KEY,
+      details: process.env.OPENAI_API_KEY ? 'AI features enabled' : 'Optional - AI features disabled'
+    },
+    { 
+      name: 'Google Analytics', 
+      configured: !!(process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL && process.env.GOOGLE_ANALYTICS_PRIVATE_KEY),
+      details: process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL ? 'Analytics enabled' : 'Optional - analytics disabled'
+    },
   ];
   
   console.log('📋 Service configuration status:');
   services.forEach(service => {
     const status = service.configured ? '✅' : '❌';
     console.log(`  ${status} ${service.name}`);
+    if (service.details) {
+      console.log(`      ${service.details}`);
+    }
   });
 }
 

@@ -123,16 +123,27 @@ export async function testLobConnectivity(): Promise<ApiTestResult> {
   const startTime = Date.now();
   
   try {
-    const apiKey = process.env.LOB_PROD_KEY || process.env.LOB_TEST_KEY;
+    // Respect the LOB_ENVIRONMENT setting to choose the correct API key
+    const environment = process.env.LOB_ENVIRONMENT || 'test';
+    let apiKey: string | undefined;
+    
+    if (environment === 'live' || environment === 'prod') {
+      apiKey = process.env.LOB_PROD_KEY;
+    } else {
+      apiKey = process.env.LOB_TEST_KEY;
+    }
+    
     if (!apiKey) {
       return {
         service: 'lob',
         status: 'unhealthy',
-        error: 'Lob API key not configured'
+        error: `Lob ${environment} API key not configured`
       };
     }
 
     // Test API connectivity with a simple account retrieval
+    console.log(`🔍 Testing Lob API with ${environment} key: ${apiKey.substring(0, 8)}...`);
+    
     const response = await fetch('https://api.lob.com/v1/accounts', {
       headers: {
         'Authorization': `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,

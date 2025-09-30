@@ -15,20 +15,51 @@ declare module 'lob' {
     address_country: string;
   }
 
-  interface MailPiece {
-    id?: string;
+  interface PostcardData {
     to: Address;
     from: Address;
+    front: string; // URL or HTML
+    back?: string; // URL or HTML
+    size?: '4x6' | '6x9';
     description?: string;
-    metadata?: Record<string, any>;
+    color?: boolean;
+    double_sided?: boolean;
+    extra_service?: string;
+  }
+
+  interface LetterData {
+    to: Address;
+    from: Address;
+    file: string; // URL or HTML content
+    description?: string;
+    color?: boolean;
+    double_sided?: boolean;
+    extra_service?: string;
+  }
+
+  interface CheckData {
+    to: Address;
+    from: Address;
+    bank_account: string;
+    amount: number;
+    memo?: string;
+    description?: string;
   }
 
   interface LobResponse<T = any> {
     id: string;
     object: string;
     status: string;
+    price?: string;
     tracking_number?: string;
-    data: T;
+    expected_delivery_date?: string;
+    date_created?: string;
+    events?: Array<{
+      name: string;
+      description: string;
+      date_created: string;
+    }>;
+    [key: string]: any;
   }
 
   interface VerificationRequest {
@@ -37,7 +68,6 @@ declare module 'lob' {
     city: string;
     state: string;
     zip_code: string;
-    country: string;
   }
 
   interface VerificationResponse {
@@ -54,10 +84,22 @@ declare module 'lob' {
       list(params?: any): Promise<{ data: LobResponse<Address>[] }>;
     };
     
-    mailpieces: {
-      create(data: MailPiece): Promise<LobResponse<MailPiece>>;
-      retrieve(id: string): Promise<LobResponse<MailPiece>>;
-      list(params?: any): Promise<{ data: LobResponse<MailPiece>[] }>;
+    postcards: {
+      create(data: PostcardData): Promise<LobResponse<PostcardData>>;
+      retrieve(id: string): Promise<LobResponse<PostcardData>>;
+      list(params?: any): Promise<{ data: LobResponse<PostcardData>[] }>;
+    };
+
+    letters: {
+      create(data: LetterData): Promise<LobResponse<LetterData>>;
+      retrieve(id: string): Promise<LobResponse<LetterData>>;
+      list(params?: any): Promise<{ data: LobResponse<LetterData>[] }>;
+    };
+
+    checks: {
+      create(data: CheckData): Promise<LobResponse<CheckData>>;
+      retrieve(id: string): Promise<LobResponse<CheckData>>;
+      list(params?: any): Promise<{ data: LobResponse<CheckData>[] }>;
     };
 
     usVerifications: {
