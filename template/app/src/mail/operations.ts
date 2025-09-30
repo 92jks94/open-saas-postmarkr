@@ -55,6 +55,7 @@ import {
   getPageCountErrorMessage 
 } from '../server/pricing/pageBasedPricing';
 import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus, calculateCost } from '../server/lob/services';
+import { stripe } from '../payment/stripe/stripeClient';
 
 // ============================================================================
 // MAIL PIECE CRUD OPERATIONS
@@ -657,8 +658,7 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
     }, context.user.id, context);
 
     // Update payment intent metadata with mailPieceId
-    const stripeClient = require('../../payment/stripe/stripeClient').stripe;
-    await stripeClient.paymentIntents.update(paymentData.paymentIntentId, {
+    await stripe.paymentIntents.update(paymentData.paymentIntentId, {
       metadata: {
         mailPieceId: args.mailPieceId,
         userId: context.user.id,
@@ -691,7 +691,11 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
     });
 
     // Get client secret from Stripe
-    const paymentIntent = await stripeClient.paymentIntents.retrieve(paymentData.paymentIntentId);
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentData.paymentIntentId);
+
+    if (!paymentIntent.client_secret) {
+      throw new HttpError(500, 'Failed to retrieve payment intent client secret');
+    }
 
     return {
       paymentIntentId: paymentData.paymentIntentId,
@@ -775,7 +779,6 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
     });
 
     // Create Stripe Checkout Session
-    const stripe = require('../../payment/stripe/stripeClient').stripe;
     const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
     
     const session = await stripe.checkout.sessions.create({

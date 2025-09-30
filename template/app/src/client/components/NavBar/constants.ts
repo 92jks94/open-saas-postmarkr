@@ -12,6 +12,7 @@ export const marketingNavigationItems: NavigationItem[] = [
   { name: 'Pricing', to: routes.PricingPageRoute.to },
   { name: 'Testimonials', to: '/#testimonials' },
   { name: 'FAQ', to: '/#faq' },
+  { name: 'Blog', to: BlogUrl },
   { name: 'Sign In', to: routes.LoginRoute.to },
 ] as const;
 

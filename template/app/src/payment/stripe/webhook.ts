@@ -27,7 +27,7 @@ export const stripeWebhook: PaymentsWebhook = async (request, response, context)
     const prismaUserDelegate = context.entities.User;
     switch (eventName) {
       case 'checkout.session.completed':
-        await handleCheckoutSessionCompleted(data, prismaUserDelegate);
+        await handleCheckoutSessionCompleted(data, prismaUserDelegate, context);
         break;
       case 'invoice.paid':
         await handleInvoicePaid(data, prismaUserDelegate);
@@ -94,13 +94,14 @@ export const stripeMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) =
 // If so, use the checkout.session.async_payment_succeeded event to confirm the payment.
 async function handleCheckoutSessionCompleted(
   session: SessionCompletedData,
-  prismaUserDelegate: PrismaClient['user']
+  prismaUserDelegate: PrismaClient['user'],
+  context: any
 ) {
   const isSuccessfulOneTimePayment = session.mode === 'payment' && session.payment_status === 'paid';
   if (isSuccessfulOneTimePayment) {
     // Check if this is a mail payment
     if (session.metadata?.type === 'mail_payment' && session.metadata?.mailPieceId) {
-      await handleMailPaymentCompleted(session);
+      await handleMailPaymentCompleted(session, context);
     } else {
       // Handle regular subscription/credit payments
       await saveSuccessfulOneTimePayment(session, prismaUserDelegate);
@@ -108,7 +109,7 @@ async function handleCheckoutSessionCompleted(
   }
 }
 
-async function handleMailPaymentCompleted(session: SessionCompletedData) {
+async function handleMailPaymentCompleted(session: SessionCompletedData, context: any) {
   try {
     const mailPieceId = session.metadata?.mailPieceId;
     if (!mailPieceId) {
@@ -116,19 +117,64 @@ async function handleMailPaymentCompleted(session: SessionCompletedData) {
       return;
     }
 
-    // Import the mail payment confirmation service
-    const { confirmMailPaymentService } = require('../../server/mail/payments');
-    
-    // Confirm the mail payment
-    await confirmMailPaymentService(
-      session.id, // Use session ID as payment intent ID
-      mailPieceId,
-      { entities: { MailPiece: require('wasp/server').prisma.mailPiece, MailPieceStatusHistory: require('wasp/server').prisma.mailPieceStatusHistory } }
-    );
+    console.log(`Processing mail payment completion for mail piece: ${mailPieceId}`);
 
-    console.log(`Mail payment completed for mail piece ${mailPieceId}`);
+    // Update mail piece status directly in the webhook
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { id: mailPieceId }
+    });
+
+    if (!mailPiece) {
+      console.error(`Mail piece not found: ${mailPieceId}`);
+      return;
+    }
+
+    // Update mail piece to paid status
+    await context.entities.MailPiece.update({
+      where: { id: mailPieceId },
+      data: {
+        paymentStatus: 'paid',
+        status: 'paid',
+        paymentIntentId: session.id,
+      },
+    });
+
+    // Create status history entry
+    await context.entities.MailPieceStatusHistory.create({
+      data: {
+        mailPieceId: mailPieceId,
+        status: 'paid',
+        previousStatus: mailPiece.status,
+        description: 'Payment completed via Stripe Checkout',
+        source: 'webhook',
+      },
+    });
+
+    console.log(`✅ Mail payment completed successfully for mail piece ${mailPieceId}`);
+
+    // Automatically submit to Lob after payment confirmation
+    try {
+      console.log(`🚀 Attempting to submit mail piece ${mailPieceId} to Lob...`);
+      
+      // Import the Lob submission operation
+      const { submitMailPieceToLob } = await import('../../mail/operations');
+      
+      // Submit to Lob
+      const result = await submitMailPieceToLob({ mailPieceId }, context);
+      
+      if (result.success) {
+        console.log(`✅ Successfully submitted mail piece ${mailPieceId} to Lob with ID: ${result.lobId}`);
+      } else {
+        console.error(`❌ Failed to submit mail piece ${mailPieceId} to Lob`);
+      }
+    } catch (lobError) {
+      console.error(`❌ Error submitting mail piece ${mailPieceId} to Lob:`, lobError);
+      // Don't fail the payment webhook if Lob submission fails
+      // The user can manually retry from the UI
+    }
+    
   } catch (error) {
-    console.error('Failed to handle mail payment completion:', error);
+    console.error('❌ Failed to handle mail payment completion:', error);
   }
 }
 

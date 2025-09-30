@@ -340,6 +340,12 @@ page AdminAppSettingsPage {
   component: import AdminAppSettings from "@src/admin/dashboards/settings/AppSettingsPage"
 }
 
+route AdminDebugMailRoute { path: "/admin/debug-mail", to: DebugMailPage }
+page DebugMailPage {
+  authRequired: true,
+  component: import DebugMailPage from "@src/admin/DebugMailPage"
+}
+
 route AdminCalendarRoute { path: "/admin/calendar", to: AdminCalendarPage }
 page AdminCalendarPage {
   authRequired: true,
@@ -521,5 +527,15 @@ query getAppSettings {
 action updateAppSetting {
   fn: import { updateAppSetting } from "@src/admin/operations",
   entities: [AppSettings]
+}
+
+query debugMailPieces {
+  fn: import { debugMailPieces } from "@src/admin/operations",
+  entities: [MailPiece, User, MailPieceStatusHistory]
+}
+
+action fixPaidOrders {
+  fn: import { fixPaidOrders } from "@src/admin/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
 }
 //#endregion

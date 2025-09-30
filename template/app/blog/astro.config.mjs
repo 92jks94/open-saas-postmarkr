@@ -6,7 +6,7 @@ import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://postmarkr.com',
+  site: 'https://blog.postmarkr.com',
   trailingSlash: 'always',
   integrations: [
     starlight({
@@ -37,7 +37,7 @@ export default defineConfig({
         },
       ],
       editLink: {
-        baseUrl: 'https://github.com/wasp-lang/open-saas-postmarkr',
+        baseUrl: 'https://github.com/wasp-lang/open-saas-postmarkr/tree/main/template/app/blog',
       },
       components: {
         SiteTitle: './src/components/MyHeader.astro',
