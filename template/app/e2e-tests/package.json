@@ -8,6 +8,13 @@
   },
   "scripts": {
     "e2e:playwright": "DEBUG=pw:webserver npx playwright test",
+    "e2e:landing": "npx playwright test tests/landingPageTests.spec.ts",
+    "e2e:demo": "npx playwright test tests/demoAppTests.spec.ts",
+    "e2e:file-upload": "npx playwright test tests/fileUploadTests.spec.ts",
+    "e2e:pricing": "npx playwright test tests/pricingPageTests.spec.ts",
+    "e2e:api": "npx playwright test tests/authenticatedApiTests.spec.ts",
+    "e2e:mail": "npx playwright test tests/mailWorkflowTests.spec.ts",
+    "e2e:all": "npx playwright test",
     "_comment-on-local:e2e:cleanup-stripe": "NOTE: because we are running the stripe webhook listener in the background, we want to make sure we kill the previous processes before starting a new one.",
     "local:e2e:cleanup-stripe": "PID=$(ps -ef | grep 'stripe listen' | grep -v grep | awk '{print $2}') || true && kill -9 $PID || true",
     "local:e2e:start-stripe": "stripe listen --forward-to localhost:3001/payments-webhook &",

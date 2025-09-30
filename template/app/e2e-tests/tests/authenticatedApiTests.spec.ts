@@ -9,8 +9,8 @@ test.describe('Authenticated API Tests', () => {
     // Create test user
     testUser = createRandomUser();
     
-    // Sign up user
-    const signupResponse = await request.post('/auth/signup', {
+    // Sign up user - Wasp uses operations, not direct auth endpoints
+    const signupResponse = await request.post('/operations/signup', {
       data: {
         email: testUser.email,
         password: testUser.password
@@ -18,8 +18,8 @@ test.describe('Authenticated API Tests', () => {
     });
     expect(signupResponse.status()).toBe(200);
     
-    // Login to get auth token
-    const loginResponse = await request.post('/auth/login', {
+    // Login to get auth token - Wasp uses operations
+    const loginResponse = await request.post('/operations/login', {
       data: {
         email: testUser.email,
         password: testUser.password
@@ -33,11 +33,7 @@ test.describe('Authenticated API Tests', () => {
   });
 
   test('Get mail pieces returns user data', async ({ request }) => {
-    const response = await request.post('/operations/getMailPieces', {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await request.get('/operations/getMailPieces');
     
     // Should return 200 with user's mail pieces (empty array for new user)
     expect(response.status()).toBe(200);
@@ -70,11 +66,7 @@ test.describe('Authenticated API Tests', () => {
   });
 
   test('Get mail addresses returns user data', async ({ request }) => {
-    const response = await request.post('/operations/getMailAddressesByUser', {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await request.get('/operations/getMailAddressesByUser');
     
     expect(response.status()).toBe(200);
     const data = await response.json();
@@ -82,11 +74,7 @@ test.describe('Authenticated API Tests', () => {
   });
 
   test('Get all files by user returns user data', async ({ request }) => {
-    const response = await request.post('/operations/getAllFilesByUser', {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await request.get('/operations/getAllFilesByUser');
     
     expect(response.status()).toBe(200);
     const data = await response.json();
@@ -110,11 +98,7 @@ test.describe('Authenticated API Tests', () => {
   });
 
   test('Get customer portal URL works for authenticated user', async ({ request }) => {
-    const response = await request.post('/operations/getCustomerPortalUrl', {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await request.get('/operations/getCustomerPortalUrl');
     
     expect(response.status()).toBe(200);
     const data = await response.json();
@@ -244,11 +228,7 @@ test.describe('API Error Handling', () => {
 test.describe('API Security Tests', () => {
   test('Operations require authentication', async ({ request }) => {
     // Test without authentication
-    const response = await request.post('/operations/getMailPieces', {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    const response = await request.get('/operations/getMailPieces');
     
     // Should return 401 (unauthorized)
     expect(response.status()).toBe(401);
@@ -256,17 +236,14 @@ test.describe('API Security Tests', () => {
 
   test('Admin operations require admin privileges', async ({ request }) => {
     // Test admin operation with regular user
-    const response = await request.post('/operations/getPaginatedUsers', {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      data: {
+    const response = await request.get('/operations/getPaginatedUsers', {
+      params: {
         skipPages: 0,
-        filter: {
+        filter: JSON.stringify({
           subscriptionStatusIn: [],
           emailContains: '',
           isAdmin: false
-        }
+        })
       }
     });
     

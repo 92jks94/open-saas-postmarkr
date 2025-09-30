@@ -75,6 +75,7 @@ export function mapFromLobAddress(lobAddress: LobAddress): InternalAddress {
  */
 export function validateLobAddress(address: InternalAddress): boolean {
   const checks = {
+    name: !!(address.contactName || address.name), // Name is required for Lob API
     address_line1: !!address.address_line1,
     address_city: !!address.address_city,
     address_state: !!address.address_state,
@@ -83,6 +84,7 @@ export function validateLobAddress(address: InternalAddress): boolean {
   };
   
   const isValid = !!(
+    checks.name &&
     checks.address_line1 &&
     checks.address_city &&
     checks.address_state &&
@@ -92,6 +94,37 @@ export function validateLobAddress(address: InternalAddress): boolean {
   
   console.log('🔍 Address validation checks:', { ...checks, isValid });
   return isValid;
+}
+
+/**
+ * Get detailed validation errors for an address
+ * 
+ * @param address - Address to validate
+ * @returns Array of missing required fields
+ */
+export function getAddressValidationErrors(address: InternalAddress): string[] {
+  const errors: string[] = [];
+  
+  if (!address.contactName && !address.name) {
+    errors.push('Name is required');
+  }
+  if (!address.address_line1) {
+    errors.push('Address line 1 is required');
+  }
+  if (!address.address_city) {
+    errors.push('City is required');
+  }
+  if (!address.address_state) {
+    errors.push('State is required');
+  }
+  if (!address.address_zip) {
+    errors.push('ZIP code is required');
+  }
+  if (!address.address_country) {
+    errors.push('Country is required');
+  }
+  
+  return errors;
 }
 
 /**

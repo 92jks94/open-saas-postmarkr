@@ -17,7 +17,7 @@
 import { lob } from './client';
 import { HttpError } from 'wasp/server';
 import { calculatePricingTier } from '../pricing/pageBasedPricing';
-import { mapToLobAddress, normalizeAddress, validateLobAddress } from './addressMapper';
+import { mapToLobAddress, normalizeAddress, validateLobAddress, getAddressValidationErrors } from './addressMapper';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -386,9 +386,10 @@ function getFallbackPricing(mailSpecs: {
 
   const classMultipliers = {
     'usps_first_class': 1.0,
-    'usps_standard': 0.8,
     'usps_express': 2.0,
     'usps_priority': 1.5,
+    // Standard mail disabled for MVP - requires minimum 200 pieces or 50 pounds
+    // 'usps_standard': 0.8,
   };
 
   const baseCost = baseCosts[mailSpecs.mailType as keyof typeof baseCosts] || 0.60;
@@ -446,11 +447,15 @@ export async function createMailPiece(mailData: {
 
     // Validate addresses before sending to Lob
     if (!validateLobAddress(normalizedToAddress)) {
-      throw new HttpError(400, 'Invalid recipient address format');
+      const errors = getAddressValidationErrors(normalizedToAddress);
+      throw new HttpError(400, `Invalid recipient address: ${errors.join(', ')}`);
     }
     if (!validateLobAddress(normalizedFromAddress)) {
-      throw new HttpError(400, 'Invalid sender address format');
+      const errors = getAddressValidationErrors(normalizedFromAddress);
+      throw new HttpError(400, `Invalid sender address: ${errors.join(', ')}`);
     }
+
+    // Standard mail validation removed - no longer available in MVP
 
     // Prepare the mailpiece data for Lob API using standardized format
     const mailpieceData = {
@@ -479,22 +484,21 @@ export async function createMailPiece(mailData: {
       const envelopeSpecs: any = {
         color: mailData.colorPrinting ?? false, // Default to black & white for MVP
         double_sided: mailData.doubleSided ?? true, // Default to double-sided for MVP
+        use_type: 'operational', // Required by Lob API - using 'operational' as default
       };
 
-      // Add envelope type specifications
-      if (mailData.envelopeType === 'standard_10_double_window') {
-        envelopeSpecs.extra_service = 'certified';
-        // Note: Lob API will handle the envelope type based on content size
-      } else if (mailData.envelopeType === 'flat_9x12_single_window') {
-        envelopeSpecs.extra_service = 'certified';
-        // Note: Lob API will handle the envelope type based on content size
-      }
-
-      // Add mail class specific services
+      // Add mail class specific services (takes precedence over envelope type)
       if (mailData.mailClass === 'usps_express') {
         envelopeSpecs.extra_service = 'express';
       } else if (mailData.mailClass === 'usps_priority') {
         envelopeSpecs.extra_service = 'priority';
+      } else if (mailData.mailClass === 'usps_first_class') {
+        // First class mail - no extra service needed (default USPS service)
+        // Don't set extra_service for first class mail
+      } else if (mailData.envelopeType === 'standard_10_double_window' || 
+                 mailData.envelopeType === 'flat_9x12_single_window') {
+        // Only set certified if no specific mail class is selected
+        envelopeSpecs.extra_service = 'certified';
       }
       
       lobResponse = await (lob as any).letters.create({
@@ -513,7 +517,11 @@ export async function createMailPiece(mailData: {
         file: fileContent,
         color: mailData.colorPrinting ?? false, // Default to black & white for MVP
         double_sided: mailData.doubleSided ?? true, // Default to double-sided for MVP
-        extra_service: mailData.mailClass === 'usps_express' ? 'express' : undefined,
+        use_type: 'operational', // Required by Lob API
+        extra_service: mailData.mailClass === 'usps_express' ? 'express' : 
+                      mailData.mailClass === 'usps_priority' ? 'priority' : 
+                      // Standard and first class don't need extra_service (default USPS service)
+                      undefined,
       });
     }
 

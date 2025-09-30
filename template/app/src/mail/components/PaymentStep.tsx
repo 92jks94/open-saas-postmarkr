@@ -128,11 +128,11 @@ const PaymentForm: React.FC<{
 
   const getMailClassDisplay = (mailClass: string) => {
     const classes: Record<string, string> = {
-      'usps_first_class': 'First Class'
-      // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
-      // 'usps_standard': 'Standard',
-      // 'usps_express': 'Express',
-      // 'usps_priority': 'Priority'
+      'usps_first_class': 'First Class',
+      'usps_express': 'Express',
+      'usps_priority': 'Priority'
+      // Standard mail disabled for MVP - requires minimum 200 pieces or 50 pounds
+      // 'usps_standard': 'Standard'
     };
     return classes[mailClass] || mailClass;
   };

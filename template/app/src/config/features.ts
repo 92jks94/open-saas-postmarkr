@@ -65,7 +65,8 @@ export const getMailClassOptions = () => {
   
   if (FEATURES.ENABLE_MULTIPLE_MAIL_CLASSES) {
     baseOptions.push(
-      { value: 'usps_standard', label: 'Standard', description: 'Economical option for bulk mail' },
+      // Standard mail disabled for MVP - requires minimum 200 pieces or 50 pounds
+      // { value: 'usps_standard', label: 'Standard', description: 'Economical option for bulk mail' },
       { value: 'usps_express', label: 'Express', description: 'Overnight delivery' },
       { value: 'usps_priority', label: 'Priority', description: '1-3 business days' }
     );

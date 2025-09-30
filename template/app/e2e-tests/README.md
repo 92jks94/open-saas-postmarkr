@@ -52,6 +52,33 @@ cd e2e-tests && npm run local:e2e:start
 
 This will start the tests in Playwright's UI mode, which will allow you to see and run the tests in an interactive browser environment. You should also see the Stripe events being triggered in the terminal where the tests were started.
 
+## Running Specific Test Suites
+
+You can run individual test suites instead of all tests:
+
+```shell
+# Run only landing page tests
+npm run e2e:landing
+
+# Run only demo app tests
+npm run e2e:demo
+
+# Run only file upload tests
+npm run e2e:file-upload
+
+# Run only pricing page tests
+npm run e2e:pricing
+
+# Run only API tests
+npm run e2e:api
+
+# Run only mail workflow tests
+npm run e2e:mail
+
+# Run all tests
+npm run e2e:all
+```
+
 To exit the local e2e tests, go back to the terminal were you started your tests and press `ctrl + c`.
 
 ## CI/CD

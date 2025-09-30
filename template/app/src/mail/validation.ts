@@ -11,13 +11,13 @@ export const mailTypeSchema = z.enum([
   // 'booklet'
 ]);
 
-// Mail class validation - SIMPLIFIED FOR LAUNCH: Only first class
+// Mail class validation - SIMPLIFIED FOR LAUNCH: Only first class, express, and priority
 export const mailClassSchema = z.enum([
-  'usps_first_class'
-  // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
-  // 'usps_standard', 
-  // 'usps_express',
-  // 'usps_priority'
+  'usps_first_class',
+  'usps_express',
+  'usps_priority'
+  // Standard mail disabled for MVP - requires minimum 200 pieces or 50 pounds
+  // 'usps_standard'
 ]);
 
 // Mail size validation - SIMPLIFIED FOR LAUNCH: Only #10 envelope
