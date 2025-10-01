@@ -6,7 +6,6 @@
  */
 
 import { HttpError } from 'wasp/server';
-import { getEmail } from 'wasp/auth';
 import { captureException, captureMessage, setUserContext, addBreadcrumb, withSentryErrorHandling } from './sentry-utils';
 
 // Example operation with Sentry integration
@@ -16,7 +15,7 @@ export async function exampleOperationWithSentry(args: any, context: any) {
     if (context.user) {
       setUserContext({
         id: context.user.id,
-        email: getEmail(context.user) ?? undefined,
+        email: context.user.email ?? undefined,
       });
     }
 
@@ -87,7 +86,7 @@ export const createTask: CreateTask<CreateTaskInput, Task> = async (args, contex
     // Set user context for better error tracking
     setUserContext({
       id: context.user.id,
-      email: getEmail(context.user),
+      email: context.user.email,
     });
 
     const task = await context.entities.Task.create({

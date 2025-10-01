@@ -32,7 +32,6 @@ import type {
 } from 'wasp/server/operations';
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
 import type { MailPieceWithRelations } from './types';
-import { getEmail } from 'wasp/auth';
 import { hasFullAccess, hasBetaAccess } from '../beta/accessHelpers';
 import { 
   createMailPieceSchema, 
@@ -828,7 +827,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
         mailSize: mailPiece.mailSize,
         type: 'mail_payment',
       },
-      customer_email: getEmail(context.user) ?? undefined,
+      customer_email: context.user.email ?? undefined,
     });
 
     if (!session.url) {

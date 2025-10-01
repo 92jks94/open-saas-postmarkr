@@ -7,7 +7,8 @@ export const resendVerificationEmail: ResendVerificationEmail<void, { success: b
   }
 
   // Check if user already has a verified email
-  const isEmailVerified = context.user.identities?.email?.isEmailVerified;
+  const userEmail = context.user.email;
+  const isEmailVerified = !!userEmail;
   
   if (isEmailVerified) {
     return { 
