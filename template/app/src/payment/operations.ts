@@ -15,6 +15,7 @@ import type { GenerateCheckoutSession, GetCustomerPortalUrl } from 'wasp/server/
 import { PaymentPlanId, paymentPlans } from '../payment/plans';
 import { paymentProcessor } from './paymentProcessor';
 import { HttpError } from 'wasp/server';
+import { getEmail } from 'wasp/auth';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 
 // ============================================================================
@@ -40,7 +41,7 @@ export const generateCheckoutSession: GenerateCheckoutSession<
 
   const paymentPlanId = ensureArgsSchemaOrThrowHttpError(generateCheckoutSessionSchema, rawPaymentPlanId);
   const userId = context.user.id;
-  const userEmail = context.user.email;
+  const userEmail = getEmail(context.user);
   if (!userEmail) {
     // If using the usernameAndPassword Auth method, switch to an Auth method that provides an email.
     throw new HttpError(403, 'User needs an email to make a payment.');

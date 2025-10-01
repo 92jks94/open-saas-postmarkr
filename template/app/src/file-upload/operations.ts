@@ -287,16 +287,16 @@ export const cleanupOrphanedS3Files = async (args: any, context: any) => {
     });
     const dbKeys = new Set(dbFiles.map((file: { key: string }) => file.key));
     
-    // List all files in S3 bucket
+    // List all files in S3 bucket (using consistent env var names with the rest of the app)
     const s3Client = new S3Client({
-      region: process.env.AWS_REGION || 'us-east-1',
+      region: process.env.AWS_S3_REGION || 'us-east-2', // Match default region with PDF processing
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
+        secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
       },
     });
     
-    const bucketName = process.env.AWS_S3_BUCKET!;
+    const bucketName = process.env.AWS_S3_FILES_BUCKET!;
     let continuationToken: string | undefined;
     let orphanedFiles: string[] = [];
     let totalFilesChecked = 0;

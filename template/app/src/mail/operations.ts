@@ -32,6 +32,7 @@ import type {
 } from 'wasp/server/operations';
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
 import type { MailPieceWithRelations } from './types';
+import { getEmail } from 'wasp/auth';
 import { hasFullAccess, hasBetaAccess } from '../beta/accessHelpers';
 import { 
   createMailPieceSchema, 
@@ -114,6 +115,9 @@ export const getMailPieces: GetMailPieces<GetMailPiecesInput, {
     where.mailType = args.mailType;
   }
   
+  // Text search with case-insensitive matching
+  // NOTE: The 'mode: insensitive' option requires PostgreSQL or MongoDB.
+  // It will not work with SQLite. This app uses PostgreSQL (see schema.prisma).
   if (args.search) {
     where.OR = [
       { description: { contains: args.search, mode: 'insensitive' } },
@@ -676,15 +680,25 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
       },
     });
 
-    // Update mail piece with payment intent
-    await context.entities.MailPiece.update({
-      where: { id: args.mailPieceId },
+    // Update mail piece with payment intent using conditional update to prevent race conditions
+    // This will only update if the status is still 'draft', preventing duplicate payment intents
+    const updateResult = await context.entities.MailPiece.updateMany({
+      where: { 
+        id: args.mailPieceId,
+        userId: context.user.id,
+        status: 'draft' // Only update if still in draft status
+      },
       data: {
         paymentIntentId: paymentData.paymentIntentId,
         cost: paymentData.cost / 100, // Convert to USD for display
         status: 'pending_payment',
       },
     });
+
+    // Check if the update succeeded (count will be 0 if status changed between checks)
+    if (updateResult.count === 0) {
+      throw new HttpError(409, 'Mail piece status changed during payment creation. Please try again.');
+    }
 
     // Create status history entry
     await context.entities.MailPieceStatusHistory.create({
@@ -814,21 +828,31 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
         mailSize: mailPiece.mailSize,
         type: 'mail_payment',
       },
-      customer_email: context.user.email ?? undefined,
+      customer_email: getEmail(context.user) ?? undefined,
     });
 
     if (!session.url) {
       throw new HttpError(500, 'Failed to create checkout session URL');
     }
 
-    // Update mail piece with checkout session ID
-    await context.entities.MailPiece.update({
-      where: { id: args.mailPieceId },
+    // Update mail piece with checkout session ID using conditional update to prevent race conditions
+    // This will only update if the status is still 'draft', preventing duplicate checkout sessions
+    const updateResult = await context.entities.MailPiece.updateMany({
+      where: { 
+        id: args.mailPieceId,
+        userId: context.user.id,
+        status: 'draft' // Only update if still in draft status
+      },
       data: {
         paymentIntentId: session.id, // Store session ID for reference
         status: 'pending_payment',
       },
     });
+
+    // Check if the update succeeded (count will be 0 if status changed between checks)
+    if (updateResult.count === 0) {
+      throw new HttpError(409, 'Mail piece status changed during checkout creation. Please try again.');
+    }
 
     // Create status history entry
     await context.entities.MailPieceStatusHistory.create({
@@ -1032,9 +1056,15 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     // Submit to Lob API
     const lobResponse = await createLobMailPiece(lobMailData);
 
-    // Update mail piece with Lob information
-    await context.entities.MailPiece.update({
-      where: { id: args.mailPieceId },
+    // Update mail piece with Lob information using conditional update to prevent race conditions
+    // This will only update if paymentStatus is 'paid' and lobId is still null
+    const updateResult = await context.entities.MailPiece.updateMany({
+      where: { 
+        id: args.mailPieceId,
+        userId: context.user.id,
+        paymentStatus: 'paid', // Only update if payment is confirmed
+        lobId: null // Only update if not already submitted to Lob
+      },
       data: {
         lobId: lobResponse.id,
         lobStatus: lobResponse.status,
@@ -1047,6 +1077,11 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
         },
       },
     });
+
+    // Check if the update succeeded (count will be 0 if already submitted or payment status changed)
+    if (updateResult.count === 0) {
+      throw new HttpError(409, 'Mail piece was already submitted to Lob or payment status changed. Please refresh and try again.');
+    }
 
     // Create status history entry
     await context.entities.MailPieceStatusHistory.create({

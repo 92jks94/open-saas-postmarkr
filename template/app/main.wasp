@@ -76,7 +76,7 @@ app OpenSaaS {
   },
 
   emailSender: {
-    provider: Dummy, // Use Dummy for development (prints emails to console)
+    provider: SMTP, // Use SMTP for production (SendGrid)
     defaultFrom: {
       name: "Postmarkr",
       email: "nathan@postmarkr.com"
