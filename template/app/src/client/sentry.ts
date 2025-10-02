@@ -9,14 +9,19 @@ export function initSentry() {
     return;
   }
 
+  // Check for Sentry DSN in multiple possible locations
+  const sentryDsn = import.meta.env.VITE_SENTRY_DSN || 
+                   import.meta.env.REACT_APP_SENTRY_DSN ||
+                   import.meta.env.SENTRY_DSN;
+
   // Only initialize if DSN is provided
-  if (!import.meta.env.VITE_SENTRY_DSN) {
+  if (!sentryDsn) {
     console.log('Sentry DSN not provided, skipping initialization');
     return;
   }
 
   Sentry.init({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
+    dsn: sentryDsn,
     environment: import.meta.env.MODE || 'development',
     integrations: [
       browserTracingIntegration(),
@@ -29,6 +34,16 @@ export function initSentry() {
     replaysOnErrorSampleRate: 1.0,
     // Set user context when available
     beforeSend(event, hint) {
+      // Filter out Chrome extension related errors
+      if (event.exception) {
+        const errorMessage = event.exception.values?.[0]?.value || '';
+        if (errorMessage.includes('Chrome API') || 
+            errorMessage.includes('message port closed') ||
+            errorMessage.includes('runtime.lastError')) {
+          return null; // Don't send Chrome extension errors to Sentry
+        }
+      }
+      
       // Filter out non-error events in development
       if (import.meta.env.MODE === 'development' && event.level !== 'error') {
         return null;

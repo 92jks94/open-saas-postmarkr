@@ -14,6 +14,7 @@ import NavBar from './components/NavBar/NavBar';
 import { demoNavigationitems, marketingNavigationItems } from './components/NavBar/constants';
 import CookieConsentBanner from './components/cookie-consent/Banner';
 import { initSentry } from './sentry';
+import './chromeExtensionErrorHandler'; // Import error handler
 
 /**
  * Root application component that handles layout and navigation
@@ -44,7 +45,9 @@ export default function App() {
 
   const shouldDisplayAppNavBar = useMemo(() => {
     return (
-      location.pathname !== routes.LoginRoute.build() && location.pathname !== routes.SignupRoute.build()
+      location.pathname !== routes.LoginRoute.build() && 
+      location.pathname !== routes.SignupRoute.build() &&
+      location.pathname !== routes.EmailVerificationRoute.build()
     );
   }, [location]);
 

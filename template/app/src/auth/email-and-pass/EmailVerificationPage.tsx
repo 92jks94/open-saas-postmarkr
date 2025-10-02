@@ -15,14 +15,10 @@ export default function EmailVerificationPage() {
     
     try {
       const result = await resendVerificationEmail();
-      if (result?.success) {
-        setResendMessage(result.message || 'Please check your spam folder or contact support for assistance.');
-      } else {
-        setResendMessage(result?.message || 'Please contact support directly at nathan@postmarkr.com for assistance.');
-      }
+      setResendMessage(result?.message || 'Please check your spam folder or contact support for assistance.');
     } catch (error: any) {
       console.error('Resend verification email error:', error);
-      setResendMessage(error.message || 'Please contact support directly at nathan@postmarkr.com for assistance.');
+      setResendMessage('Please contact support directly at nathan@postmarkr.com for assistance.');
     } finally {
       setIsResending(false);
     }
@@ -35,9 +31,14 @@ export default function EmailVerificationPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Check Your Email
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-4">
             We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p className="text-sm text-blue-800">
+              <strong>Next steps:</strong> Look for an email from Postmarkr, click the verification link, then you can log in and start sending mail.
+            </p>
+          </div>
         </div>
         
         <VerifyEmailForm />
@@ -52,18 +53,10 @@ export default function EmailVerificationPage() {
               disabled={isResending}
               className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg"
             >
-{isResending ? 'Getting Help...' : 'Need Help?'}
+              {isResending ? 'Getting Help...' : 'Need Help?'}
             </Button>
             {resendMessage && (
-              <p className={`text-sm ${
-                resendMessage.includes('check your spam') || resendMessage.includes('try signing up again') 
-                  ? 'text-blue-600' 
-                  : resendMessage.includes('already verified') 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-              }`}>
-                {resendMessage}
-              </p>
+              <p className="text-sm text-blue-600">{resendMessage}</p>
             )}
           </div>
           

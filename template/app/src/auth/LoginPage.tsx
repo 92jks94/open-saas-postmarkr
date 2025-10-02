@@ -28,6 +28,15 @@ export default function Login() {
         </WaspRouterLink>
         .
       </span>
+      <br />
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+        <p className="text-sm text-yellow-800">
+          <strong>Can't log in?</strong> If you just signed up, check your email for a verification link. 
+          <WaspRouterLink to={routes.EmailVerificationRoute.to} className='underline ml-1'>
+            Go to verification page
+          </WaspRouterLink>
+        </p>
+      </div>
     </AuthPageLayout>
   );
 }

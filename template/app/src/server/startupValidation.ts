@@ -477,7 +477,7 @@ export function getServiceHealthStatus(): Record<string, { status: 'healthy' | '
   };
   
   // Check AWS
-  const awsConfigured = !!(process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+  const awsConfigured = !!(process.env.AWS_S3_IAM_ACCESS_KEY && process.env.AWS_S3_IAM_SECRET_KEY);
   services.aws = {
     status: awsConfigured ? 'healthy' : 'unhealthy',
     message: awsConfigured ? undefined : 'AWS credentials not configured'

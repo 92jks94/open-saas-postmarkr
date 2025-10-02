@@ -7,6 +7,9 @@ const BETA_ACCESS_CODE = '312'; // Beta access code
 // Check if we're in development mode
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
 
+// Check if we should skip email verification (for testing/debugging)
+const skipEmailVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true' || isDevelopment;
+
 // Schema for extracting user entity fields from signup data
 // Note: password is handled internally by Wasp auth, not by userSignupFields
 const emailDataSchema = z.object({

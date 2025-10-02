@@ -32,6 +32,7 @@
     "clsx": "^2.1.1",
     "cookie-parser": "~1.4.6",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.2",
     "headlessui": "^0.0.0",
     "helmet": "^6.0.0",
     "lob": "^6.6.3",
@@ -58,6 +59,7 @@
   },
   "devDependencies": {
     "@faker-js/faker": "8.3.1",
+    "@types/cors": "^2.8.5",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/react": "^18.0.37",
@@ -87,7 +89,11 @@
     "test:critical-only": "vitest run src/test/critical/**/*.test.ts --reporter=verbose",
     "test:integration-only": "vitest run src/test/integration/**/*.test.ts --reporter=verbose",
     "test:performance-only": "vitest run src/test/performance/**/*.test.ts --reporter=verbose",
-    "check:production": "tsx src/server/productionReadinessCheck.ts"
+    "check:production": "tsx src/server/productionReadinessCheck.ts",
+    "check:health": "curl -f https://postmarkr-server.fly.dev/health || echo 'Server not responding'",
+    "deploy:production": "./scripts/deploy-with-health-checks.sh",
+    "deploy:wasp": "./scripts/wasp-deploy-with-checks.sh",
+    "sync:secrets": "./scripts/sync-env-secrets.sh"
   },
   "overrides": {
     "form-data": "^4.0.0",

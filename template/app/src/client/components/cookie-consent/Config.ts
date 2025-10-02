@@ -58,9 +58,13 @@ const getConfig = () => {
             label: 'Google Analytics',
             onAccept: () => {
               try {
-                const GA_ANALYTICS_ID = import.meta.env.REACT_APP_GOOGLE_ANALYTICS_ID;
-                if (!GA_ANALYTICS_ID.length) {
-                  throw new Error('Google Analytics ID is missing');
+                // Check for Google Analytics ID in multiple possible locations
+                const GA_ANALYTICS_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID || 
+                                       import.meta.env.REACT_APP_GOOGLE_ANALYTICS_ID ||
+                                       import.meta.env.GOOGLE_ANALYTICS_ID;
+                if (!GA_ANALYTICS_ID || !GA_ANALYTICS_ID.length) {
+                  console.log('Google Analytics ID not provided, skipping initialization');
+                  return;
                 }
                 window.dataLayer = window.dataLayer || [];
                 function gtag(..._args: unknown[]) {

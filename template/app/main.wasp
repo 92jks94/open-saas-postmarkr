@@ -76,7 +76,7 @@ app OpenSaaS {
   },
 
   emailSender: {
-    provider: SMTP, // Use SMTP for production (SendGrid)
+    provider: SendGrid, // Use Wasp's built-in SendGrid provider
     defaultFrom: {
       name: "Postmarkr",
       email: "nathan@postmarkr.com"
@@ -93,6 +93,11 @@ page LandingPage {
 route LoginRoute { path: "/login", to: LoginPage }
 page LoginPage {
   component: import Login from "@src/auth/LoginPage"
+}
+
+route LoginDebugRoute { path: "/login-debug", to: LoginDebugPage }
+page LoginDebugPage {
+  component: import LoginDebug from "@src/auth/LoginDebugPage"
 }
 
 route SignupRoute { path: "/signup", to: SignupPage }
