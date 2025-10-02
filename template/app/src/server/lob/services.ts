@@ -736,7 +736,7 @@ async function fetchFileContent(fileUrl: string): Promise<string> {
       clearTimeout(timeoutId);
       
       // Handle timeout specifically
-      if (error.name === 'AbortError') {
+      if (error instanceof Error && error.name === 'AbortError') {
         console.error('❌ File fetch timed out after 30 seconds');
         throw new HttpError(
           504,

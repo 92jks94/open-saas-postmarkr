@@ -95,6 +95,7 @@
     "deploy:wasp": "./scripts/wasp-deploy-with-checks.sh",
     "deploy:retry": "./scripts/deploy-with-retry.sh",
     "deploy:simple": "./scripts/deploy-simple-retry.sh",
+    "deploy:fixed": "./scripts/deploy-with-server-fix.sh",
     "sync:secrets": "./scripts/sync-env-secrets.sh"
   },
   "overrides": {

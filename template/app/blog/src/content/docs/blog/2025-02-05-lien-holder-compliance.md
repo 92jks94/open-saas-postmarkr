@@ -1,7 +1,7 @@
 ---
-title: Archival Integrity: Meeting Delaware's Strict Physical Standards for Corporate Filing Print-and-Mail
+title: "Archival Integrity: Meeting Delaware's Strict Physical Standards for Corporate Filing Print-and-Mail"
 date: 2025-02-05
-description: Ensure Delaware corporate filings meet strict archival standards with professional print and mail services.
+description: "Ensure Delaware corporate filings meet strict archival standards with professional print and mail services."
 authors: ["Postmarkr Team"]
 tags: ["Delaware corporate", "archival standards", "print quality", "corporate filings", "compliance"]
 ---

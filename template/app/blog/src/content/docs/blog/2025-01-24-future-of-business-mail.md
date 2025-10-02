@@ -1,7 +1,7 @@
 ---
-title: The Future of Business Mail Virtual Print Rooms Explained
+title: "The Future of Business Mail Virtual Print Rooms Explained"
 date: 2025-01-24
-description: Why small businesses are saying goodbye to printers and post office lines
+description: "Why small businesses are saying goodbye to printers and post office lines"
 authors: ["Postmarkr Team"]
 tags: ["virtual print room", "digital mail", "mail automation", "remote business"]
 ---

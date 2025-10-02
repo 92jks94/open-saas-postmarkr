@@ -1,4 +1,4 @@
-import { type Prisma } from '@prisma/client';
+import { Prisma, type User as PrismaUser } from '@prisma/client';
 import { type User } from 'wasp/entities';
 import { HttpError, prisma } from 'wasp/server';
 import { type GetPaginatedUsers, type UpdateIsUserAdminById } from 'wasp/server/operations';
@@ -71,13 +71,13 @@ export const getPaginatedUsers: GetPaginatedUsers<GetPaginatedUsersInput, GetPag
     take: pageSize,
     where: {
       AND: [
-        {
+        ...(emailContains ? [{
           email: {
             contains: emailContains,
-            mode: 'insensitive',
-          },
-          isAdmin,
-        },
+            mode: Prisma.QueryMode.insensitive,
+          }
+        }] : []),
+        ...(isAdmin !== undefined ? [{ isAdmin }] : []),
         {
           OR: [
             {

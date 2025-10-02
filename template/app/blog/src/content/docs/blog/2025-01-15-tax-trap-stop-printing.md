@@ -1,7 +1,7 @@
 ---
-title: The Tax Trap: Stop Printing! How to Outsource the Mail Submission of Your IRS and State Tax Forms (Even with a Digital Signature)
+title: "The Tax Trap: Stop Printing! How to Outsource the Mail Submission of Your IRS and State Tax Forms (Even with a Digital Signature)"
 date: 2025-01-15
-description: Stop wasting employee time printing tax forms. Learn how to automate the final mile of compliance with digitally-signed documents.
+description: "Stop wasting employee time printing tax forms. Learn how to automate the final mile of compliance with digitally-signed documents."
 authors: ["Postmarkr Team"]
 tags: ["tax compliance", "digital signatures", "IRS forms", "automation", "mail outsourcing"]
 ---

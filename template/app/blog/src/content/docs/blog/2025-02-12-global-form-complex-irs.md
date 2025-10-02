@@ -1,7 +1,7 @@
 ---
-title: The Global Form: Outsourcing Paper Filing for Complex IRS Forms 3520, 1042, and Other Specialized Tax Filings
+title: "The Global Form: Outsourcing Paper Filing for Complex IRS Forms 3520, 1042, and Other Specialized Tax Filings"
 date: 2025-02-12
-description: Streamline complex international tax compliance with automated print and mail services for specialized IRS forms.
+description: "Streamline complex international tax compliance with automated print and mail services for specialized IRS forms."
 authors: ["Postmarkr Team"]
 tags: ["international tax", "IRS forms", "Form 3520", "Form 1042", "specialized filings", "compliance"]
 ---

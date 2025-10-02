@@ -1,7 +1,7 @@
 ---
-title: The Future of Business Mail in a Remote-First World
+title: "The Future of Business Mail in a Remote-First World"
 date: 2024-01-15
-description: How digital transformation is reshaping traditional mail services
+description: "How digital transformation is reshaping traditional mail services"
 authors: ["Postmarkr Team"]
 tags: ["business", "remote-work", "mail-service", "industry-trends"]
 ---

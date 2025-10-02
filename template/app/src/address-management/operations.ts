@@ -14,6 +14,7 @@ import type { MailAddress } from 'wasp/entities';
 // ============================================================================
 // LOCAL SERVICE/UTILITY IMPORTS
 // ============================================================================
+import { validateAddress as validateAddressService } from '../server/lob/services';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 
@@ -64,9 +65,6 @@ export const createMailAddress: CreateMailAddress<CreateMailAddressInput, MailAd
       address_zip: address.address_zip,
       address_country: address.address_country,
     });
-    
-    // Import the validation service
-    const { validateAddress: validateAddressService } = await import('../server/lob/services');
     
     // Call the Lob validation service with correct field names
     const validationResult = await validateAddressService({
@@ -196,9 +194,6 @@ export const updateMailAddress: UpdateMailAddress<UpdateMailAddressInput, MailAd
       address_zip: updatedAddress.address_zip,
       address_country: updatedAddress.address_country,
     });
-    
-    // Import the validation service
-    const { validateAddress: validateAddressService } = await import('../server/lob/services');
     
     // Call the Lob validation service with correct field names
     const validationResult = await validateAddressService({

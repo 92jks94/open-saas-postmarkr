@@ -7,6 +7,7 @@ import { stripe } from './stripeClient';
 import { paymentPlans, PaymentPlanId, SubscriptionStatus, type PaymentPlanEffect } from '../plans';
 import { updateUserStripePaymentDetails } from './paymentDetails';
 import { emailSender } from 'wasp/server/email';
+import { submitPaidMailToLob } from 'wasp/server/jobs';
 import { assertUnreachable } from '../../shared/utils';
 import { requireNodeEnvVar } from '../../server/utils';
 import {
@@ -205,9 +206,6 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
     // Schedule background job to submit to Lob after payment confirmation
     try {
       console.log(`📋 Scheduling Lob submission job for mail piece ${mailPieceId}...`);
-      
-      // Import PgBoss job
-      const { submitPaidMailToLob } = await import('wasp/server/jobs');
       
       // Schedule job for immediate execution with retries
       await submitPaidMailToLob.submit(

@@ -3,6 +3,7 @@ import { runAllConnectivityTests, runCriticalConnectivityTests } from './apiConn
 import { alertManager, runMonitoringChecks } from './monitoringAlerts';
 import { displayStartupBanner, displayProductionStatus } from './startupBanner';
 import { runServiceConnectivityTests } from './serviceConnectivityTests';
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Server startup validation
@@ -72,8 +73,7 @@ async function validateDatabaseConnection(): Promise<void> {
   console.log('📊 Validating database connection...');
   
   try {
-    // Import Prisma client dynamically to avoid circular dependencies
-    const { PrismaClient } = await import('@prisma/client');
+    // Use Prisma client directly to avoid Rollup dynamic import issues
     const prisma = new PrismaClient();
     
     // Test basic connectivity
@@ -459,7 +459,6 @@ export async function getServiceHealthStatus(): Promise<Record<string, { status:
   
   // Check Database
   try {
-    const { PrismaClient } = await import('@prisma/client');
     const prisma = new PrismaClient();
     await prisma.$queryRaw`SELECT 1`;
     await prisma.$disconnect();

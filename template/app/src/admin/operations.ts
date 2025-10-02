@@ -5,6 +5,7 @@ import * as z from 'zod';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { stripe } from '../payment/stripe/stripeClient';
 import { getDownloadFileSignedURLFromS3 } from '../file-upload/s3Utils';
+import { createMailPiece } from '../server/lob/services';
 
 const updateAppSettingInputSchema = z.object({
   key: z.string().nonempty(),
@@ -235,9 +236,6 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
       if (needsLobSubmission || (needsPaymentFix && isPaid)) {
         // Handle Lob submission for paid orders
         try {
-          // Import Lob service directly to bypass user ownership check
-          const { createMailPiece } = await import('../server/lob/services');
-          
           // Generate download URL for file (upload URLs are write-only and expire quickly)
           let fileUrl: string | undefined;
           if (order.file?.key) {

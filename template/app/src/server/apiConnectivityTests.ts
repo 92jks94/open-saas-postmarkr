@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 import { OpenAI } from 'openai';
 import * as Sentry from '@sentry/node';
+import { lob } from './lob/client';
 
 export interface ApiTestResult {
   service: string;
@@ -123,9 +124,7 @@ export async function testLobConnectivity(): Promise<ApiTestResult> {
   const startTime = Date.now();
   
   try {
-    // Import Lob client dynamically to avoid circular dependencies
-    const { lob } = await import('./lob/client');
-    
+    // Use Lob client directly to avoid Rollup dynamic import issues
     if (!lob) {
       return {
         service: 'lob',

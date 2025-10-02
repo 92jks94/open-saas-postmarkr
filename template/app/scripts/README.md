@@ -69,6 +69,29 @@ Deploys the application with automated health check verification.
 ./scripts/deploy-with-health-checks.sh
 ```
 
+### `deploy-with-server-fix.sh`
+
+Deploys the application with automatic server binding fix for Fly.io compatibility.
+
+**Usage**:
+```bash
+./scripts/deploy-with-server-fix.sh
+# or
+npm run deploy:fixed
+```
+
+**What it does**:
+- ✅ Applies server binding patch (0.0.0.0:8080) for Fly.io compatibility
+- ✅ Deploys using correct `wasp deploy fly deploy` command
+- ✅ Includes retry logic for network issues
+- ✅ Runs comprehensive health checks
+- ✅ Provides detailed status reporting
+
+**When to use**:
+- Production deployments to Fly.io
+- When experiencing server binding issues
+- For reliable, automated deployments
+
 ### `deploy-with-retry.sh`
 
 Deploys with automatic retry on failure.

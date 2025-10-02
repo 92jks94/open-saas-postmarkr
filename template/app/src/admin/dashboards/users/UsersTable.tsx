@@ -18,10 +18,19 @@ function AdminSwitch({ id, isAdmin }: Pick<User, 'id' | 'isAdmin'>) {
   const { data: currentUser } = useAuth();
   const isCurrentUser = currentUser?.id === id;
 
+  const handleAdminToggle = async (value: boolean) => {
+    try {
+      await updateIsUserAdminById({ id, isAdmin: value });
+    } catch (error) {
+      console.error('Failed to update admin status:', error);
+      alert('Failed to update admin status. Please try again.');
+    }
+  };
+
   return (
     <Switch
       checked={isAdmin}
-      onCheckedChange={(value) => updateIsUserAdminById({ id: id, isAdmin: value })}
+      onCheckedChange={handleAdminToggle}
       disabled={isCurrentUser}
     />
   );
@@ -265,7 +274,7 @@ const UsersTable = () => {
                 <DropdownEditDelete 
                   userId={user.id} 
                   isAdmin={user.isAdmin} 
-                  userEmail={user.email || ''} 
+                  userEmail={user.email || 'Unknown User'} 
                 />
               </div>
             </div>

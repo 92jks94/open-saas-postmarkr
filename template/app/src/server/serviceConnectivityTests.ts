@@ -1,4 +1,5 @@
 import { isDevelopment } from './envValidation';
+import { lob } from './lob/client';
 
 /**
  * Real-time service connectivity tests
@@ -168,9 +169,7 @@ async function testLobConnectivity(): Promise<ConnectivityResult> {
   const startTime = Date.now();
   
   try {
-    // Import Lob client dynamically to avoid circular dependencies
-    const { lob } = await import('./lob/client');
-    
+    // Use Lob client directly to avoid Rollup dynamic import issues
     if (!lob) {
       return {
         service: 'Lob',

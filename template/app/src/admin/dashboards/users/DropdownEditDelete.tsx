@@ -1,4 +1,4 @@
-import { Ellipsis, SquarePen, Trash2 } from 'lucide-react';
+import { Ellipsis, SquarePen, User } from 'lucide-react';
 import { useState } from 'react';
 import { updateIsUserAdminById } from 'wasp/client/operations';
 import {
@@ -16,34 +16,25 @@ interface DropdownEditDeleteProps {
 }
 
 const DropdownEditDelete = ({ userId, isAdmin, userEmail }: DropdownEditDeleteProps) => {
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleToggleAdmin = async () => {
     try {
+      setIsUpdating(true);
       await updateIsUserAdminById({ id: userId, isAdmin: !isAdmin });
       // The parent component will refetch data automatically
     } catch (error) {
       console.error('Error updating admin status:', error);
       alert('Failed to update admin status. Please try again.');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  const handleDeleteUser = async () => {
-    if (!confirm(`Are you sure you want to delete user ${userEmail}? This action cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      // Note: There's no deleteUser operation in the current operations
-      // This would need to be implemented in the backend
-      alert('User deletion is not yet implemented. Please contact the development team.');
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      alert('Failed to delete user. Please try again.');
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleViewUserDetails = () => {
+    // For now, just show an alert with user info
+    // In the future, this could navigate to a user details page
+    alert(`User Details:\nEmail: ${userEmail}\nAdmin Status: ${isAdmin ? 'Yes' : 'No'}\nUser ID: ${userId}`);
   };
 
   return (
@@ -54,17 +45,13 @@ const DropdownEditDelete = ({ userId, isAdmin, userEmail }: DropdownEditDeletePr
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-40'>
-        <DropdownMenuItem onClick={handleToggleAdmin}>
+        <DropdownMenuItem onClick={handleToggleAdmin} disabled={isUpdating}>
           <SquarePen className='size-4 mr-2' />
-          {isAdmin ? 'Remove Admin' : 'Make Admin'}
+          {isUpdating ? 'Updating...' : (isAdmin ? 'Remove Admin' : 'Make Admin')}
         </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={handleDeleteUser}
-          disabled={isDeleting}
-          className="text-red-600"
-        >
-          <Trash2 className='size-4 mr-2' />
-          {isDeleting ? 'Deleting...' : 'Delete'}
+        <DropdownMenuItem onClick={handleViewUserDetails}>
+          <User className='size-4 mr-2' />
+          View Details
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

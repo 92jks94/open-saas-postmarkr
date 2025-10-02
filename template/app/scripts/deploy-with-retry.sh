@@ -36,7 +36,7 @@ fi
 deploy_with_wasp() {
     print_status $BLUE "🚀 Attempting deployment (attempt $((CURRENT_RETRY + 1))/$MAX_RETRIES)..."
     
-    # Run the deployment
+    # Run the deployment using correct Wasp command
     wasp deploy fly deploy
     return $?
 }

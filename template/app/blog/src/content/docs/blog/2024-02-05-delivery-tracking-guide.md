@@ -1,7 +1,7 @@
 ---
-title: Complete Guide to Mail Delivery Tracking
+title: "Complete Guide to Mail Delivery Tracking"
 date: 2024-02-05
-description: Maximize visibility and reliability in your mail operations
+description: "Maximize visibility and reliability in your mail operations"
 authors: ["Postmarkr Team"]
 tags: ["delivery-tracking", "mail-monitoring", "business-logistics", "customer-service"]
 ---

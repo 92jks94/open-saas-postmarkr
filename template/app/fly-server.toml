@@ -36,7 +36,7 @@ primary_region = 'ord'
   cpu_kind = 'shared'
   cpus = 1
 
-# Metrics configuration for monitoring
-[metrics]
-  port = 9091
-  path = "/metrics"
+# Metrics configuration for monitoring (temporarily disabled due to deployment issues)
+# [metrics]
+#   port = 9091
+#   path = "/metrics"
