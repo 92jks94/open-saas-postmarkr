@@ -5,19 +5,6 @@
  * in production environments and prevents them from affecting the user experience.
  */
 
-// Declare Chrome extension types for TypeScript
-declare global {
-  interface Window {
-    chrome?: {
-      runtime?: {
-        onError?: {
-          addListener: (callback: (error: { message: string }) => void) => void;
-        };
-      };
-    };
-  }
-}
-
 // Global error handler for unhandled promise rejections
 window.addEventListener('unhandledrejection', (event) => {
   const error = event.reason;
@@ -60,12 +47,12 @@ window.addEventListener('error', (event) => {
   console.error('JavaScript error:', error);
 });
 
-// Handle Chrome extension specific errors
-if (typeof window.chrome !== 'undefined' && window.chrome.runtime) {
+// Handle Chrome extension specific errors (using any to avoid TypeScript issues)
+if (typeof (window as any).chrome !== 'undefined' && (window as any).chrome.runtime) {
   // Suppress Chrome extension errors
-  const originalOnError = window.chrome.runtime.onError;
-  if (originalOnError) {
-    originalOnError.addListener((error) => {
+  const chromeRuntime = (window as any).chrome.runtime;
+  if (chromeRuntime.onError) {
+    chromeRuntime.onError.addListener((error: any) => {
       console.debug('Suppressed Chrome runtime error:', error.message);
       // Don't propagate the error
     });

@@ -93,6 +93,8 @@
     "check:health": "curl -f https://postmarkr-server.fly.dev/health || echo 'Server not responding'",
     "deploy:production": "./scripts/deploy-with-health-checks.sh",
     "deploy:wasp": "./scripts/wasp-deploy-with-checks.sh",
+    "deploy:retry": "./scripts/deploy-with-retry.sh",
+    "deploy:simple": "./scripts/deploy-simple-retry.sh",
     "sync:secrets": "./scripts/sync-env-secrets.sh"
   },
   "overrides": {

@@ -41,6 +41,7 @@ interface LobLetterResponse {
  * Validate an address using Lob API
  */
 export async function validateAddress(addressData: {
+  contactName?: string;
   address_line1: string;
   address_line2?: string;
   address_city: string;

@@ -53,7 +53,7 @@ export default function EmailVerificationPage() {
               disabled={isResending}
               className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-6 py-2 rounded-lg"
             >
-              {isResending ? 'Getting Help...' : 'Need Help?'}
+              {isResending ? 'Sending...' : 'Resend Verification Email'}
             </Button>
             {resendMessage && (
               <p className="text-sm text-blue-600">{resendMessage}</p>

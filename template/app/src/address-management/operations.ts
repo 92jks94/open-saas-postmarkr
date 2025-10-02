@@ -69,6 +69,7 @@ export const createMailAddress: CreateMailAddress<CreateMailAddressInput, MailAd
     
     // Call the Lob validation service with correct field names
     const validationResult = await validateAddressService({
+      contactName: address.contactName,
       address_line1: address.address_line1,
       address_line2: address.address_line2 || undefined,
       address_city: address.address_city,
@@ -200,6 +201,7 @@ export const updateMailAddress: UpdateMailAddress<UpdateMailAddressInput, MailAd
     
     // Call the Lob validation service with correct field names
     const validationResult = await validateAddressService({
+      contactName: updatedAddress.contactName,
       address_line1: updatedAddress.address_line1,
       address_line2: updatedAddress.address_line2 || undefined,
       address_city: updatedAddress.address_city,
@@ -304,6 +306,7 @@ export const validateAddress: ValidateAddress<ValidateAddressInput, { address: M
     
     // Call the Lob validation service with correct field names
     const validationResult = await validateAddressService({
+      contactName: address.contactName,
       address_line1: address.address_line1,
       address_line2: address.address_line2 || undefined,
       address_city: address.address_city,
