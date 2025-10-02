@@ -1,8 +1,9 @@
 import { HttpError } from 'wasp/server';
-import type { GetAppSettings, UpdateAppSetting, DebugMailPieces, FixPaidOrders } from 'wasp/server/operations';
+import type { GetAppSettings, UpdateAppSetting, DebugMailPieces, FixPaidOrders, DebugMailPieceStatus } from 'wasp/server/operations';
 import type { AppSettings, MailPiece } from 'wasp/entities';
 import * as z from 'zod';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
+import { stripe } from '../payment/stripe/stripeClient';
 
 const updateAppSettingInputSchema = z.object({
   key: z.string().nonempty(),
@@ -96,10 +97,12 @@ export const debugMailPieces: DebugMailPieces<void, AdminMailPiecesResult> = asy
     _count: { paymentStatus: true }
   });
 
-  // Count draft orders with payment intents (these are the broken ones)
+  // Count draft or pending_payment orders with payment intents (these are the broken ones)
   const draftWithPaymentCount = await context.entities.MailPiece.count({
     where: {
-      status: 'draft',
+      status: {
+        in: ['draft', 'pending_payment']
+      },
       paymentIntentId: {
         not: null
       }
@@ -127,10 +130,12 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
   }
 
   // Find mail pieces that should be marked as paid
-  // These are pieces that have a payment intent ID but are still in draft status
-  const draftOrdersWithPayment = await context.entities.MailPiece.findMany({
+  // These are pieces that have a payment intent ID but are still in draft or pending_payment status
+  const ordersWithPayment = await context.entities.MailPiece.findMany({
     where: {
-      status: 'draft',
+      status: {
+        in: ['draft', 'pending_payment']
+      },
       paymentIntentId: {
         not: null
       }
@@ -139,9 +144,43 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
 
   const results: FixResult[] = [];
 
-  for (const order of draftOrdersWithPayment) {
+  for (const order of ordersWithPayment) {
     try {
-      // Update the order
+      // Check the actual payment status in Stripe
+      let isPaid = false;
+      let stripeStatus = 'unknown';
+      
+      try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId!);
+        stripeStatus = paymentIntent.status;
+        isPaid = paymentIntent.status === 'succeeded';
+      } catch (stripeError) {
+        // If payment intent lookup fails, try as a checkout session
+        try {
+          const session = await stripe.checkout.sessions.retrieve(order.paymentIntentId!);
+          stripeStatus = session.payment_status;
+          isPaid = session.payment_status === 'paid';
+        } catch (sessionError) {
+          console.error(`Failed to retrieve Stripe data for ${order.id}:`, sessionError);
+          results.push({
+            id: order.id,
+            status: 'error',
+            message: 'Could not verify payment status in Stripe'
+          });
+          continue;
+        }
+      }
+
+      if (!isPaid) {
+        results.push({
+          id: order.id,
+          status: 'error',
+          message: `Payment not completed in Stripe (status: ${stripeStatus})`
+        });
+        continue;
+      }
+
+      // Update the order to paid status
       await context.entities.MailPiece.update({
         where: { id: order.id },
         data: {
@@ -155,8 +194,8 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
         data: {
           mailPieceId: order.id,
           status: 'paid',
-          previousStatus: 'draft',
-          description: 'Payment status fixed via admin operation',
+          previousStatus: order.status,
+          description: `Payment status fixed via admin operation (Stripe status: ${stripeStatus})`,
           source: 'system'
         }
       });
@@ -164,7 +203,7 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
       results.push({
         id: order.id,
         status: 'fixed',
-        message: 'Successfully updated to paid status'
+        message: `Successfully updated to paid status (verified in Stripe: ${stripeStatus})`
       });
 
     } catch (error: any) {
@@ -181,4 +220,72 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
     errorCount: results.filter(r => r.status === 'error').length,
     results
   };
+};
+
+// Debug operation to check specific mail piece status
+type DebugMailPieceStatusInput = {
+  mailPieceId: string;
+};
+
+type DebugMailPieceStatusResult = {
+  mailPiece: any;
+  stripeStatus: any;
+  webhookLogs: any[];
+};
+
+export const debugMailPieceStatus: DebugMailPieceStatus<DebugMailPieceStatusInput, DebugMailPieceStatusResult> = async (args, context) => {
+  try {
+    // Authentication check
+    if (!context.user) {
+      throw new HttpError(401, 'Not authorized');
+    }
+
+    // Admin check
+    if (!context.user.isAdmin) {
+      throw new HttpError(403, 'Admin access required');
+    }
+
+    // Get mail piece details
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { id: args.mailPieceId },
+      include: {
+        statusHistory: {
+          orderBy: { createdAt: 'desc' },
+        },
+        user: {
+          select: { email: true }
+        }
+      },
+    });
+
+    if (!mailPiece) {
+      throw new HttpError(404, 'Mail piece not found');
+    }
+
+    let stripeStatus: any = null;
+    if (mailPiece.paymentIntentId) {
+      try {
+        stripeStatus = await stripe.paymentIntents.retrieve(mailPiece.paymentIntentId);
+      } catch (error) {
+        console.error('Failed to retrieve Stripe payment intent:', error);
+        stripeStatus = { error: error instanceof Error ? error.message : 'Unknown error' };
+      }
+    }
+
+    // Get recent webhook logs (this would need to be implemented based on your logging system)
+    const webhookLogs: any[] = [];
+
+    return {
+      mailPiece,
+      stripeStatus,
+      webhookLogs,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    
+    console.error('Failed to debug mail piece status:', error);
+    throw new HttpError(500, 'Failed to debug mail piece status due to an internal error.');
+  }
 };

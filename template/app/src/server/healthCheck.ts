@@ -45,7 +45,7 @@ export async function performHealthCheck(): Promise<HealthCheckResponse> {
   const envStatus = checkEnvironmentVariables();
   
   // Check external services
-  const services = getServiceHealthStatus();
+  const services = await getServiceHealthStatus();
   
   // Run API connectivity tests (async)
   let connectivityResults: HealthCheckResponse['connectivity'];

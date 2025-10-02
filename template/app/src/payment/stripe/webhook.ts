@@ -22,8 +22,23 @@ import { UnhandledWebhookEventError } from '../errors';
 
 export const stripeWebhook: PaymentsWebhook = async (request, response, context) => {
   try {
+    console.log('🔔 Stripe webhook received:', {
+      timestamp: new Date().toISOString(),
+      headers: {
+        'stripe-signature': request.headers['stripe-signature'] ? 'present' : 'missing',
+        'content-type': request.headers['content-type']
+      }
+    });
+    
     const rawStripeEvent = constructStripeEvent(request);
     const { eventName, data } = await parseWebhookPayload(rawStripeEvent);
+    
+    console.log('📋 Processing webhook event:', {
+      eventType: rawStripeEvent.type,
+      eventId: rawStripeEvent.id,
+      parsedEventName: eventName
+    });
+    
     const prismaUserDelegate = context.entities.User;
     switch (eventName) {
       case 'checkout.session.completed':
@@ -97,27 +112,55 @@ async function handleCheckoutSessionCompleted(
   prismaUserDelegate: PrismaClient['user'],
   context: any
 ) {
+  console.log('🛒 Processing checkout session completed:', {
+    sessionId: session.id,
+    mode: session.mode,
+    paymentStatus: session.payment_status,
+    metadata: session.metadata
+  });
+  
   const isSuccessfulOneTimePayment = session.mode === 'payment' && session.payment_status === 'paid';
+  console.log('💰 Payment check:', {
+    isSuccessfulOneTimePayment,
+    mode: session.mode,
+    paymentStatus: session.payment_status
+  });
+  
   if (isSuccessfulOneTimePayment) {
+    console.log('✅ Successful one-time payment detected');
     // Check if this is a mail payment
     if (session.metadata?.type === 'mail_payment' && session.metadata?.mailPieceId) {
+      console.log('📬 Mail payment detected, calling handleMailPaymentCompleted');
       await handleMailPaymentCompleted(session, context);
     } else {
+      console.log('💳 Regular payment detected, calling saveSuccessfulOneTimePayment');
       // Handle regular subscription/credit payments
       await saveSuccessfulOneTimePayment(session, prismaUserDelegate);
     }
+  } else {
+    console.log('❌ Not a successful one-time payment:', {
+      mode: session.mode,
+      paymentStatus: session.payment_status
+    });
   }
 }
 
 async function handleMailPaymentCompleted(session: SessionCompletedData, context: any) {
   try {
+    console.log('💳 Processing mail payment completion:', {
+      sessionId: session.id,
+      paymentStatus: session.payment_status,
+      mode: session.mode,
+      metadata: session.metadata
+    });
+    
     const mailPieceId = session.metadata?.mailPieceId;
     if (!mailPieceId) {
-      console.error('Mail payment completed but no mailPieceId in metadata');
+      console.error('❌ Mail payment completed but no mailPieceId in metadata');
       return;
     }
 
-    console.log(`Processing mail payment completion for mail piece: ${mailPieceId}`);
+    console.log(`📬 Processing mail payment completion for mail piece: ${mailPieceId}`);
 
     // Update mail piece status directly in the webhook
     const mailPiece = await context.entities.MailPiece.findFirst({
@@ -130,13 +173,20 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
     }
 
     // Update mail piece to paid status
-    await context.entities.MailPiece.update({
+    const updatedMailPiece = await context.entities.MailPiece.update({
       where: { id: mailPieceId },
       data: {
         paymentStatus: 'paid',
         status: 'paid',
         paymentIntentId: session.id,
       },
+    });
+
+    console.log('✅ Updated mail piece status:', {
+      mailPieceId,
+      oldStatus: mailPiece.status,
+      newStatus: 'paid',
+      paymentStatus: 'paid'
     });
 
     // Create status history entry
@@ -327,17 +377,32 @@ async function handlePaymentIntentSucceeded(
   paymentIntent: PaymentIntentSucceededData,
   context: any
 ) {
+  console.log('💳 Processing payment intent succeeded:', {
+    paymentIntentId: paymentIntent.id,
+    amount: paymentIntent.amount,
+    currency: paymentIntent.currency,
+    metadata: paymentIntent.metadata
+  });
+  
   // Check if this is a mail payment based on metadata
   if (paymentIntent.metadata?.type === 'mail_payment') {
     const mailPieceId = paymentIntent.metadata.mailPieceId;
     if (mailPieceId) {
+      console.log(`📬 Processing payment intent for mail piece: ${mailPieceId}`);
+      
       // Update mail piece status to paid
-      await context.entities.MailPiece.update({
+      const updatedMailPiece = await context.entities.MailPiece.update({
         where: { paymentIntentId: paymentIntent.id },
         data: {
           paymentStatus: 'paid',
           status: 'paid',
         },
+      });
+
+      console.log('✅ Updated mail piece via payment intent:', {
+        mailPieceId,
+        paymentIntentId: paymentIntent.id,
+        newStatus: 'paid'
       });
 
       // Create status history entry
@@ -351,8 +416,12 @@ async function handlePaymentIntentSucceeded(
         },
       });
 
-      console.log(`Mail payment succeeded for payment intent ${paymentIntent.id}`);
+      console.log(`✅ Mail payment succeeded for payment intent ${paymentIntent.id}`);
+    } else {
+      console.log('⚠️ Payment intent has mail_payment type but no mailPieceId in metadata');
     }
+  } else {
+    console.log('ℹ️ Payment intent is not a mail payment, skipping mail processing');
   }
 }
 

@@ -454,51 +454,74 @@ function logServiceConfiguration(): void {
  * Health check endpoint data
  * Returns the status of all external services
  */
-export function getServiceHealthStatus(): Record<string, { status: 'healthy' | 'unhealthy' | 'unknown'; message?: string }> {
+export async function getServiceHealthStatus(): Promise<Record<string, { status: 'healthy' | 'unhealthy' | 'unknown'; message?: string }>> {
   const services: Record<string, { status: 'healthy' | 'unhealthy' | 'unknown'; message?: string }> = {};
+  
+  // Check Database
+  try {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    await prisma.$queryRaw`SELECT 1`;
+    await prisma.$disconnect();
+    services.database = {
+      status: 'healthy' as 'healthy' | 'unhealthy' | 'unknown',
+      message: undefined
+    };
+  } catch (error) {
+    services.database = {
+      status: 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
+      message: error instanceof Error ? error.message : 'Database connection failed'
+    };
+  }
+  
+  // Check Environment variable (for environment status)
+  services.environment = {
+    status: process.env.DATABASE_URL ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
+    message: process.env.DATABASE_URL ? undefined : 'DATABASE_URL not configured'
+  };
   
   // Check Stripe
   services.stripe = {
-    status: process.env.STRIPE_SECRET_KEY ? 'healthy' : 'unhealthy',
+    status: process.env.STRIPE_SECRET_KEY ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
     message: process.env.STRIPE_SECRET_KEY ? undefined : 'Stripe secret key not configured'
   };
   
   // Check SendGrid
   services.sendgrid = {
-    status: process.env.SENDGRID_API_KEY ? 'healthy' : 'unhealthy',
+    status: process.env.SENDGRID_API_KEY ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
     message: process.env.SENDGRID_API_KEY ? undefined : 'SendGrid API key not configured'
   };
   
   // Check Lob
   const lobKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
   services.lob = {
-    status: lobKey ? 'healthy' : 'unhealthy',
+    status: lobKey ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
     message: lobKey ? undefined : 'Lob API key not configured'
   };
   
   // Check AWS
   const awsConfigured = !!(process.env.AWS_S3_IAM_ACCESS_KEY && process.env.AWS_S3_IAM_SECRET_KEY);
   services.aws = {
-    status: awsConfigured ? 'healthy' : 'unhealthy',
+    status: awsConfigured ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
     message: awsConfigured ? undefined : 'AWS credentials not configured'
   };
   
   // Check Sentry
   services.sentry = {
-    status: process.env.SENTRY_DSN ? 'healthy' : 'unhealthy',
+    status: process.env.SENTRY_DSN ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unhealthy' as 'healthy' | 'unhealthy' | 'unknown',
     message: process.env.SENTRY_DSN ? undefined : 'Sentry DSN not configured'
   };
   
   // Check OpenAI
   services.openai = {
-    status: process.env.OPENAI_API_KEY ? 'healthy' : 'unknown',
+    status: process.env.OPENAI_API_KEY ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unknown' as 'healthy' | 'unhealthy' | 'unknown',
     message: process.env.OPENAI_API_KEY ? undefined : 'OpenAI API key not configured (optional)'
   };
   
   // Check Google Analytics
   const gaConfigured = !!(process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL && process.env.GOOGLE_ANALYTICS_PRIVATE_KEY);
   services.googleAnalytics = {
-    status: gaConfigured ? 'healthy' : 'unknown',
+    status: gaConfigured ? 'healthy' as 'healthy' | 'unhealthy' | 'unknown' : 'unknown' as 'healthy' | 'unhealthy' | 'unknown',
     message: gaConfigured ? undefined : 'Google Analytics not configured (optional)'
   };
   

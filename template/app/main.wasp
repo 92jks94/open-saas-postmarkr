@@ -348,6 +348,12 @@ page DebugMailPage {
   component: import DebugMailPage from "@src/admin/DebugMailPage"
 }
 
+route AdminMonitoringRoute { path: "/admin/monitoring", to: AdminMonitoringPage }
+page AdminMonitoringPage {
+  authRequired: true,
+  component: import AdminMonitoring from "@src/admin/dashboards/monitoring/MonitoringDashboard"
+}
+
 route AdminCalendarRoute { path: "/admin/calendar", to: AdminCalendarPage }
 page AdminCalendarPage {
   authRequired: true,
@@ -539,5 +545,10 @@ query debugMailPieces {
 action fixPaidOrders {
   fn: import { fixPaidOrders } from "@src/admin/operations",
   entities: [MailPiece, MailPieceStatusHistory]
+}
+
+action debugMailPieceStatus {
+  fn: import { debugMailPieceStatus } from "@src/admin/operations",
+  entities: [MailPiece, MailPieceStatusHistory, User]
 }
 //#endregion

@@ -5,6 +5,7 @@ import { performHealthCheck, simpleHealthCheck } from './healthCheck';
  * Health check API endpoint
  * GET /health - Returns comprehensive health status
  * GET /health/simple - Returns simple health status
+ * GET /health/detailed - Returns health status with system metrics
  */
 
 export async function healthCheckEndpoint(req: Request, res: Response) {
@@ -15,6 +16,24 @@ export async function healthCheckEndpoint(req: Request, res: Response) {
       // Simple health check for basic monitoring
       const health = simpleHealthCheck();
       res.status(health.status === 'ok' ? 200 : 500).json(health);
+    } else if (path === '/health/detailed') {
+      // Detailed health check with system metrics
+      const health = await performHealthCheck();
+      const statusCode = health.status === 'healthy' ? 200 : 
+                        health.status === 'degraded' ? 200 : 500;
+      
+      // Add system metrics
+      const systemMetrics = {
+        memoryUsage: process.memoryUsage(),
+        uptime: process.uptime(),
+        nodeVersion: process.version,
+        platform: process.platform,
+      };
+      
+      res.status(statusCode).json({
+        ...health,
+        system: systemMetrics
+      });
     } else {
       // Comprehensive health check
       const health = await performHealthCheck();

@@ -10,13 +10,10 @@ import { RefreshCw, AlertTriangle, CheckCircle, Clock, Server, Database, Mail, C
 interface HealthStatus {
   status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
-  services: {
-    database: 'ok' | 'error';
-    environment: 'ok' | 'error';
-    lob?: 'ok' | 'error';
-    stripe?: 'ok' | 'error';
-    sendgrid?: 'ok' | 'error';
-  };
+  services: Record<string, {
+    status: 'healthy' | 'unhealthy' | 'unknown';
+    message?: string;
+  }>;
   uptime: number;
   version: string;
 }
@@ -72,12 +69,17 @@ export default function MonitoringDashboard({ user }: { user: AuthUser }) {
     return () => clearInterval(interval);
   }, []);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
+  const getStatusIcon = (status: string | { status: string }) => {
+    const statusValue = typeof status === 'string' ? status : status.status;
+    switch (statusValue) {
       case 'ok':
+      case 'healthy':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'error':
+      case 'unhealthy':
         return <AlertTriangle className="h-4 w-4 text-red-500" />;
+      case 'unknown':
+        return <Clock className="h-4 w-4 text-gray-400" />;
       default:
         return <Clock className="h-4 w-4 text-yellow-500" />;
     }
@@ -168,7 +170,7 @@ export default function MonitoringDashboard({ user }: { user: AuthUser }) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {healthStatus?.services.database === 'ok' ? 'Connected' : 'Error'}
+                {healthStatus?.services.database?.status === 'healthy' ? 'Connected' : 'Error'}
               </div>
               <p className="text-xs text-muted-foreground">
                 PostgreSQL connection
@@ -179,11 +181,11 @@ export default function MonitoringDashboard({ user }: { user: AuthUser }) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Email Service</CardTitle>
-              {healthStatus && getStatusIcon(healthStatus.services.sendgrid || 'unknown')}
+              {healthStatus && getStatusIcon(healthStatus.services.sendgrid || { status: 'unknown' })}
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {healthStatus?.services.sendgrid === 'ok' ? 'Active' : 'Error'}
+                {healthStatus?.services.sendgrid?.status === 'healthy' ? 'Active' : 'Error'}
               </div>
               <p className="text-xs text-muted-foreground">
                 SendGrid integration
@@ -194,11 +196,11 @@ export default function MonitoringDashboard({ user }: { user: AuthUser }) {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Mail Service</CardTitle>
-              {healthStatus && getStatusIcon(healthStatus.services.lob || 'unknown')}
+              {healthStatus && getStatusIcon(healthStatus.services.lob || { status: 'unknown' })}
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {healthStatus?.services.lob === 'ok' ? 'Active' : 'Error'}
+                {healthStatus?.services.lob?.status === 'healthy' ? 'Active' : 'Error'}
               </div>
               <p className="text-xs text-muted-foreground">
                 Lob API integration
@@ -333,14 +335,19 @@ export default function MonitoringDashboard({ user }: { user: AuthUser }) {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(healthStatus.services).map(([service, status]) => (
+                {Object.entries(healthStatus.services).map(([service, serviceStatus]) => (
                   <div key={service} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
-                      {getStatusIcon(status)}
-                      <span className="font-medium capitalize">{service}</span>
+                      {getStatusIcon(serviceStatus)}
+                      <div>
+                        <span className="font-medium capitalize">{service}</span>
+                        {serviceStatus.message && (
+                          <p className="text-xs text-muted-foreground">{serviceStatus.message}</p>
+                        )}
+                      </div>
                     </div>
-                    <Badge variant={status === 'ok' ? 'default' : 'destructive'}>
-                      {status === 'ok' ? 'Operational' : 'Error'}
+                    <Badge variant={serviceStatus.status === 'healthy' ? 'default' : serviceStatus.status === 'unhealthy' ? 'destructive' : 'outline'}>
+                      {serviceStatus.status === 'healthy' ? 'Operational' : serviceStatus.status === 'unhealthy' ? 'Error' : 'Unknown'}
                     </Badge>
                   </div>
                 ))}

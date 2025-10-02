@@ -8,6 +8,10 @@ import {
   Sheet,
   X,
   Cog,
+  MessageSquare,
+  Activity,
+  Bug,
+  Users,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -132,11 +136,31 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                     )
                   }
                 >
-                  <Sheet />
+                  <Users />
                   Users
                 </NavLink>
               </li>
               {/* <!-- Menu Item Users --> */}
+
+              {/* <!-- Menu Item Messages --> */}
+              <li>
+                <NavLink
+                  to='/admin/messages'
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
+                      {
+                        'bg-accent text-accent-foreground': isActive,
+                      }
+                    )
+                  }
+                >
+                  <MessageSquare />
+                  Messages
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Messages --> */}
 
               {/* <!-- Menu Item Settings --> */}
               <li>
@@ -180,9 +204,56 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
             </ul>
           </div>
 
+          {/* <!-- System Group --> */}
+          <div>
+            <h3 className='mb-4 ml-4 text-sm font-semibold text-muted-foreground'>SYSTEM</h3>
+
+            <ul className='mb-6 flex flex-col gap-1.5'>
+              {/* <!-- Menu Item Monitoring --> */}
+              <li>
+                <NavLink
+                  to='/admin/monitoring'
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
+                      {
+                        'bg-accent text-accent-foreground': isActive,
+                      }
+                    )
+                  }
+                >
+                  <Activity />
+                  Monitoring
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Monitoring --> */}
+
+              {/* <!-- Menu Item Debug Mail --> */}
+              <li>
+                <NavLink
+                  to='/admin/debug-mail'
+                  end
+                  className={({ isActive }) =>
+                    cn(
+                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
+                      {
+                        'bg-accent text-accent-foreground': isActive,
+                      }
+                    )
+                  }
+                >
+                  <Bug />
+                  Debug Mail
+                </NavLink>
+              </li>
+              {/* <!-- Menu Item Debug Mail --> */}
+            </ul>
+          </div>
+
           {/* <!-- Others Group --> */}
           <div>
-            <h3 className='mb-4 ml-4 text-sm font-semibold text-muted-foreground'>Extra Components</h3>
+            <h3 className='mb-4 ml-4 text-sm font-semibold text-muted-foreground'>COMPONENTS</h3>
 
             <ul className='mb-6 flex flex-col gap-1.5'>
               {/* <!-- Menu Item Calendar --> */}
