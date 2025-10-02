@@ -109,9 +109,13 @@ export function getFileSpecifications(file: File): FileSpecifications {
 
 /**
  * Process file for Lob submission
+ * 
+ * NOTE: This function is currently unused but kept for potential future use.
+ * The file.key should be converted to a download URL before submission to Lob.
+ * See src/mail/operations.ts submitMailPieceToLob for the correct implementation.
  */
 export function processFileForMail(file: File, mailType: string, mailSize: string): {
-  fileUrl: string;
+  fileKey: string; // Changed from fileUrl to fileKey - caller must generate download URL
   specifications: FileSpecifications;
   processingNotes: string[];
 } {
@@ -135,11 +139,12 @@ export function processFileForMail(file: File, mailType: string, mailSize: strin
     processingNotes.push('File may need resizing for optimal mail processing');
   }
 
-  // Generate file URL for Lob submission
-  const fileUrl = file.uploadUrl; // Use existing upload URL
+  // Return file key - caller must generate download URL using getDownloadFileSignedURLFromS3
+  // DO NOT use file.uploadUrl as it's write-only and expires quickly
+  const fileKey = file.key;
 
   return {
-    fileUrl,
+    fileKey,
     specifications,
     processingNotes
   };

@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger 
 } from '../components/ui/dropdown-menu';
 import { Separator } from '../components/ui/separator';
+import { MailPreview } from './components/MailPreview';
 
 /**
  * Detailed view component for individual mail pieces
@@ -379,6 +380,14 @@ export default function MailDetailsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Mail Preview */}
+            <MailPreview 
+              thumbnails={mailPiece.lobThumbnails}
+              lobPreviewUrl={mailPiece.lobPreviewUrl}
+              mailType={mailPiece.mailType}
+              lobId={mailPiece.lobId}
+            />
 
             {/* Mail Specifications */}
             <Card>

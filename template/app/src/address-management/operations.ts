@@ -15,6 +15,7 @@ import type { MailAddress } from 'wasp/entities';
 // LOCAL SERVICE/UTILITY IMPORTS
 // ============================================================================
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
+import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 
 // ============================================================================
 // EXTERNAL LIBRARY IMPORTS
@@ -285,6 +286,9 @@ export const validateAddress: ValidateAddress<ValidateAddressInput, { address: M
   if (!context.user) {
     throw new HttpError(401);
   }
+  
+  // Rate limit: 20 address validations per hour per user
+  checkOperationRateLimit('validateAddress', 'addressValidation', context.user.id);
 
   const { addressId } = ensureArgsSchemaOrThrowHttpError(validateAddressInputSchema, rawArgs);
 

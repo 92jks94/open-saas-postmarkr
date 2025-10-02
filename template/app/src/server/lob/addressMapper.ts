@@ -5,6 +5,56 @@
  * and Lob API's expected format to prevent field naming inconsistencies.
  */
 
+/**
+ * US State name to abbreviation mapping
+ */
+const US_STATE_ABBREVIATIONS: Record<string, string> = {
+  'alabama': 'AL', 'alaska': 'AK', 'arizona': 'AZ', 'arkansas': 'AR',
+  'california': 'CA', 'colorado': 'CO', 'connecticut': 'CT', 'delaware': 'DE',
+  'florida': 'FL', 'georgia': 'GA', 'hawaii': 'HI', 'idaho': 'ID',
+  'illinois': 'IL', 'indiana': 'IN', 'iowa': 'IA', 'kansas': 'KS',
+  'kentucky': 'KY', 'louisiana': 'LA', 'maine': 'ME', 'maryland': 'MD',
+  'massachusetts': 'MA', 'michigan': 'MI', 'minnesota': 'MN', 'mississippi': 'MS',
+  'missouri': 'MO', 'montana': 'MT', 'nebraska': 'NE', 'nevada': 'NV',
+  'new hampshire': 'NH', 'new jersey': 'NJ', 'new mexico': 'NM', 'new york': 'NY',
+  'north carolina': 'NC', 'north dakota': 'ND', 'ohio': 'OH', 'oklahoma': 'OK',
+  'oregon': 'OR', 'pennsylvania': 'PA', 'rhode island': 'RI', 'south carolina': 'SC',
+  'south dakota': 'SD', 'tennessee': 'TN', 'texas': 'TX', 'utah': 'UT',
+  'vermont': 'VT', 'virginia': 'VA', 'washington': 'WA', 'west virginia': 'WV',
+  'wisconsin': 'WI', 'wyoming': 'WY',
+  // US Territories
+  'district of columbia': 'DC', 'puerto rico': 'PR', 'virgin islands': 'VI',
+  'american samoa': 'AS', 'guam': 'GU', 'northern mariana islands': 'MP'
+};
+
+/**
+ * Normalize state name to 2-letter abbreviation
+ * @param state - State name or abbreviation
+ * @returns 2-letter state abbreviation
+ */
+function normalizeStateAbbreviation(state: string): string {
+  if (!state) return state;
+  
+  const trimmed = state.trim();
+  
+  // If already 2 letters, return uppercase
+  if (trimmed.length === 2) {
+    return trimmed.toUpperCase();
+  }
+  
+  // Try to find abbreviation from full name (case-insensitive)
+  const lowercase = trimmed.toLowerCase();
+  const abbreviation = US_STATE_ABBREVIATIONS[lowercase];
+  
+  if (abbreviation) {
+    return abbreviation;
+  }
+  
+  // If not found, return original (could be non-US state)
+  console.warn(`⚠️ Could not normalize state: "${state}" - using as-is`);
+  return trimmed;
+}
+
 export interface InternalAddress {
   contactName?: string;
   name?: string;
@@ -36,16 +86,26 @@ export interface LobAddress {
  * @returns Address formatted for Lob API
  */
 export function mapToLobAddress(internalAddress: InternalAddress): LobAddress {
-  return {
+  const lobAddress: LobAddress = {
     name: internalAddress.contactName || internalAddress.name || 'Recipient',
-    company: internalAddress.companyName || internalAddress.company,
     address_line1: internalAddress.address_line1,
-    address_line2: internalAddress.address_line2,
     address_city: internalAddress.address_city,
-    address_state: internalAddress.address_state,
+    address_state: normalizeStateAbbreviation(internalAddress.address_state),
     address_zip: internalAddress.address_zip,
     address_country: internalAddress.address_country,
   };
+
+  // Only include optional fields if they have non-empty values
+  if (internalAddress.companyName || internalAddress.company) {
+    lobAddress.company = internalAddress.companyName || internalAddress.company;
+  }
+
+  // Only include address_line2 if it has a non-empty value
+  if (internalAddress.address_line2 && internalAddress.address_line2.trim() !== '') {
+    lobAddress.address_line2 = internalAddress.address_line2;
+  }
+
+  return lobAddress;
 }
 
 /**
@@ -135,13 +195,15 @@ export function getAddressValidationErrors(address: InternalAddress): string[] {
  * @returns Standardized internal address format
  */
 export function normalizeAddress(address: any): InternalAddress {
+  const stateValue = address.address_state || address.state;
+  
   const normalized = {
     contactName: address.contactName || address.name,
     companyName: address.companyName || address.company,
     address_line1: address.address_line1 || address.addressLine1 || address.primary_line,
     address_line2: address.address_line2 ?? address.addressLine2 ?? address.secondary_line,
     address_city: address.address_city || address.city,
-    address_state: address.address_state || address.state,
+    address_state: stateValue ? normalizeStateAbbreviation(stateValue) : stateValue,
     address_zip: address.address_zip || address.postalCode || address.zip_code,
     address_country: address.address_country || address.country || 'US',
   };

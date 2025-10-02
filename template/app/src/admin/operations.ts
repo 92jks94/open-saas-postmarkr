@@ -4,6 +4,7 @@ import type { AppSettings, MailPiece } from 'wasp/entities';
 import * as z from 'zod';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { stripe } from '../payment/stripe/stripeClient';
+import { getDownloadFileSignedURLFromS3 } from '../file-upload/s3Utils';
 
 const updateAppSettingInputSchema = z.object({
   key: z.string().nonempty(),
@@ -237,6 +238,18 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
           // Import Lob service directly to bypass user ownership check
           const { createMailPiece } = await import('../server/lob/services');
           
+          // Generate download URL for file (upload URLs are write-only and expire quickly)
+          let fileUrl: string | undefined;
+          if (order.file?.key) {
+            try {
+              fileUrl = await getDownloadFileSignedURLFromS3({ key: order.file.key });
+              console.log(`📎 [Admin] Generated download URL for file: ${order.file.name}`);
+            } catch (error) {
+              console.error(`❌ [Admin] Failed to generate download URL for file ${order.file.key}:`, error);
+              throw new Error('Failed to prepare file for mailing');
+            }
+          }
+          
           // Prepare data for Lob API
           const lobMailData = {
             to: order.recipientAddress,
@@ -244,7 +257,7 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
             mailType: order.mailType,
             mailClass: order.mailClass,
             mailSize: order.mailSize,
-            fileUrl: order.file?.uploadUrl,
+            fileUrl,
             description: order.description || `Mail piece created via Postmarkr - ${order.mailType}`,
             envelopeType: order.envelopeType || undefined,
             colorPrinting: order.colorPrinting ?? false,

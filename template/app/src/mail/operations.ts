@@ -55,6 +55,7 @@ import {
   getPageCountErrorMessage 
 } from '../server/pricing/pageBasedPricing';
 import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMailPieceStatus, calculateCost } from '../server/lob/services';
+import { getDownloadFileSignedURLFromS3 } from '../file-upload/s3Utils';
 import { stripe } from '../payment/stripe/stripeClient';
 import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 
@@ -1039,13 +1040,25 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     }
 
     // Prepare data for Lob API
+    // Generate a download URL for the file (upload URLs are write-only and expire quickly)
+    let fileUrl: string | undefined;
+    if (mailPiece.file?.key) {
+      try {
+        fileUrl = await getDownloadFileSignedURLFromS3({ key: mailPiece.file.key });
+        console.log(`📎 Generated download URL for file: ${mailPiece.file.name}`);
+      } catch (error) {
+        console.error(`❌ Failed to generate download URL for file ${mailPiece.file.key}:`, error);
+        throw new HttpError(500, 'Failed to prepare file for mailing. Please try again.');
+      }
+    }
+
     const lobMailData = {
       to: mailPiece.recipientAddress,
       from: mailPiece.senderAddress,
       mailType: mailPiece.mailType,
       mailClass: mailPiece.mailClass,
       mailSize: mailPiece.mailSize,
-      fileUrl: mailPiece.file?.uploadUrl,
+      fileUrl,
       description: mailPiece.description || `Mail piece created via Postmarkr - ${mailPiece.mailType}`,
       envelopeType: mailPiece.envelopeType || undefined,
       colorPrinting: mailPiece.colorPrinting ?? false, // Default to black & white for MVP
@@ -1054,6 +1067,15 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
 
     // Submit to Lob API
     const lobResponse = await createLobMailPiece(lobMailData);
+
+    // Extract preview URLs from Lob response
+    const thumbnails = lobResponse.lobData?.thumbnails || [];
+    const previewUrl = lobResponse.lobData?.url || null;
+
+    console.log(`📸 Extracted preview data from Lob:`, {
+      thumbnailCount: Array.isArray(thumbnails) ? thumbnails.length : 0,
+      hasPreviewUrl: !!previewUrl
+    });
 
     // Update mail piece with Lob information using conditional update to prevent race conditions
     // This will only update if paymentStatus is 'paid' and lobId is still null
@@ -1070,6 +1092,8 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
         lobTrackingNumber: lobResponse.trackingNumber,
         status: 'submitted',
         cost: lobResponse.cost / 100, // Convert to USD for display
+        lobThumbnails: thumbnails, // Store thumbnail URLs for preview
+        lobPreviewUrl: previewUrl, // Store direct preview URL
         metadata: {
           lobData: lobResponse.lobData,
           submittedAt: new Date().toISOString(),

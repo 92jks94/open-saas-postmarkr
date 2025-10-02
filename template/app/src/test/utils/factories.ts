@@ -158,6 +158,8 @@ export const createMailPiece = (
   trackingEnabled: false,
   colorPrinting: false,
   doubleSided: true,
+  lobThumbnails: null,
+  lobPreviewUrl: null,
   ...overrides,
 });
 

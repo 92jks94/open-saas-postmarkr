@@ -202,25 +202,28 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
 
     console.log(`✅ Mail payment completed successfully for mail piece ${mailPieceId}`);
 
-    // Automatically submit to Lob after payment confirmation
+    // Schedule background job to submit to Lob after payment confirmation
     try {
-      console.log(`🚀 Attempting to submit mail piece ${mailPieceId} to Lob...`);
+      console.log(`📋 Scheduling Lob submission job for mail piece ${mailPieceId}...`);
       
-      // Import the Lob submission operation
-      const { submitMailPieceToLob } = await import('../../mail/operations');
+      // Import PgBoss job
+      const { submitPaidMailToLob } = await import('wasp/server/jobs');
       
-      // Submit to Lob
-      const result = await submitMailPieceToLob({ mailPieceId }, context);
+      // Schedule job for immediate execution with retries
+      await submitPaidMailToLob.submit(
+        { mailPieceId },
+        { 
+          retryLimit: 3,           // Retry up to 3 times if it fails
+          retryDelay: 60,          // Wait 60 seconds between retries
+          retryBackoff: true       // Use exponential backoff
+        }
+      );
       
-      if (result.success) {
-        console.log(`✅ Successfully submitted mail piece ${mailPieceId} to Lob with ID: ${result.lobId}`);
-      } else {
-        console.error(`❌ Failed to submit mail piece ${mailPieceId} to Lob`);
-      }
-    } catch (lobError) {
-      console.error(`❌ Error submitting mail piece ${mailPieceId} to Lob:`, lobError);
-      // Don't fail the payment webhook if Lob submission fails
-      // The user can manually retry from the UI
+      console.log(`✅ Lob submission job scheduled for mail piece ${mailPieceId}`);
+    } catch (jobError) {
+      console.error(`❌ Error scheduling Lob submission job for ${mailPieceId}:`, jobError);
+      // Don't fail the webhook - payment is confirmed
+      // Job system will handle retries
     }
     
   } catch (error) {

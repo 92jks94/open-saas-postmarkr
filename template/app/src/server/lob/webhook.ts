@@ -1,5 +1,6 @@
 import { type MiddlewareConfigFn, HttpError } from 'wasp/server';
 import { updateMailPieceStatus } from '../../mail/operations';
+import { emailSender } from 'wasp/server/email';
 import express from 'express';
 import crypto from 'crypto';
 import { requireNodeEnvVar } from '../utils';
@@ -22,6 +23,53 @@ let webhookMetrics: WebhookMetrics = {
   eventsByType: {},
   lastProcessedAt: null,
 };
+
+// Error tracking for alerting
+const WEBHOOK_ERROR_THRESHOLD = 5; // Alert after 5 consecutive failures
+let consecutiveErrors = 0;
+
+// Metrics persistence configuration
+const METRICS_PERSIST_INTERVAL = 10; // Persist metrics every 10 events
+let eventsSinceLastPersist = 0;
+
+/**
+ * Persist webhook metrics to database
+ * Called periodically to avoid losing metrics on server restart
+ */
+async function persistWebhookMetrics(context: any) {
+  try {
+    const metricsData = {
+      source: 'lob',
+      totalEvents: webhookMetrics.totalEvents,
+      successfulEvents: webhookMetrics.successfulEvents,
+      failedEvents: webhookMetrics.failedEvents,
+      averageProcessingTime: webhookMetrics.averageProcessingTime,
+      eventsByType: webhookMetrics.eventsByType,
+      lastProcessedAt: webhookMetrics.lastProcessedAt,
+    };
+
+    // Upsert metrics (update if exists for 'lob', create if not)
+    const existingMetrics = await context.entities.WebhookMetrics.findFirst({
+      where: { source: 'lob' }
+    });
+
+    if (existingMetrics) {
+      await context.entities.WebhookMetrics.update({
+        where: { id: existingMetrics.id },
+        data: metricsData
+      });
+    } else {
+      await context.entities.WebhookMetrics.create({
+        data: metricsData
+      });
+    }
+    
+    console.log('📊 Webhook metrics persisted to database');
+  } catch (error) {
+    console.error('Failed to persist webhook metrics:', error);
+    // Don't throw - metrics persistence failure shouldn't break webhook processing
+  }
+}
 
 /**
  * Verify Lob webhook signature using HMAC-SHA256
@@ -169,6 +217,16 @@ export const lobWebhook = async (request: express.Request, response: express.Res
       (webhookMetrics.averageProcessingTime * (webhookMetrics.totalEvents - 1) + processingTime) / webhookMetrics.totalEvents;
     webhookMetrics.eventsByType[eventType] = (webhookMetrics.eventsByType[eventType] || 0) + 1;
     webhookMetrics.lastProcessedAt = new Date();
+    
+    // Reset consecutive errors on success
+    consecutiveErrors = 0;
+    
+    // Persist metrics periodically
+    eventsSinceLastPersist++;
+    if (eventsSinceLastPersist >= METRICS_PERSIST_INTERVAL) {
+      await persistWebhookMetrics(context);
+      eventsSinceLastPersist = 0;
+    }
 
     console.log(`Webhook ${webhookId}: Updated mail piece ${lobId} to status: ${internalStatus} (${processingTime}ms)`);
 
@@ -189,12 +247,58 @@ export const lobWebhook = async (request: express.Request, response: express.Res
     webhookMetrics.failedEvents++;
     webhookMetrics.averageProcessingTime = 
       (webhookMetrics.averageProcessingTime * (webhookMetrics.totalEvents - 1) + processingTime) / webhookMetrics.totalEvents;
+    
+    // Track consecutive errors for alerting
+    consecutiveErrors++;
+    
+    // Send alert email if error threshold is reached
+    if (consecutiveErrors >= WEBHOOK_ERROR_THRESHOLD) {
+      const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'nathan@postmarkr.com';
+      const errorRate = Math.round((webhookMetrics.failedEvents / webhookMetrics.totalEvents) * 100);
+      
+      try {
+        await emailSender.send({
+          to: adminEmail,
+          subject: '🚨 Lob Webhook Failures Detected',
+          text: `
+WARNING: ${consecutiveErrors} consecutive Lob webhook failures detected.
 
-    console.error(`Webhook ${webhookId || 'unknown'} error:`, {
+Error Rate: ${errorRate}%
+Total Events: ${webhookMetrics.totalEvents}
+Failed Events: ${webhookMetrics.failedEvents}
+
+Latest Error: ${err instanceof Error ? err.message : String(err)}
+
+Check logs for details and investigate immediately.
+          `,
+          html: `
+<h2>🚨 Lob Webhook Failures Detected</h2>
+<p><strong>WARNING:</strong> ${consecutiveErrors} consecutive webhook failures.</p>
+<ul>
+  <li><strong>Error Rate:</strong> ${errorRate}%</li>
+  <li><strong>Total Events:</strong> ${webhookMetrics.totalEvents}</li>
+  <li><strong>Failed Events:</strong> ${webhookMetrics.failedEvents}</li>
+</ul>
+<p><strong>Latest Error:</strong> ${err instanceof Error ? err.message : String(err)}</p>
+<p>Check server logs for details and investigate immediately.</p>
+          `
+        });
+        
+        console.log(`📧 Alert email sent to ${adminEmail} after ${consecutiveErrors} consecutive webhook failures`);
+        
+        // Reset counter after sending alert to avoid spam
+        consecutiveErrors = 0;
+      } catch (emailError) {
+        console.error('Failed to send webhook error alert email:', emailError);
+      }
+    }
+
+    console.error(`Webhook ${webhookId || 'unknown'} error (${consecutiveErrors} consecutive):`, {
       error: err,
       lobId,
       eventType,
       processingTimeMs: processingTime,
+      consecutiveErrors,
       timestamp: new Date().toISOString()
     });
 
@@ -259,12 +363,27 @@ export const webhookHealthCheck = async (request: express.Request, response: exp
 };
 
 /**
- * Webhook metrics endpoint
+ * Webhook metrics endpoint (admin only)
+ * Returns both in-memory and persisted metrics
  */
 export const webhookMetricsEndpoint = async (request: express.Request, response: express.Response, context?: any) => {
   try {
+    // Require admin authentication
+    if (!context?.user?.isAdmin) {
+      return response.status(403).json({
+        error: 'Forbidden',
+        message: 'Admin access required to view webhook metrics'
+      });
+    }
+    
+    // Get persisted metrics from database
+    const persistedMetrics = await context.entities.WebhookMetrics.findFirst({
+      where: { source: 'lob' }
+    });
+    
     return response.status(200).json({
-      metrics: webhookMetrics,
+      current: webhookMetrics, // In-memory metrics (current session)
+      persisted: persistedMetrics, // Database metrics (historical)
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -277,11 +396,23 @@ export const webhookMetricsEndpoint = async (request: express.Request, response:
 };
 
 /**
- * Webhook events endpoint (for debugging)
+ * Webhook events endpoint (admin only, for debugging)
  */
 export const webhookEventsEndpoint = async (request: express.Request, response: express.Response, context: any) => {
   try {
-    const { limit = 50, lobId, eventType, success } = request.query;
+    // Require admin authentication
+    if (!context?.user?.isAdmin) {
+      return response.status(403).json({
+        error: 'Forbidden',
+        message: 'Admin access required to view webhook events'
+      });
+    }
+    
+    const { limit, offset, lobId, eventType, success } = request.query;
+    
+    // Parse and validate pagination parameters
+    const parsedLimit = Math.min(parseInt(limit as string, 10) || 50, 100); // Max 100 items
+    const parsedOffset = parseInt(offset as string, 10) || 0;
     
     const whereClause: any = {
       source: 'webhook'
@@ -304,10 +435,16 @@ export const webhookEventsEndpoint = async (request: express.Request, response: 
       }
     }
 
+    // Get total count for pagination metadata
+    const totalCount = await context.entities.MailPieceStatusHistory.count({
+      where: whereClause
+    });
+
     const events = await context.entities.MailPieceStatusHistory.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
-      take: parseInt(limit as string, 10),
+      skip: parsedOffset,
+      take: parsedLimit,
       include: {
         mailPiece: {
           select: {
@@ -321,7 +458,14 @@ export const webhookEventsEndpoint = async (request: express.Request, response: 
 
     return response.status(200).json({
       events,
-      count: events.length,
+      pagination: {
+        total: totalCount,
+        limit: parsedLimit,
+        offset: parsedOffset,
+        hasMore: parsedOffset + parsedLimit < totalCount,
+        currentPage: Math.floor(parsedOffset / parsedLimit) + 1,
+        totalPages: Math.ceil(totalCount / parsedLimit)
+      },
       timestamp: new Date().toISOString()
     });
   } catch (error) {

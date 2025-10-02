@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { getMailPiece } from 'wasp/client/operations';
 import type { MailPiece, MailAddress, File } from 'wasp/entities';
+import { MailPreview } from './components/MailPreview';
 
 /**
  * Page component for handling mail checkout results
@@ -131,27 +132,39 @@ export default function MailCheckoutResultPage() {
                 </p>
                 
                 {mailPiece && (
-                  <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left">
-                    <h3 className="font-medium text-gray-900 mb-4">Mail Piece Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Type:</span>
-                        <p className="font-medium capitalize">{mailPiece.mailType}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Class:</span>
-                        <p className="font-medium capitalize">{mailPiece.mailClass}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Size:</span>
-                        <p className="font-medium">{mailPiece.mailSize}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Status:</span>
-                        <p className="font-medium capitalize text-green-600">{mailPiece.status}</p>
+                  <>
+                    <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left">
+                      <h3 className="font-medium text-gray-900 mb-4">Mail Piece Details</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500">Type:</span>
+                          <p className="font-medium capitalize">{mailPiece.mailType}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Class:</span>
+                          <p className="font-medium capitalize">{mailPiece.mailClass}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Size:</span>
+                          <p className="font-medium">{mailPiece.mailSize}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Status:</span>
+                          <p className="font-medium capitalize text-green-600">{mailPiece.status}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+
+                    {/* Show mail preview if available */}
+                    <div className="mb-8">
+                      <MailPreview 
+                        thumbnails={mailPiece.lobThumbnails}
+                        lobPreviewUrl={mailPiece.lobPreviewUrl}
+                        mailType={mailPiece.mailType}
+                        lobId={mailPiece.lobId}
+                      />
+                    </div>
+                  </>
                 )}
                 
                 <div className="space-y-4">

@@ -31,6 +31,14 @@ export const RATE_LIMITS = {
     max: 5,
     message: 'Too many payment requests. Please try again shortly.',
   },
+  
+  // Address validation: 20 requests per hour
+  // Prevents abuse of Lob API for free validation
+  addressValidation: {
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 20,
+    message: 'Address validation limit exceeded. Please try again later.',
+  },
 };
 
 /**

@@ -215,7 +215,8 @@ api paymentsWebhook {
   fn: import { paymentsWebhook } from "@src/payment/webhook",
   entities: [User],
   middlewareConfigFn: import { paymentsMiddlewareConfigFn } from "@src/payment/webhook",
-  httpRoute: (POST, "/payments-webhook")
+  httpRoute: (POST, "/payments-webhook"),
+  auth: false
 }
 //#endregion
 
@@ -268,6 +269,14 @@ job cleanupOrphanedS3Files {
   schedule: {
     cron: "0 2 * * *" // Run daily at 2 AM to clean up orphaned S3 files
   }
+}
+
+job submitPaidMailToLob {
+  executor: PgBoss,
+  perform: {
+    fn: import { submitPaidMailToLob } from "@src/mail/jobs"
+  },
+  entities: [MailPiece, MailAddress, File, MailPieceStatusHistory]
 }
 //#endregion
 
@@ -475,45 +484,48 @@ action bulkDeleteMailPieces {
 
 api lobWebhook {
   fn: import { lobWebhook } from "@src/server/lob/webhook",
-  entities: [MailPiece, MailPieceStatusHistory],
+  entities: [MailPiece, MailPieceStatusHistory, WebhookMetrics],
   middlewareConfigFn: import { lobMiddlewareConfigFn } from "@src/server/lob/webhook",
-  httpRoute: (POST, "/webhooks/lob")
-}
-
-api validateAddress {
-  fn: import { validateAddressEndpoint } from "@src/server/lob/addressValidation",
-  httpRoute: (POST, "/api/validate-address")
+  httpRoute: (POST, "/webhooks/lob"),
+  auth: false
 }
 
 api healthCheck {
   fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
-  httpRoute: (GET, "/health")
+  httpRoute: (GET, "/health"),
+  auth: false
 }
 
 api healthCheckSimple {
   fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
-  httpRoute: (GET, "/health/simple")
+  httpRoute: (GET, "/health/simple"),
+  auth: false
 }
 
 api healthCheckDetailed {
   fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
-  httpRoute: (GET, "/health/detailed")
+  httpRoute: (GET, "/health/detailed"),
+  auth: false
 }
 
 api webhookHealthCheck {
   fn: import { webhookHealthCheck } from "@src/server/lob/webhook",
-  httpRoute: (GET, "/api/webhooks/health")
+  httpRoute: (GET, "/api/webhooks/health"),
+  auth: false
 }
 
 api webhookMetrics {
   fn: import { webhookMetricsEndpoint } from "@src/server/lob/webhook",
-  httpRoute: (GET, "/api/webhooks/metrics")
+  entities: [WebhookMetrics],
+  httpRoute: (GET, "/api/webhooks/metrics"),
+  auth: true
 }
 
 api webhookEvents {
   fn: import { webhookEventsEndpoint } from "@src/server/lob/webhook",
   entities: [MailPieceStatusHistory, MailPiece],
-  httpRoute: (GET, "/api/webhooks/events")
+  httpRoute: (GET, "/api/webhooks/events"),
+  auth: true
 }
 
 

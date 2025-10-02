@@ -670,48 +670,95 @@ async function createMailPieceInternal(mailData: {
  * Supports both PDF files (returns URL) and HTML files (returns content)
  */
 async function fetchFileContent(fileUrl: string): Promise<string> {
+  console.log('📥 Fetching file content for Lob API:', { 
+    url: fileUrl,
+    urlLength: fileUrl.length,
+    isPDF: fileUrl.toLowerCase().endsWith('.pdf')
+  });
+
   try {
     // Check if it's a PDF file - Lob can handle PDF URLs directly
     if (fileUrl.toLowerCase().endsWith('.pdf')) {
-      console.log('PDF file detected, using URL directly for Lob API');
+      console.log('✅ PDF file detected, passing URL directly to Lob API');
       return fileUrl; // Lob API can handle PDF URLs directly
     }
 
     // For HTML files or other text-based content, fetch the content
-    console.log('Fetching file content from URL:', fileUrl);
-    const response = await fetch(fileUrl);
+    console.log('🌐 Fetching non-PDF file content from S3...');
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
-    }
+    // Add 30-second timeout to prevent hung connections
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    
+    try {
+      const response = await fetch(fileUrl, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+        console.error('❌ File fetch failed:', errorMsg);
+        throw new Error(`Failed to fetch file: ${errorMsg}`);
+      }
 
-    const contentType = response.headers.get('content-type') || '';
-    
-    // If it's HTML content, return as-is
-    if (contentType.includes('text/html') || fileUrl.toLowerCase().endsWith('.html')) {
-      return await response.text();
-    }
-    
-    // If it's a PDF or other binary file, return the URL for Lob to handle
-    if (contentType.includes('application/pdf') || fileUrl.toLowerCase().endsWith('.pdf')) {
-      return fileUrl;
-    }
+      const contentType = response.headers.get('content-type') || '';
+      console.log('📄 File content-type:', contentType);
+      
+      // If it's HTML content, return as-is
+      if (contentType.includes('text/html') || fileUrl.toLowerCase().endsWith('.html')) {
+        const htmlContent = await response.text();
+        console.log('✅ HTML content fetched successfully');
+        return htmlContent;
+      }
+      
+      // If it's a PDF or other binary file, return the URL for Lob to handle
+      if (contentType.includes('application/pdf') || fileUrl.toLowerCase().endsWith('.pdf')) {
+        console.log('✅ PDF content-type detected, passing URL to Lob API');
+        return fileUrl;
+      }
 
-    // For other text-based content, try to read as text
-    const content = await response.text();
-    
-    // If it looks like HTML, return as-is
-    if (content.trim().startsWith('<') && content.trim().endsWith('>')) {
-      return content;
+      // For other text-based content, try to read as text
+      const content = await response.text();
+      console.log('📝 Text content fetched, length:', content.length);
+      
+      // If it looks like HTML, return as-is
+      if (content.trim().startsWith('<') && content.trim().endsWith('>')) {
+        console.log('✅ HTML-like content detected, using as-is');
+        return content;
+      }
+      
+      // Otherwise, wrap in basic HTML
+      console.log('📦 Wrapping text content in HTML template');
+      return `<html><body><pre>${content}</pre></body></html>`;
+      
+    } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Handle timeout specifically
+      if (error.name === 'AbortError') {
+        console.error('❌ File fetch timed out after 30 seconds');
+        throw new HttpError(
+          504,
+          'File fetch timed out after 30 seconds. The file may be too large or S3 is experiencing issues.'
+        );
+      }
+      throw error;
     }
-    
-    // Otherwise, wrap in basic HTML
-    return `<html><body><pre>${content}</pre></body></html>`;
     
   } catch (error) {
-    console.error('Error fetching file content:', error);
-    // Return a fallback HTML template
-    return '<html><body><h1>Mail Content</h1><p>Unable to load the original file. This is a fallback content.</p></body></html>';
+    console.error('❌ CRITICAL: File fetch failed completely:', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      fileUrl,
+    });
+    
+    // This should NOT happen with properly generated download URLs
+    // If it does, there's a critical issue with file storage/access
+    throw new HttpError(
+      500, 
+      'Failed to retrieve file from storage. The file may have been deleted or is inaccessible. Please try uploading the file again.'
+    );
   }
 }
 
