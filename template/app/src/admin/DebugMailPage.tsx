@@ -6,8 +6,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 
+type FixResult = {
+  fixedCount: number;
+  errorCount: number;
+  submittedToLobCount: number;
+  results: Array<{
+    id: string;
+    status: 'fixed' | 'error' | 'submitted_to_lob';
+    message: string;
+    lobId?: string;
+  }>;
+};
+
 export default function DebugMailPage() {
-  const [fixResult, setFixResult] = useState<any>(null);
+  const [fixResult, setFixResult] = useState<FixResult | null>(null);
   const [isFixing, setIsFixing] = useState(false);
   
   const { data: debugData, isLoading, error, refetch } = useQuery(debugMailPieces, undefined);
@@ -21,11 +33,13 @@ export default function DebugMailPage() {
       setFixResult(result);
       // Refetch debug data to show updated state
       refetch();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setFixResult({
         fixedCount: 0,
         errorCount: 1,
-        results: [{ status: 'error', message: error.message }]
+        submittedToLobCount: 0,
+        results: [{ id: 'error', status: 'error', message: errorMessage }]
       });
     } finally {
       setIsFixing(false);
@@ -59,6 +73,15 @@ export default function DebugMailPage() {
     }
   };
 
+  const getResultStatusColor = (status: string) => {
+    switch (status) {
+      case 'fixed': return 'bg-green-100 text-green-800';
+      case 'submitted_to_lob': return 'bg-blue-100 text-blue-800';
+      case 'error': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">Mail Pieces Debug</h1>
@@ -80,7 +103,7 @@ export default function DebugMailPage() {
           </CardHeader>
           <CardContent>
           <div className="space-y-2">
-            {debugData?.statusCounts?.map((count: any) => (
+            {debugData?.statusCounts?.map((count: { status: string; count: number }) => (
               <div key={count.status} className="flex justify-between">
                 <Badge className={getStatusColor(count.status)}>
                   {count.status}
@@ -98,7 +121,7 @@ export default function DebugMailPage() {
           </CardHeader>
           <CardContent>
           <div className="space-y-2">
-            {debugData?.paymentCounts?.map((count: any) => (
+            {debugData?.paymentCounts?.map((count: { paymentStatus: string; count: number }) => (
               <div key={count.paymentStatus} className="flex justify-between">
                 <Badge className={getStatusColor(count.paymentStatus)}>
                   {count.paymentStatus}
@@ -114,7 +137,7 @@ export default function DebugMailPage() {
       {/* Fix Orders Section */}
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle>Fix Paid Orders</CardTitle>
+          <CardTitle>Fix & Submit Orders</CardTitle>
         </CardHeader>
         <CardContent>
           {debugData?.draftWithPaymentCount > 0 ? (
@@ -132,24 +155,47 @@ export default function DebugMailPage() {
           )}
           
           <p className="mb-4 text-gray-600">
-            This will find orders that have payment intent IDs but are still in draft status and mark them as paid.
+            This will fix payment status issues and automatically submit paid orders to Lob API for processing.
           </p>
           
           <Button 
             onClick={handleFixOrders} 
-            disabled={isFixing || debugData?.draftWithPaymentCount === 0}
-            className="mb-4"
+            disabled={isFixing}
+            className="mb-4 bg-blue-600 hover:bg-blue-700"
           >
-            {isFixing ? 'Fixing Orders...' : `Fix ${debugData?.draftWithPaymentCount || 0} Paid Orders`}
+            {isFixing ? 'Processing Orders...' : 'Fix & Submit Orders'}
           </Button>
 
           {fixResult && (
             <Alert className="mb-4">
               <AlertDescription>
                 Fixed {fixResult.fixedCount} orders. 
+                {fixResult.submittedToLobCount > 0 && ` Submitted ${fixResult.submittedToLobCount} orders to Lob.`}
                 {fixResult.errorCount > 0 && ` ${fixResult.errorCount} errors occurred.`}
               </AlertDescription>
             </Alert>
+          )}
+
+          {fixResult && fixResult.results && fixResult.results.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-medium mb-2">Detailed Results:</h4>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {fixResult.results.map((result, index: number) => (
+                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex-1">
+                      <span className="text-sm font-mono">{result.id.slice(-8)}</span>
+                      <span className="text-sm text-gray-600 ml-2">{result.message}</span>
+                      {result.lobId && (
+                        <span className="text-xs text-blue-600 ml-2">Lob ID: {result.lobId.slice(-8)}</span>
+                      )}
+                    </div>
+                    <Badge className={getResultStatusColor(result.status)}>
+                      {result.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -161,7 +207,7 @@ export default function DebugMailPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {debugData?.recentMailPieces?.map((piece: any) => (
+            {debugData?.recentMailPieces?.map((piece) => (
               <div key={piece.id} className="border rounded-lg p-4">
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -207,7 +253,7 @@ export default function DebugMailPage() {
                   <div className="mt-3 pt-3 border-t">
                     <p className="text-sm text-gray-500 mb-2">Recent Status History:</p>
                     <div className="space-y-1">
-                      {piece.statusHistory.map((history: any, index: number) => (
+                      {piece.statusHistory.map((history, index: number) => (
                         <div key={index} className="text-xs text-gray-600">
                           {new Date(history.createdAt).toLocaleString()} - {history.status} 
                           {history.description && ` (${history.description})`}

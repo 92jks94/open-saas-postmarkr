@@ -1,4 +1,3 @@
-import { Request, Response } from 'express';
 import { performHealthCheck, simpleHealthCheck } from './healthCheck';
 
 /**
@@ -8,7 +7,7 @@ import { performHealthCheck, simpleHealthCheck } from './healthCheck';
  * GET /health/detailed - Returns health status with system metrics
  */
 
-export async function healthCheckEndpoint(req: Request, res: Response) {
+export async function healthCheckEndpoint(req: any, res: any, context: any) {
   try {
     const { path } = req;
     
@@ -35,11 +34,25 @@ export async function healthCheckEndpoint(req: Request, res: Response) {
         system: systemMetrics
       });
     } else {
-      // Comprehensive health check
+      // Comprehensive health check - format for monitoring dashboard
       const health = await performHealthCheck();
       const statusCode = health.status === 'healthy' ? 200 : 
                         health.status === 'degraded' ? 200 : 500;
-      res.status(statusCode).json(health);
+      
+      // Transform to match monitoring dashboard expectations
+      const dashboardFormat = {
+        status: health.status,
+        timestamp: health.timestamp,
+        services: health.services,
+        uptime: health.uptime,
+        version: health.version,
+        environment: health.environment,
+        environmentVariables: health.environmentVariables,
+        connectivity: health.connectivity,
+        monitoring: health.monitoring
+      };
+      
+      res.status(statusCode).json(dashboardFormat);
     }
   } catch (error) {
     console.error('Health check error:', error);

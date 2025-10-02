@@ -249,6 +249,10 @@ jobs:
       needs.pre-deploy-checks.outputs.should-deploy == 'true' && 
       needs.deploy.result == 'success'
     
+    env:
+      FLY_SERVER_APP: ${{ secrets.FLY_SERVER_APP_NAME }}
+      FLY_CLIENT_APP: ${{ secrets.FLY_CLIENT_APP_NAME }}
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -266,8 +270,8 @@ jobs:
     - name: Run smoke tests
       run: |
         echo "Running smoke tests against deployed application..."
-        SERVER_URL="https://${{ secrets.FLY_SERVER_APP_NAME }}.fly.dev"
-        CLIENT_URL="https://${{ secrets.FLY_CLIENT_APP_NAME }}.fly.dev"
+        SERVER_URL="https://${FLY_SERVER_APP:-postmarkr-server}.fly.dev"
+        CLIENT_URL="https://${FLY_CLIENT_APP:-postmarkr-client}.fly.dev"
         
         # Test server health endpoint
         curl -f "$SERVER_URL/health" && echo "✅ Server health check passed"
@@ -285,8 +289,8 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "## Environment: ${{ needs.pre-deploy-checks.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
         echo "## Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "## Server: https://${{ secrets.FLY_SERVER_APP_NAME }}.fly.dev" >> $GITHUB_STEP_SUMMARY
-        echo "## Client: https://${{ secrets.FLY_CLIENT_APP_NAME }}.fly.dev" >> $GITHUB_STEP_SUMMARY
+        echo "## Server: https://${FLY_SERVER_APP:-postmarkr-server}.fly.dev" >> $GITHUB_STEP_SUMMARY
+        echo "## Client: https://${FLY_CLIENT_APP:-postmarkr-client}.fly.dev" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Deployment Status: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
         echo "### Smoke Tests: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY

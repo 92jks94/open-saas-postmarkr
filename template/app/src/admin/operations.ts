@@ -120,25 +120,43 @@ export const debugMailPieces: DebugMailPieces<void, AdminMailPiecesResult> = asy
 
 type FixResult = {
   id: string;
-  status: 'fixed' | 'error';
+  status: 'fixed' | 'error' | 'submitted_to_lob';
   message: string;
+  lobId?: string;
 };
 
-export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount: number; results: FixResult[] }> = async (_args, context) => {
+export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount: number; submittedToLobCount: number; results: FixResult[] }> = async (_args, context) => {
   if (!context.user?.isAdmin) {
     throw new HttpError(403, 'Only admins are allowed to perform this operation');
   }
 
-  // Find mail pieces that should be marked as paid
-  // These are pieces that have a payment intent ID but are still in draft or pending_payment status
+  // Find mail pieces that need fixing:
+  // 1. Pieces with payment intent ID but still in draft or pending_payment status (payment fix needed)
+  // 2. Pieces that are paid but haven't been submitted to Lob yet (Lob submission needed)
   const ordersWithPayment = await context.entities.MailPiece.findMany({
     where: {
-      status: {
-        in: ['draft', 'pending_payment']
-      },
-      paymentIntentId: {
-        not: null
-      }
+      OR: [
+        // Payment fix needed
+        {
+          status: {
+            in: ['draft', 'pending_payment']
+          },
+          paymentIntentId: {
+            not: null
+          }
+        },
+        // Lob submission needed
+        {
+          status: 'paid',
+          paymentStatus: 'paid',
+          lobId: null
+        }
+      ]
+    },
+    include: {
+      senderAddress: true,
+      recipientAddress: true,
+      file: true,
     }
   });
 
@@ -146,71 +164,151 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
 
   for (const order of ordersWithPayment) {
     try {
-      // Check the actual payment status in Stripe
-      let isPaid = false;
+      // Determine what type of fix is needed
+      const needsPaymentFix = ['draft', 'pending_payment'].includes(order.status) && order.paymentIntentId;
+      const needsLobSubmission = order.status === 'paid' && order.paymentStatus === 'paid' && !order.lobId;
+
+      let isPaid = order.status === 'paid' && order.paymentStatus === 'paid';
       let stripeStatus = 'unknown';
-      
-      try {
-        const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId!);
-        stripeStatus = paymentIntent.status;
-        isPaid = paymentIntent.status === 'succeeded';
-      } catch (stripeError) {
-        // If payment intent lookup fails, try as a checkout session
+
+      if (needsPaymentFix) {
+        // Handle payment status fix
+        
         try {
-          const session = await stripe.checkout.sessions.retrieve(order.paymentIntentId!);
-          stripeStatus = session.payment_status;
-          isPaid = session.payment_status === 'paid';
-        } catch (sessionError) {
-          console.error(`Failed to retrieve Stripe data for ${order.id}:`, sessionError);
+          const paymentIntent = await stripe.paymentIntents.retrieve(order.paymentIntentId!);
+          stripeStatus = paymentIntent.status;
+          isPaid = paymentIntent.status === 'succeeded';
+        } catch (stripeError) {
+          // If payment intent lookup fails, try as a checkout session
+          try {
+            const session = await stripe.checkout.sessions.retrieve(order.paymentIntentId!);
+            stripeStatus = session.payment_status;
+            isPaid = session.payment_status === 'paid';
+          } catch (sessionError) {
+            console.error(`Failed to retrieve Stripe data for ${order.id}:`, sessionError);
+            results.push({
+              id: order.id,
+              status: 'error',
+              message: 'Could not verify payment status in Stripe'
+            });
+            continue;
+          }
+        }
+
+        if (!isPaid) {
           results.push({
             id: order.id,
             status: 'error',
-            message: 'Could not verify payment status in Stripe'
+            message: `Payment not completed in Stripe (status: ${stripeStatus})`
           });
           continue;
         }
-      }
 
-      if (!isPaid) {
+        // Update the order to paid status
+        await context.entities.MailPiece.update({
+          where: { id: order.id },
+          data: {
+            status: 'paid',
+            paymentStatus: 'paid'
+          }
+        });
+
+        // Create status history
+        await context.entities.MailPieceStatusHistory.create({
+          data: {
+            mailPieceId: order.id,
+            status: 'paid',
+            previousStatus: order.status,
+            description: `Payment status fixed via admin operation (Stripe status: ${stripeStatus})`,
+            source: 'system'
+          }
+        });
+
         results.push({
           id: order.id,
-          status: 'error',
-          message: `Payment not completed in Stripe (status: ${stripeStatus})`
+          status: 'fixed',
+          message: `Successfully updated to paid status (verified in Stripe: ${stripeStatus})`
         });
-        continue;
       }
 
-      // Update the order to paid status
-      await context.entities.MailPiece.update({
-        where: { id: order.id },
-        data: {
-          status: 'paid',
-          paymentStatus: 'paid'
+      if (needsLobSubmission || (needsPaymentFix && isPaid)) {
+        // Handle Lob submission for paid orders
+        try {
+          // Import Lob service directly to bypass user ownership check
+          const { createMailPiece } = await import('../server/lob/services');
+          
+          // Prepare data for Lob API
+          const lobMailData = {
+            to: order.recipientAddress,
+            from: order.senderAddress,
+            mailType: order.mailType,
+            mailClass: order.mailClass,
+            mailSize: order.mailSize,
+            fileUrl: order.file?.uploadUrl,
+            description: order.description || `Mail piece created via Postmarkr - ${order.mailType}`,
+            envelopeType: order.envelopeType || undefined,
+            colorPrinting: order.colorPrinting ?? false,
+            doubleSided: order.doubleSided ?? true,
+          };
+
+          // Submit to Lob API
+          const lobResponse = await createMailPiece(lobMailData);
+
+          // Update mail piece with Lob information
+          await context.entities.MailPiece.update({
+            where: { id: order.id },
+            data: {
+              lobId: lobResponse.id,
+              lobStatus: lobResponse.status,
+              lobTrackingNumber: lobResponse.trackingNumber,
+              status: 'submitted',
+              cost: lobResponse.cost / 100,
+              metadata: {
+                lobData: lobResponse.lobData,
+                submittedAt: new Date().toISOString(),
+              },
+            },
+          });
+
+          // Create status history entry
+          await context.entities.MailPieceStatusHistory.create({
+            data: {
+              mailPieceId: order.id,
+              status: 'submitted',
+              previousStatus: 'paid',
+              description: `Submitted to Lob API via admin - ID: ${lobResponse.id}`,
+              source: 'system',
+              lobData: {
+                lobId: lobResponse.id,
+                lobStatus: lobResponse.status,
+                trackingNumber: lobResponse.trackingNumber,
+                submittedAt: new Date().toISOString(),
+              },
+            },
+          });
+
+          results.push({
+            id: order.id,
+            status: 'submitted_to_lob',
+            message: `Successfully submitted to Lob API with ID: ${lobResponse.id}`,
+            lobId: lobResponse.id
+          });
+        } catch (lobError: unknown) {
+          const errorMessage = lobError instanceof Error ? lobError.message : 'Unknown error';
+          results.push({
+            id: order.id,
+            status: 'error',
+            message: `Lob submission failed: ${errorMessage}`
+          });
         }
-      });
+      }
 
-      // Create status history
-      await context.entities.MailPieceStatusHistory.create({
-        data: {
-          mailPieceId: order.id,
-          status: 'paid',
-          previousStatus: order.status,
-          description: `Payment status fixed via admin operation (Stripe status: ${stripeStatus})`,
-          source: 'system'
-        }
-      });
-
-      results.push({
-        id: order.id,
-        status: 'fixed',
-        message: `Successfully updated to paid status (verified in Stripe: ${stripeStatus})`
-      });
-
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       results.push({
         id: order.id,
         status: 'error',
-        message: error?.message || 'Unknown error occurred'
+        message: errorMessage
       });
     }
   }
@@ -218,6 +316,7 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
   return {
     fixedCount: results.filter(r => r.status === 'fixed').length,
     errorCount: results.filter(r => r.status === 'error').length,
+    submittedToLobCount: results.filter(r => r.status === 'submitted_to_lob').length,
     results
   };
 };

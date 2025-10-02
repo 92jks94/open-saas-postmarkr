@@ -464,6 +464,7 @@ action bulkDeleteMailPieces {
 
 api lobWebhook {
   fn: import { lobWebhook } from "@src/server/lob/webhook",
+  entities: [MailPiece, MailPieceStatusHistory],
   middlewareConfigFn: import { lobMiddlewareConfigFn } from "@src/server/lob/webhook",
   httpRoute: (POST, "/webhooks/lob")
 }
@@ -474,8 +475,18 @@ api validateAddress {
 }
 
 api healthCheck {
-  fn: import { healthCheckEndpoint } from "@src/server/healthCheck",
+  fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
   httpRoute: (GET, "/health")
+}
+
+api healthCheckSimple {
+  fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
+  httpRoute: (GET, "/health/simple")
+}
+
+api healthCheckDetailed {
+  fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
+  httpRoute: (GET, "/health/detailed")
 }
 
 api webhookHealthCheck {
@@ -490,6 +501,7 @@ api webhookMetrics {
 
 api webhookEvents {
   fn: import { webhookEventsEndpoint } from "@src/server/lob/webhook",
+  entities: [MailPieceStatusHistory, MailPiece],
   httpRoute: (GET, "/api/webhooks/events")
 }
 
@@ -544,7 +556,7 @@ query debugMailPieces {
 
 action fixPaidOrders {
   fn: import { fixPaidOrders } from "@src/admin/operations",
-  entities: [MailPiece, MailPieceStatusHistory]
+  entities: [MailPiece, MailPieceStatusHistory, File, MailAddress]
 }
 
 action debugMailPieceStatus {

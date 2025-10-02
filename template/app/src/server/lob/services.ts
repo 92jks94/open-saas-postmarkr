@@ -18,6 +18,7 @@ import { lob } from './client';
 import { HttpError } from 'wasp/server';
 import { calculatePricingTier } from '../pricing/pageBasedPricing';
 import { mapToLobAddress, normalizeAddress, validateLobAddress, getAddressValidationErrors } from './addressMapper';
+import { withRetry, RETRY_CONFIGS, CircuitBreaker, RateLimitHandler } from './retry';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -50,7 +51,29 @@ export async function validateAddress(addressData: {
   address_country: string;
 }): Promise<{
   isValid: boolean;
-  verifiedAddress: any;
+  verifiedAddress: Record<string, unknown> | null;
+  error: string | null;
+}> {
+  // Wrap address validation with retry logic
+  return await withRetry(async () => {
+    return await validateAddressInternal(addressData);
+  }, RETRY_CONFIGS.addressValidation);
+}
+
+/**
+ * Internal address validation function (with retry wrapper)
+ */
+async function validateAddressInternal(addressData: {
+  contactName?: string;
+  address_line1: string;
+  address_line2?: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+  address_country: string;
+}): Promise<{
+  isValid: boolean;
+  verifiedAddress: Record<string, unknown> | null;
   error: string | null;
 }> {
   try {
@@ -180,8 +203,8 @@ export async function calculateCost(mailSpecs: {
   mailType: string;
   mailClass: string;
   mailSize: string;
-  toAddress: any;
-  fromAddress: any;
+  toAddress: Record<string, unknown>;
+  fromAddress: Record<string, unknown>;
   pageCount?: number;
   envelopeType?: string;
 }) {
@@ -253,8 +276,8 @@ async function getLobPricing(mailSpecs: {
   mailType: string;
   mailClass: string;
   mailSize: string;
-  toAddress: any;
-  fromAddress: any;
+  toAddress: Record<string, unknown>;
+  fromAddress: Record<string, unknown>;
   pageCount?: number;
   envelopeType?: string;
 }) {
@@ -332,6 +355,7 @@ async function getLobPricing(mailSpecs: {
       pricingResponse = await (lob as any).letters.create({
         ...mailpieceData,
         file: '<html><body><h1>Test Letter</h1><p>This is a test letter for pricing calculation.</p></body></html>',
+        use_type: 'operational', // Required by Lob API
         ...envelopeSpecs,
       }) as LobLetterResponse;
     } else {
@@ -341,6 +365,7 @@ async function getLobPricing(mailSpecs: {
         file: '<html><body><h1>Test Mail</h1><p>This is a test mailpiece for pricing calculation.</p></body></html>',
         color: true,
         double_sided: false,
+        use_type: 'operational', // Required by Lob API
         extra_service: mailSpecs.mailClass === 'usps_express' ? 'express' : undefined,
       }) as LobLetterResponse;
     }
@@ -415,8 +440,82 @@ function getFallbackPricing(mailSpecs: {
  * Create a mail piece using Lob API
  */
 export async function createMailPiece(mailData: {
-  to: any;
-  from: any;
+  to: Record<string, unknown>;
+  from: Record<string, unknown>;
+  mailType: string;
+  mailClass: string;
+  mailSize: string;
+  fileUrl?: string;
+  description?: string;
+  envelopeType?: string;
+  colorPrinting?: boolean;
+  doubleSided?: boolean;
+}) {
+  const circuitBreaker = CircuitBreaker.getInstance();
+  const rateLimitHandler = RateLimitHandler.getInstance();
+  
+  // Check circuit breaker before attempting request
+  if (!circuitBreaker.canExecute()) {
+    console.error('🔴 Circuit breaker OPEN - Lob API unavailable');
+    throw new HttpError(503, 'Lob API temporarily unavailable due to repeated failures. Please try again later.');
+  }
+  
+  // Wait if we're currently rate limited by Lob
+  await rateLimitHandler.waitForRateLimit();
+  
+  // Log the request for debugging
+  console.log('📮 Lob API Request:', {
+    operation: 'createMailPiece',
+    mailType: mailData.mailType,
+    mailClass: mailData.mailClass,
+    mailSize: mailData.mailSize,
+    hasFile: !!mailData.fileUrl,
+    timestamp: new Date().toISOString(),
+    environment: process.env.LOB_ENVIRONMENT || 'test',
+    circuitBreakerState: circuitBreaker.getState()
+  });
+
+  try {
+    // Wrap the actual API call with retry logic
+    const result = await withRetry(async () => {
+      return await createMailPieceInternal(mailData);
+    }, RETRY_CONFIGS.mailPieceCreation);
+    
+    // On success, reset circuit breaker
+    circuitBreaker.onSuccess();
+    
+    console.log('✅ Lob API Success:', {
+      operation: 'createMailPiece',
+      lobId: result.id,
+      status: result.status,
+      cost: result.cost,
+      timestamp: new Date().toISOString()
+    });
+    
+    return result;
+  } catch (error) {
+    // Handle rate limit errors from Lob
+    if (error && typeof error === 'object') {
+      const err = error as any;
+      if (err.status === 429 || err?.message?.includes('rate limit')) {
+        rateLimitHandler.handleRateLimitError(error);
+      }
+    }
+    
+    // Update circuit breaker on failure
+    circuitBreaker.onFailure();
+    
+    // Re-throw the error to be handled by the caller
+    throw error;
+  }
+}
+
+/**
+ * Internal mail piece creation function (with retry wrapper)
+ */
+async function createMailPieceInternal(mailData: {
+  to: Record<string, unknown>;
+  from: Record<string, unknown>;
   mailType: string;
   mailClass: string;
   mailSize: string;
@@ -543,15 +642,22 @@ export async function createMailPiece(mailData: {
   } catch (error) {
     console.error('Lob mail creation error:', error);
     
-    // If it's a Lob API error, provide more specific error message
+    // Enhanced error messages based on Lob API responses
     if (error && typeof error === 'object' && 'message' in error) {
       const errorMessage = (error as any).message;
+      
       if (errorMessage.includes('address')) {
         throw new HttpError(400, 'Invalid address format. Please check your address details.');
       } else if (errorMessage.includes('file')) {
         throw new HttpError(400, 'Invalid file format. Please ensure your file is compatible with mail processing.');
       } else if (errorMessage.includes('rate limit')) {
         throw new HttpError(429, 'Rate limit exceeded. Please try again later.');
+      } else if (errorMessage.includes('insufficient')) {
+        throw new HttpError(402, 'Insufficient Lob account balance. Please contact support.');
+      } else if (errorMessage.includes('invalid_request')) {
+        throw new HttpError(400, 'Invalid request parameters. Please verify your mail specifications.');
+      } else if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
+        throw new HttpError(401, 'Lob API authentication failed. Please contact support.');
       }
     }
     
@@ -613,6 +719,16 @@ async function fetchFileContent(fileUrl: string): Promise<string> {
  * Get mail piece status from Lob API
  */
 export async function getMailPieceStatus(lobId: string) {
+  // Wrap status retrieval with retry logic
+  return await withRetry(async () => {
+    return await getMailPieceStatusInternal(lobId);
+  }, RETRY_CONFIGS.statusRetrieval);
+}
+
+/**
+ * Internal mail piece status retrieval function (with retry wrapper)
+ */
+async function getMailPieceStatusInternal(lobId: string) {
   try {
     // Check if Lob API key is configured
     const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
@@ -702,13 +818,16 @@ export async function getMailPieceStatus(lobId: string) {
   } catch (error) {
     console.error('Lob status retrieval error:', error);
     
-    // If it's a Lob API error, provide more specific error message
+    // Enhanced error messages based on Lob API responses
     if (error && typeof error === 'object' && 'message' in error) {
       const errorMessage = (error as any).message;
+      
       if (errorMessage.includes('not found')) {
         throw new HttpError(404, 'Mail piece not found in Lob API');
       } else if (errorMessage.includes('rate limit')) {
         throw new HttpError(429, 'Rate limit exceeded. Please try again later.');
+      } else if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
+        throw new HttpError(401, 'Lob API authentication failed. Please contact support.');
       }
     }
     
