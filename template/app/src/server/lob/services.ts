@@ -187,7 +187,7 @@ async function validateAddressInternal(addressData: {
 
     return {
       isValid,
-      verifiedAddress: verification.address,
+      verifiedAddress: verification.address as unknown as Record<string, unknown>,
       error,
     };
   } catch (error) {

@@ -8,6 +8,10 @@ primary_region = 'ord'
 
 [build]
 
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+
 [http_service]
   internal_port = 8080
   force_https = true
@@ -16,7 +20,23 @@ primary_region = 'ord'
   min_machines_running = 1
   processes = ['app']
 
+  # Health check configuration
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health/simple"
+    
+    [http_service.checks.headers]
+      User-Agent = "Fly-Health-Check"
+
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+# Metrics configuration for monitoring
+[metrics]
+  port = 9091
+  path = "/metrics"

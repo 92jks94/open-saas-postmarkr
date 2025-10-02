@@ -253,7 +253,7 @@ export default function DebugMailPage() {
                   <div className="mt-3 pt-3 border-t">
                     <p className="text-sm text-gray-500 mb-2">Recent Status History:</p>
                     <div className="space-y-1">
-                      {piece.statusHistory.map((history, index: number) => (
+                      {piece.statusHistory.map((history: any, index: number) => (
                         <div key={index} className="text-xs text-gray-600">
                           {new Date(history.createdAt).toLocaleString()} - {history.status} 
                           {history.description && ` (${history.description})`}

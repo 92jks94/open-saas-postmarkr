@@ -8,6 +8,10 @@ primary_region = 'ord'
 
 [build]
 
+[env]
+  PORT = "8043"
+  NODE_ENV = "production"
+
 [http_service]
   internal_port = 8043
   force_https = true
@@ -15,6 +19,19 @@ primary_region = 'ord'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
+
+  # Health check configuration
+  # Note: Client health checks are handled by the server
+  # The client serves static files, so we check for a successful response
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/"
+    
+    [http_service.checks.headers]
+      User-Agent = "Fly-Health-Check"
 
 [[vm]]
   memory = '1gb'

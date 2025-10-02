@@ -258,6 +258,17 @@ job processPDFMetadata {
   },
   entities: [File]
 }
+
+job cleanupOrphanedS3Files {
+  executor: PgBoss,
+  perform: {
+    fn: import { cleanupOrphanedS3Files } from "@src/file-upload/operations"
+  },
+  entities: [File],
+  schedule: {
+    cron: "0 2 * * *" // Run daily at 2 AM to clean up orphaned S3 files
+  }
+}
 //#endregion
 
 //#region Address Management

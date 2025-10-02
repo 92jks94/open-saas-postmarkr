@@ -87,7 +87,7 @@ export const createMailAddress: CreateMailAddress<CreateMailAddressInput, MailAd
         isValidated: validationResult.isValid,
         validationDate: new Date(),
         validationError: validationResult.error,
-        lobAddressId: validationResult.verifiedAddress?.id,
+        lobAddressId: validationResult.verifiedAddress?.id as string | null | undefined,
       },
     });
 
@@ -219,7 +219,7 @@ export const updateMailAddress: UpdateMailAddress<UpdateMailAddressInput, MailAd
         isValidated: validationResult.isValid,
         validationDate: new Date(),
         validationError: validationResult.error,
-        lobAddressId: validationResult.verifiedAddress?.id,
+        lobAddressId: validationResult.verifiedAddress?.id as string | null | undefined,
       },
     });
 
@@ -322,7 +322,7 @@ export const validateAddress: ValidateAddress<ValidateAddressInput, { address: M
         isValidated: validationResult.isValid,
         validationDate: new Date(),
         validationError: validationResult.error,
-        lobAddressId: validationResult.verifiedAddress?.id,
+        lobAddressId: validationResult.verifiedAddress?.id as string | null | undefined,
       },
     });
 
@@ -330,7 +330,7 @@ export const validateAddress: ValidateAddress<ValidateAddressInput, { address: M
       address: updatedAddress,
       isValid: validationResult.isValid,
       error: validationResult.error,
-      lobAddressId: validationResult.verifiedAddress?.id,
+      lobAddressId: validationResult.verifiedAddress?.id as string | undefined,
     };
   } catch (error) {
     console.error('Address validation error:', error);
