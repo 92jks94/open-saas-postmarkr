@@ -16,6 +16,7 @@ import {
   FileText
 } from 'lucide-react';
 import type { MailPiece, MailAddress, File } from 'wasp/entities';
+import { AddressPlacement } from '@prisma/client';
 
 // Note: Stripe Elements provider is handled at the app level
 
@@ -60,13 +61,15 @@ const PaymentForm: React.FC<{
         // Calculate cost based on page count using the pricing tiers
         if (mailPiece.file?.pageCount) {
           const pageCount = mailPiece.file.pageCount;
+          // Add extra page for insert_blank_page option
+          const effectivePageCount = mailPiece.addressPlacement === AddressPlacement.INSERT_BLANK_PAGE ? pageCount + 1 : pageCount;
           let estimatedCost = 250; // Default to tier 1 ($2.50)
           
-          if (pageCount <= 5) {
+          if (effectivePageCount <= 5) {
             estimatedCost = 250; // $2.50
-          } else if (pageCount <= 20) {
+          } else if (effectivePageCount <= 20) {
             estimatedCost = 750; // $7.50
-          } else if (pageCount <= 60) {
+          } else if (effectivePageCount <= 60) {
             estimatedCost = 1500; // $15.00
           } else {
             throw new Error('Document too large for processing');

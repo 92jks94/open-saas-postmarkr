@@ -21,11 +21,8 @@
 /*.html
   Cache-Control: public, max-age=3600
 
-# Cache root and blog pages for 30 minutes
+# Cache root pages for 30 minutes
 /
-  Cache-Control: public, max-age=1800
-
-/blog/*
   Cache-Control: public, max-age=1800
 
 # Security headers with HSTS
@@ -36,6 +33,6 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
 
-# HSTS for blog domain
+# HSTS for main domain
 /
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload

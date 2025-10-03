@@ -103,6 +103,17 @@ export default function PricingPage() {
   return (
     <div className='py-10 lg:mt-10'>
       <div className='mx-auto max-w-7xl px-6 lg:px-8'>
+        {/* Add H1 heading for SEO */}
+        <div className='mx-auto max-w-4xl text-center mb-8'>
+          <h1 className='text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>
+            Choose Your <span className='text-primary'>Pricing Plan</span>
+          </h1>
+          <p className='mt-4 text-lg leading-8 text-muted-foreground'>
+            Simple, transparent pricing for mail services. Pay per page with no hidden fees or subscriptions. 
+            Perfect for remote workers, startups, and small businesses who need reliable mail delivery.
+          </p>
+        </div>
+        
         <div id='pricing' className='mx-auto max-w-4xl text-center'>
           <h2 className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>
             Pick your <span className='text-primary'>pricing</span>
@@ -115,6 +126,31 @@ export default function PricingPage() {
             4242 4242 4242 4242 4242
           </span>
         </p>
+        
+        {/* Add more descriptive content for better SEO */}
+        <div className='mx-auto max-w-4xl mt-12 mb-8'>
+          <div className='bg-muted/30 rounded-lg p-6'>
+            <h3 className='text-xl font-semibold mb-4'>Why Choose Postmarkr?</h3>
+            <div className='grid md:grid-cols-2 gap-4 text-sm text-muted-foreground'>
+              <div className='flex items-start gap-2'>
+                <CheckCircle className='h-5 w-5 text-green-500 mt-0.5 flex-shrink-0' />
+                <span>No monthly subscriptions - pay only for what you send</span>
+              </div>
+              <div className='flex items-start gap-2'>
+                <CheckCircle className='h-5 w-5 text-green-500 mt-0.5 flex-shrink-0' />
+                <span>Full tracking and delivery confirmation included</span>
+              </div>
+              <div className='flex items-start gap-2'>
+                <CheckCircle className='h-5 w-5 text-green-500 mt-0.5 flex-shrink-0' />
+                <span>Professional business addresses available</span>
+              </div>
+              <div className='flex items-start gap-2'>
+                <CheckCircle className='h-5 w-5 text-green-500 mt-0.5 flex-shrink-0' />
+                <span>Secure document handling with AWS S3</span>
+              </div>
+            </div>
+          </div>
+        </div>
         {errorMessage && (
           <Alert variant='destructive' className='mt-8'>
             <AlertDescription>{errorMessage}</AlertDescription>

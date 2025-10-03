@@ -47,6 +47,8 @@ export interface FormData {
   /** Printing preferences - for future use */
   colorPrinting: boolean;
   doubleSided: boolean;
+  /** Address placement preference */
+  addressPlacement: 'top_first_page' | 'insert_blank_page';
 }
 
 
@@ -65,6 +67,7 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     // Printing preferences - MVP defaults
     colorPrinting: false, // Default to black & white for MVP
     doubleSided: true,    // Default to double-sided for MVP
+    addressPlacement: 'insert_blank_page', // Default to insert_blank_page
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -127,7 +130,8 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
         senderAddressId: formData.senderAddressId!,
         recipientAddressId: formData.recipientAddressId!,
         fileId: formData.fileId!,
-        description: formData.description || undefined
+        description: formData.description || undefined,
+        addressPlacement: formData.addressPlacement
       });
 
       // Fetch the complete mail piece with relations for payment step
@@ -300,6 +304,41 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Address Placement */}
+            <div className="space-y-2">
+              <Label htmlFor="addressPlacement">Address Placement</Label>
+              <Select
+                value={formData.addressPlacement}
+                onValueChange={(value: 'top_first_page' | 'insert_blank_page') => 
+                  setFormData(prev => ({ ...prev, addressPlacement: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select address placement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="insert_blank_page">
+                    <div>
+                      <div className="font-medium">Insert Blank Page</div>
+                      <div className="text-xs text-gray-500">Adds an extra page for address (recommended)</div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="top_first_page">
+                    <div>
+                      <div className="font-medium">Top of First Page</div>
+                      <div className="text-xs text-gray-500">Address printed on your first page (cost-effective)</div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-gray-500">
+                {formData.addressPlacement === 'insert_blank_page' 
+                  ? 'Lob will add a blank page at the beginning for the recipient address. This ensures your content remains unchanged but adds an extra page cost.'
+                  : 'Lob will print the recipient address at the top of your first page. Make sure to leave space at the top of your document for the address block.'
+                }
+              </div>
             </div>
 
             {/* Description */}

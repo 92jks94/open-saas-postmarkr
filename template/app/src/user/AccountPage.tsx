@@ -4,11 +4,19 @@ import type { User } from 'wasp/entities';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Separator } from '../components/ui/separator';
+import { PageHeader } from '../components/ui/page-header';
 import { SubscriptionStatus, parsePaymentPlanId, prettyPaymentPlanName } from '../payment/plans';
 
 export default function AccountPage({ user }: { user: User }) {
   return (
     <div className='mt-10 px-6'>
+      <PageHeader
+        title="Account Settings"
+        description="Manage your account information and subscription details."
+        breadcrumbs={[
+          { label: 'Account', current: true }
+        ]}
+      />
       <Card className='mb-4 lg:m-8'>
         <CardHeader>
           <CardTitle className='text-base font-semibold leading-6 text-foreground'>

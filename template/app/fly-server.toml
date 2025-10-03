@@ -24,10 +24,21 @@ primary_region = 'ord'
   # Health check configuration
   [[http_service.checks]]
     grace_period = "30s"
-    interval = "15s"
+    interval = "10s"  # More frequent checks
     method = "GET"
-    timeout = "5s"
+    timeout = "10s"   # Longer timeout for database checks
     path = "/health/simple"
+    
+    [http_service.checks.headers]
+      User-Agent = "Fly-Health-Check"
+
+  # Additional comprehensive health check
+  [[http_service.checks]]
+    grace_period = "60s"
+    interval = "30s"
+    method = "GET"
+    timeout = "15s"
+    path = "/health"  # Full health check endpoint
     
     [http_service.checks.headers]
       User-Agent = "Fly-Health-Check"

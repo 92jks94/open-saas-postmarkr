@@ -94,6 +94,7 @@
     "check:health": "curl -f https://postmarkr-server.fly.dev/health || echo 'Server not responding'",
     "deploy": "./scripts/deploy.sh",
     "deploy:quick": "./scripts/deploy-quick.sh",
+    "deploy:fixed": "./deploy-fixed.sh",
     "sync:secrets": "./scripts/sync-env-secrets.sh"
   },
   "overrides": {

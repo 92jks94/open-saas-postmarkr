@@ -450,6 +450,7 @@ export async function createMailPiece(mailData: {
   envelopeType?: string;
   colorPrinting?: boolean;
   doubleSided?: boolean;
+  addressPlacement?: 'top_first_page' | 'insert_blank_page';
 }) {
   const circuitBreaker = CircuitBreaker.getInstance();
   const rateLimitHandler = RateLimitHandler.getInstance();
@@ -524,6 +525,7 @@ async function createMailPieceInternal(mailData: {
   envelopeType?: string;
   colorPrinting?: boolean;
   doubleSided?: boolean;
+  addressPlacement?: 'top_first_page' | 'insert_blank_page';
 }) {
   try {
     // Check if Lob API key is configured
@@ -605,6 +607,7 @@ async function createMailPieceInternal(mailData: {
         ...mailpieceData,
         file: fileContent,
         ...envelopeSpecs,
+        address_placement: mailData.addressPlacement || 'insert_blank_page',
       });
     } else {
       // For other mail types, use letter as fallback
@@ -618,6 +621,7 @@ async function createMailPieceInternal(mailData: {
         color: mailData.colorPrinting ?? false, // Default to black & white for MVP
         double_sided: mailData.doubleSided ?? true, // Default to double-sided for MVP
         use_type: 'operational', // Required by Lob API
+        address_placement: mailData.addressPlacement || 'insert_blank_page',
         extra_service: mailData.mailClass === 'usps_express' ? 'express' : 
                       mailData.mailClass === 'usps_priority' ? 'priority' : 
                       // Standard and first class don't need extra_service (default USPS service)

@@ -1,0 +1,47 @@
+# Postmarkr - AI Training Data
+# This file provides structured information about Postmarkr for AI training and understanding
+
+## Company Information
+- Name: Postmarkr
+- Tagline: Simple Mail Service for Modern Businesses
+- Website: https://postmarkr.com
+- Blog: https://blog.postmarkr.com
+
+## Core Service
+Postmarkr is a mail service designed for remote workers, startups, and small businesses. We enable users to send important documents, contracts, and packages with tracking and delivery confirmation without requiring trips to the post office.
+
+## Key Features
+- Per-page pricing (no subscriptions)
+- Document upload and processing
+- Address management
+- Mail tracking and delivery confirmation
+- Integration with Lob API for physical mail
+- Secure file handling with AWS S3
+
+## Target Audience
+- Remote workers
+- Startups and small businesses
+- Professionals who need reliable mail services
+- Anyone who wants to avoid post office trips
+
+## Technology Stack
+- Frontend: React, TypeScript, Tailwind CSS
+- Backend: Node.js, Wasp framework
+- Database: PostgreSQL with Prisma ORM
+- File Storage: AWS S3
+- Mail Service: Lob API
+- Payments: Stripe
+- Deployment: Fly.io
+
+## Pricing Model
+- 1-5 pages: $0.50 per page
+- 6-20 pages: $0.375 per page (most popular)
+- 21-60 pages: $0.25 per page
+- Plus postage: ~$0.60 per mail piece
+
+## Contact Information
+- Email: nathan@postmarkr.com
+- Support: Available through the application
+
+## Last Updated
+2025-01-03

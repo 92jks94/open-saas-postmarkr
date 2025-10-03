@@ -4,11 +4,15 @@ import type { MailAddress } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../components/ui/form';
+import { Form, FormControl, FormItem, FormLabel, FormMessage } from '../components/ui/form';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Separator } from '../components/ui/separator';
+import { LoadingSpinner } from '../components/ui/loading-spinner';
+import { EmptyAddressesState } from '../components/ui/empty-state';
+import { PageHeader } from '../components/ui/page-header';
+import { FormField, FormSection } from '../components/ui/form-field';
 import { cn } from '../lib/utils';
 import { ADDRESS_TYPES, SUPPORTED_COUNTRIES } from './validation';
 import { SimpleAddressValidator } from '../shared/addressValidationSimple';
@@ -181,15 +185,13 @@ export default function AddressManagementPage() {
   return (
     <div className='py-10 lg:mt-10'>
       <div className='mx-auto max-w-7xl px-6 lg:px-8'>
-        {/* Copy exact header pattern from FileUploadPage */}
-        <div className='mx-auto max-w-4xl text-center'>
-          <h2 className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>
-            <span className='text-primary'>Address</span> Management
-          </h2>
-        </div>
-        <p className='mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-muted-foreground'>
-          Manage your saved addresses for quick mail sending
-        </p>
+        <PageHeader
+          title="Address Management"
+          description="Manage your saved addresses for quick mail sending and easy access."
+          breadcrumbs={[
+            { label: 'Addresses', current: true }
+          ]}
+        />
 
         {/* Enhanced Card structure with better layout */}
         <Card className='my-8'>
@@ -203,44 +205,38 @@ export default function AddressManagementPage() {
               
               <form onSubmit={handleCreateAddress} className='space-y-6'>
                 {/* Contact Information Section */}
-                <div className='space-y-4'>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-px bg-border flex-1'></div>
-                    <span className='text-sm font-medium text-muted-foreground px-3'>Contact Information</span>
-                    <div className='h-px bg-border flex-1'></div>
-                  </div>
-                  
+                <FormSection title="Contact Information">
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='contactName' className='text-sm font-medium'>Contact Name *</Label>
+                    <FormField
+                      label="Contact Name"
+                      required
+                      error={formErrors.contactName || fieldErrors.contactName}
+                    >
                       <Input
                         id='contactName'
                         name='contactName'
                         placeholder='John Doe'
                         required
                         onChange={() => clearFieldError('contactName')}
-                        className={cn('h-10', (formErrors.contactName || fieldErrors.contactName) && 'border-red-500')}
+                        className={cn('h-10', (formErrors.contactName || fieldErrors.contactName) && 'border-destructive')}
                       />
-                      {(formErrors.contactName || fieldErrors.contactName) && (
-                        <p className='text-sm text-red-600'>{formErrors.contactName || fieldErrors.contactName}</p>
-                      )}
-                    </div>
+                    </FormField>
                     
-                    <div className='space-y-2'>
-                      <Label htmlFor='companyName' className='text-sm font-medium'>Company Name</Label>
+                    <FormField
+                      label="Company Name"
+                      error={fieldErrors.companyName}
+                      helpText="Optional company or organization name"
+                    >
                       <Input
                         id='companyName'
                         name='companyName'
                         placeholder='Acme Corp'
                         onChange={() => clearFieldError('companyName')}
-                        className={cn('h-10', fieldErrors.companyName && 'border-red-500')}
+                        className={cn('h-10', fieldErrors.companyName && 'border-destructive')}
                       />
-                      {fieldErrors.companyName && (
-                        <p className='text-sm text-red-600'>{fieldErrors.companyName}</p>
-                      )}
-                    </div>
+                    </FormField>
                   </div>
-                </div>
+                </FormSection>
 
                 {/* Address Information Section */}
                 <div className='space-y-4'>
@@ -427,12 +423,7 @@ export default function AddressManagementPage() {
               </div>
               
               {allUserAddresses.isLoading && (
-                <div className='flex items-center justify-center py-8'>
-                  <div className='text-center'>
-                    <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2'></div>
-                    <p className='text-muted-foreground'>Loading addresses...</p>
-                  </div>
-                </div>
+                <LoadingSpinner text="Loading addresses..." />
               )}
               
               {allUserAddresses.error && (
@@ -684,20 +675,12 @@ export default function AddressManagementPage() {
                   ))}
                 </div>
               ) : !allUserAddresses.isLoading && (
-                <Card className='p-8 text-center'>
-                  <div className='space-y-4'>
-                    <div className='text-6xl text-muted-foreground'>📍</div>
-                    <div>
-                      <h3 className='text-lg font-semibold text-foreground mb-2'>No addresses saved yet</h3>
-                      <p className='text-muted-foreground mb-4'>
-                        Create your first address above to get started with managing your mail addresses.
-                      </p>
-                      <p className='text-sm text-muted-foreground'>
-                        Saved addresses will appear here for easy access when creating mail jobs.
-                      </p>
-                    </div>
-                  </div>
-                </Card>
+                <EmptyAddressesState onAdd={() => {
+                  const form = document.querySelector('form');
+                  if (form) {
+                    form.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }} />
               )}
             </div>
           </CardContent>

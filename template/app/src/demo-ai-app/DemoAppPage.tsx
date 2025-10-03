@@ -44,14 +44,41 @@ export default function DemoAppPage() {
     <div className='py-10 lg:mt-10'>
       <div className='mx-auto max-w-7xl px-6 lg:px-8'>
         <div className='mx-auto max-w-4xl text-center'>
-          <h2 className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>
+          <h1 className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>
             <span className='text-primary'>AI</span> Day Scheduler
-          </h2>
+          </h1>
         </div>
         <p className='mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-muted-foreground'>
           This example app uses OpenAI's chat completions with function calling to return a structured JSON
           object. Try it out, enter your day's tasks, and let AI do the rest!
         </p>
+        
+        {/* Add more descriptive content for better SEO */}
+        <div className='mx-auto max-w-4xl mt-8 mb-8'>
+          <div className='bg-muted/30 rounded-lg p-6'>
+            <h2 className='text-xl font-semibold mb-4'>How It Works</h2>
+            <div className='grid md:grid-cols-3 gap-4 text-sm text-muted-foreground'>
+              <div className='text-center'>
+                <div className='bg-primary/10 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2'>
+                  <span className='text-primary font-bold'>1</span>
+                </div>
+                <span>Enter your tasks and priorities</span>
+              </div>
+              <div className='text-center'>
+                <div className='bg-primary/10 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2'>
+                  <span className='text-primary font-bold'>2</span>
+                </div>
+                <span>AI analyzes and schedules optimally</span>
+              </div>
+              <div className='text-center'>
+                <div className='bg-primary/10 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2'>
+                  <span className='text-primary font-bold'>3</span>
+                </div>
+                <span>Get your personalized daily schedule</span>
+              </div>
+            </div>
+          </div>
+        </div>
         {/* begin AI-powered Todo List */}
         <Card className='my-8 bg-muted/10'>
           <CardContent className='sm:w-[90%] md:w-[70%] lg:w-[50%] py-10 px-6 mx-auto my-8 space-y-10'>

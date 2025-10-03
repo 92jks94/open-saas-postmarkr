@@ -2,6 +2,7 @@ import React from 'react';
 
 interface PageBasedPricingDisplayProps {
   pageCount?: number;
+  addressPlacement?: 'top_first_page' | 'insert_blank_page';
   onPricingInfo?: (info: {
     tier: string;
     price: number;
@@ -10,19 +11,23 @@ interface PageBasedPricingDisplayProps {
   }) => void;
 }
 
-export function PageBasedPricingDisplay({ pageCount, onPricingInfo }: PageBasedPricingDisplayProps) {
+export function PageBasedPricingDisplay({ pageCount, addressPlacement, onPricingInfo }: PageBasedPricingDisplayProps) {
   const getPricingInfo = (pages: number) => {
     if (pages <= 0) return null;
-    if (pages > 60) return null;
     
-    if (pages <= 5) {
+    // Add extra page for insert_blank_page option
+    const effectivePages = addressPlacement === 'insert_blank_page' ? pages + 1 : pages;
+    
+    if (effectivePages > 60) return null;
+    
+    if (effectivePages <= 5) {
       return {
         tier: 'tier_1',
         price: 2.50,
         envelopeType: 'standard_10_double_window',
         description: '1-5 pages - Standard #10 double-window envelope'
       };
-    } else if (pages <= 20) {
+    } else if (effectivePages <= 20) {
       return {
         tier: 'tier_2',
         price: 7.50,

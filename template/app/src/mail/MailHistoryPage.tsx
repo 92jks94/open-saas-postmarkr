@@ -25,6 +25,9 @@ import {
   DropdownMenuTrigger 
 } from '../components/ui/dropdown-menu';
 import { Alert, AlertDescription } from '../components/ui/alert';
+import { LoadingSpinner, PageLoadingSpinner } from '../components/ui/loading-spinner';
+import { EmptyMailState } from '../components/ui/empty-state';
+import { PageHeader } from '../components/ui/page-header';
 
 /**
  * Simplified mail history page for testing
@@ -138,18 +141,16 @@ export default function MailHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="animate-pulse">
-              <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-24 bg-gray-200 rounded"></div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <PageHeader
+            title="Mail History"
+            description="View your physical mail pieces"
+            breadcrumbs={[
+              { label: 'Mail History', current: true }
+            ]}
+          />
+          <PageLoadingSpinner text="Loading mail pieces..." />
         </div>
       </div>
     );
@@ -157,8 +158,15 @@ export default function MailHistoryPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PageHeader
+            title="Mail History"
+            description="View your physical mail pieces"
+            breadcrumbs={[
+              { label: 'Mail History', current: true }
+            ]}
+          />
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -171,25 +179,21 @@ export default function MailHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Mail History
-              </h1>
-              <p className="text-gray-600 mt-2">
-                View your physical mail pieces
-              </p>
-            </div>
+        <PageHeader
+          title="Mail History"
+          description="View your physical mail pieces"
+          breadcrumbs={[
+            { label: 'Mail History', current: true }
+          ]}
+          actions={
             <Button onClick={() => navigate('/mail/create')}>
               <Plus className="h-4 w-4 mr-2" />
               Create Mail Piece
             </Button>
-          </div>
-        </div>
+          }
+        />
 
 
         {/* Error Display */}
@@ -203,21 +207,7 @@ export default function MailHistoryPage() {
         {/* Mail Pieces List */}
         <div className="space-y-4">
           {sortedMailPieces.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No mail pieces found
-                </h3>
-                <p className="text-gray-500 mb-4">
-                  Create your first mail piece to get started.
-                </p>
-                <Button onClick={() => navigate('/mail/create')}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Mail Piece
-                </Button>
-              </CardContent>
-            </Card>
+            <EmptyMailState onCreate={() => navigate('/mail/create')} />
           ) : (
             sortedMailPieces.map((mailPiece) => (
               <Card key={mailPiece.id} className="hover:shadow-md transition-shadow">
@@ -227,7 +217,7 @@ export default function MailHistoryPage() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-3 mb-2">
                           {getStatusIcon(mailPiece.status)}
-                          <h3 className="text-lg font-medium text-gray-900">
+                          <h3 className="text-lg font-medium text-foreground">
                             {mailPiece.description || 'Untitled Mail Piece'}
                           </h3>
                           <Badge variant={getStatusBadgeVariant(mailPiece.status)}>
@@ -235,7 +225,7 @@ export default function MailHistoryPage() {
                           </Badge>
                         </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                         <div>
                           <span className="font-medium">Type:</span> {mailPiece.mailType}
                         </div>
@@ -256,7 +246,7 @@ export default function MailHistoryPage() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
+                      <div className="flex items-center space-x-4 mt-3 text-xs text-muted-foreground">
                         <div className="flex items-center">
                           <Calendar className="h-3 w-3 mr-1" />
                           Created: {formatDate(mailPiece.createdAt.toISOString())}
@@ -320,7 +310,7 @@ export default function MailHistoryPage() {
 
         {/* Results Summary */}
         {sortedMailPieces.length > 0 && (
-          <div className="mt-4 text-center text-sm text-gray-500">
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             {sortedMailPieces.length} mail piece{sortedMailPieces.length !== 1 ? 's' : ''}
           </div>
         )}

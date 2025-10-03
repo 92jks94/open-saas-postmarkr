@@ -7,6 +7,9 @@ import { Card, CardContent, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Progress } from '../components/ui/progress';
+import { LoadingSpinner, InlineLoadingSpinner } from '../components/ui/loading-spinner';
+import { EmptyFilesState } from '../components/ui/empty-state';
+import { PageHeader } from '../components/ui/page-header';
 import { cn } from '../lib/utils';
 import {
   type FileUploadError,
@@ -143,15 +146,13 @@ export default function FileUploadPage() {
   return (
     <div className='py-10 lg:mt-10'>
       <div className='mx-auto max-w-7xl px-6 lg:px-8'>
-        <div className='mx-auto max-w-4xl text-center'>
-          <h2 className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>
-            <span className='text-primary'>AWS</span> File Upload
-          </h2>
-        </div>
-        <p className='mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-muted-foreground'>
-          This is an example file upload page using AWS S3. Maybe your app needs this. Maybe it doesn't. But a
-          lot of people asked for this feature, so here you go 🤝
-        </p>
+        <PageHeader
+          title="File Upload"
+          description="Upload files to use with your mail pieces. Supports PDF, images, and documents."
+          breadcrumbs={[
+            { label: 'Upload Files', current: true }
+          ]}
+        />
         <Card className='my-8'>
           <CardContent className='space-y-10 my-10 py-8 px-4 mx-auto sm:max-w-lg'>
             <form onSubmit={handleUpload} className='flex flex-col gap-4'>
@@ -190,13 +191,10 @@ export default function FileUploadPage() {
               <div className="flex items-center justify-between">
                 <CardTitle className='text-xl font-bold text-foreground'>Uploaded Files</CardTitle>
                 {hasProcessingFiles && (
-                  <div className="flex items-center gap-2 text-sm text-blue-600">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    Processing metadata...
-                  </div>
+                  <InlineLoadingSpinner text="Processing metadata..." />
                 )}
               </div>
-              {allUserFiles.isLoading && <p className='text-muted-foreground'>Loading...</p>}
+              {allUserFiles.isLoading && <LoadingSpinner text="Loading files..." />}
               {allUserFiles.error && (
                 <Alert variant='destructive'>
                   <AlertDescription>Error: {allUserFiles.error.message}</AlertDescription>
@@ -214,8 +212,13 @@ export default function FileUploadPage() {
                     />
                   ))}
                 </div>
-              ) : (
-                <p className='text-muted-foreground text-center'>No files uploaded yet :(</p>
+              ) : !allUserFiles.isLoading && (
+                <EmptyFilesState onUpload={() => {
+                  const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                  if (fileInput) {
+                    fileInput.click();
+                  }
+                }} />
               )}
             </div>
           </CardContent>

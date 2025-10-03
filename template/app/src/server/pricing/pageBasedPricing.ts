@@ -44,7 +44,7 @@ export const PAGE_BASED_PRICING: PageBasedPricingConfig[] = [
 /**
  * Calculate pricing tier based on page count
  */
-export function calculatePricingTier(pageCount: number): {
+export function calculatePricingTier(pageCount: number, addressPlacement?: 'top_first_page' | 'insert_blank_page'): {
   tier: string;
   price: number;
   envelopeType: string;
@@ -56,17 +56,20 @@ export function calculatePricingTier(pageCount: number): {
     throw new Error('Page count must be greater than 0');
   }
 
-  if (pageCount > 60) {
+  // Add extra page for insert_blank_page option
+  const effectivePageCount = addressPlacement === 'insert_blank_page' ? pageCount + 1 : pageCount;
+
+  if (effectivePageCount > 60) {
     throw new Error('Documents with more than 60 pages are not supported');
   }
 
-  // Find the appropriate pricing tier
+  // Find the appropriate pricing tier based on effective page count
   const pricingConfig = PAGE_BASED_PRICING.find(
-    config => pageCount >= config.minPages && pageCount <= config.maxPages
+    config => effectivePageCount >= config.minPages && effectivePageCount <= config.maxPages
   );
 
   if (!pricingConfig) {
-    throw new Error(`No pricing tier found for ${pageCount} pages`);
+    throw new Error(`No pricing tier found for ${effectivePageCount} pages`);
   }
 
   return {
@@ -88,7 +91,7 @@ export function getPricingForTier(tier: string): PageBasedPricingConfig | null {
 /**
  * Validate page count and return pricing info
  */
-export function validateAndCalculatePricing(pageCount: number): {
+export function validateAndCalculatePricing(pageCount: number, addressPlacement?: 'top_first_page' | 'insert_blank_page'): {
   isValid: boolean;
   error?: string;
   pricing?: {
@@ -99,7 +102,7 @@ export function validateAndCalculatePricing(pageCount: number): {
   };
 } {
   try {
-    const pricing = calculatePricingTier(pageCount);
+    const pricing = calculatePricingTier(pageCount, addressPlacement);
     return {
       isValid: true,
       pricing: {

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AddressPlacement } from '@prisma/client';
 
 // Mail type validation - SIMPLIFIED FOR LAUNCH: Only letters
 export const mailTypeSchema = z.enum([
@@ -70,6 +71,7 @@ export const createMailPieceSchema = z.object({
   recipientAddressId: z.string().uuid('Invalid recipient address ID'),
   fileId: z.string().uuid('Invalid file ID').optional(),
   description: z.string().min(1, 'Description is required').max(500, 'Description too long').optional(),
+  addressPlacement: z.nativeEnum(AddressPlacement).optional(),
 }).refine(
   (data) => data.senderAddressId !== data.recipientAddressId,
   {

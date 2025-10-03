@@ -155,16 +155,16 @@ function NavBarMobileMenu({
           </SheetHeader>
           <div className='mt-6 flow-root'>
             <div className='-my-6 divide-y divide-border'>
-              <ul className='space-y-2 py-6'>{renderNavigationItems(navigationItems, setMobileMenuOpen)}</ul>
+              <ul className='space-y-1 py-6'>{renderNavigationItems(navigationItems, setMobileMenuOpen)}</ul>
               <div className='py-6'>
                 {isUserLoading ? null : !user ? (
                   <WaspRouterLink to={routes.LoginRoute.to}>
-                    <div className='flex justify-end items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors'>
+                    <div className='flex justify-end items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors p-3 rounded-lg hover:bg-accent min-h-[44px]'>
                       Log in <LogIn size='1.1rem' className='ml-1' />
                     </div>
                   </WaspRouterLink>
                 ) : (
-                  <ul className='space-y-2'>
+                  <ul className='space-y-1'>
                     <UserMenuItems user={user} onItemClick={() => setMobileMenuOpen(false)} />
                   </ul>
                 )}
@@ -182,7 +182,7 @@ function renderNavigationItems(
   setMobileMenuOpen?: Dispatch<SetStateAction<boolean>>
 ) {
   const menuStyles = cn({
-    'block rounded-lg px-3 py-2 text-sm font-medium leading-7 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors':
+    'block rounded-lg px-3 py-3 text-sm font-medium leading-7 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors min-h-[44px] flex items-center':
       !!setMobileMenuOpen,
     'text-sm font-normal leading-6 text-foreground duration-300 ease-in-out hover:text-primary transition-colors':
       !setMobileMenuOpen,

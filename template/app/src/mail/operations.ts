@@ -31,6 +31,7 @@ import type {
   SyncMailPieceStatus
 } from 'wasp/server/operations';
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
+import { AddressPlacement } from '@prisma/client';
 import type { MailPieceWithRelations } from './types';
 import { hasFullAccess, hasBetaAccess } from '../beta/accessHelpers';
 import { 
@@ -190,6 +191,7 @@ type CreateMailPieceInput = {
   recipientAddressId: string;
   fileId?: string;
   description?: string;
+  addressPlacement?: 'top_first_page' | 'insert_blank_page';
 };
 
 export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> = async (args, context) => {
@@ -243,7 +245,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
       
       // Validate page count for pricing
       if (pageCount) {
-        const pricingValidation = validateAndCalculatePricing(pageCount);
+        const pricingValidation = validateAndCalculatePricing(pageCount, validatedInput.addressPlacement === AddressPlacement.TOP_FIRST_PAGE ? 'top_first_page' : 'insert_blank_page');
         if (!pricingValidation.isValid) {
           throw new HttpError(400, pricingValidation.error || 'Invalid page count');
         }
@@ -256,7 +258,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
     let customerPrice: number | undefined;
     
     if (pageCount) {
-      const pricing = calculatePricingTier(pageCount);
+      const pricing = calculatePricingTier(pageCount, validatedInput.addressPlacement === AddressPlacement.TOP_FIRST_PAGE ? 'top_first_page' : 'insert_blank_page');
       pricingTier = pricing.tier;
       envelopeType = pricing.envelopeType;
       customerPrice = pricing.price / 100; // Convert cents to dollars
@@ -282,6 +284,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
         // Set printing preferences with MVP defaults
         colorPrinting: false, // Default to black & white for MVP
         doubleSided: true,    // Default to double-sided for MVP
+        addressPlacement: validatedInput.addressPlacement || AddressPlacement.INSERT_BLANK_PAGE, // Default to insert_blank_page
       },
     });
 
@@ -1056,6 +1059,7 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       envelopeType: mailPiece.envelopeType || undefined,
       colorPrinting: mailPiece.colorPrinting ?? false, // Default to black & white for MVP
       doubleSided: mailPiece.doubleSided ?? true, // Default to double-sided for MVP
+      addressPlacement: (mailPiece.addressPlacement === AddressPlacement.TOP_FIRST_PAGE ? 'top_first_page' : 'insert_blank_page') as 'top_first_page' | 'insert_blank_page', // Convert enum to Lob API format
     };
 
     // Submit to Lob API

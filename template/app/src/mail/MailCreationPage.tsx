@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { CheckCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/ui/page-header';
 import MailCreationForm from './components/MailCreationForm';
 
 /**
@@ -64,26 +65,20 @@ export default function MailCreationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/mail/history')}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Mail History
-          </Button>
-          
-          <h1 className="text-3xl font-bold text-gray-900">
-            Create Mail Piece
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Send physical mail with professional tracking and delivery confirmation.
-          </p>
-        </div>
+        <PageHeader
+          title="Create Mail Piece"
+          description="Send physical mail with professional tracking and delivery confirmation."
+          breadcrumbs={[
+            { label: 'Mail History', href: '/mail/history' },
+            { label: 'Create Mail Piece', current: true }
+          ]}
+          showBackButton={true}
+          backButtonText="Back to Mail History"
+          backButtonHref="/mail/history"
+        />
 
         {/* Simplified Implementation Notice */}
         <Alert className="mb-6">

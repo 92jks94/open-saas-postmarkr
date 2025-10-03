@@ -158,6 +158,7 @@ export const createMailPiece = (
   trackingEnabled: false,
   colorPrinting: false,
   doubleSided: true,
+  addressPlacement: 'INSERT_BLANK_PAGE',
   lobThumbnails: null,
   lobPreviewUrl: null,
   ...overrides,

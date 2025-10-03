@@ -35,6 +35,7 @@ declare module 'lob' {
     color?: boolean;
     double_sided?: boolean;
     extra_service?: string;
+    address_placement?: 'top_first_page' | 'insert_blank_page';
   }
 
   interface CheckData {

@@ -17,12 +17,13 @@ You can fix this by configuring your app to listen on the following addresses:
 
 **Solution**:
 ```bash
-# Use the fixed deployment script
+# Use the fixed deployment script (RECOMMENDED)
 npm run deploy:fixed
 
-# Or manually apply the patch
+# Or manually apply the patch and deploy
 ./scripts/patch-server-binding.sh
-wasp deploy fly
+cd .wasp/build
+flyctl deploy --config ../../fly-server.toml --app postmarkr-server
 ```
 
 ### **Deployment Command Errors**

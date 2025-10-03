@@ -71,6 +71,10 @@ export WASP_SERVER_URL="${SERVER_URL}"
 # Build the application
 wasp build
 
+# Apply server binding patch for Fly.io compatibility
+print_status $BLUE "🔧 Applying server binding patch..."
+bash ../../scripts/patch-server-binding.sh
+
 # Navigate to build directory
 cd .wasp/build
 
@@ -117,6 +121,44 @@ echo ""
 
 print_status $BLUE "Client status:"
 flyctl status --app ${CLIENT_APP} 2>/dev/null || print_status $YELLOW "⏳ Client still deploying..."
+echo ""
+
+# Step 6: Health check validation
+print_status $YELLOW "📋 Step 6: Validating deployment health..."
+echo ""
+
+# Wait for services to be ready
+print_status $BLUE "⏳ Waiting 30 seconds for services to stabilize..."
+sleep 30
+
+# Check server health
+print_status $BLUE "🔍 Testing server health endpoint..."
+if curl -f -s --max-time 10 "${SERVER_URL}/health/simple" > /dev/null 2>&1; then
+    print_status $GREEN "✅ Server health check passed"
+else
+    print_status $RED "❌ Server health check failed"
+    print_status $YELLOW "   Checking server logs..."
+    flyctl logs --app ${SERVER_APP} --no-tail | tail -20
+fi
+
+# Check client accessibility
+print_status $BLUE "🔍 Testing client accessibility..."
+if curl -f -s --max-time 10 "${CLIENT_URL}" > /dev/null 2>&1; then
+    print_status $GREEN "✅ Client accessibility check passed"
+else
+    print_status $RED "❌ Client accessibility check failed"
+fi
+
+# Check database connectivity through server
+print_status $BLUE "🔍 Testing database connectivity..."
+if curl -f -s --max-time 10 "${SERVER_URL}/health" | grep -q '"database".*"healthy"' 2>/dev/null; then
+    print_status $GREEN "✅ Database connectivity check passed"
+else
+    print_status $RED "❌ Database connectivity check failed"
+    print_status $YELLOW "   Checking database logs..."
+    flyctl logs --app postmarkr-db --no-tail | tail -10
+fi
+
 echo ""
 
 # Final summary
