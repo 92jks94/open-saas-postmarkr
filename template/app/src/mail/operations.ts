@@ -58,6 +58,7 @@ import { createMailPiece as createLobMailPiece, getMailPieceStatus as getLobMail
 import { getDownloadFileSignedURLFromS3 } from '../file-upload/s3Utils';
 import { stripe } from '../payment/stripe/stripeClient';
 import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
+import { mapLobStatus } from '../shared/statusMapping';
 
 // ============================================================================
 // MAIL PIECE CRUD OPERATIONS
@@ -354,15 +355,7 @@ export const updateMailPieceStatus: UpdateMailPieceStatus<UpdateMailPieceStatusI
     let newStatus = mailPiece.status;
     if (validatedInput.lobStatus) {
       // Map Lob statuses to internal statuses
-      const statusMapping: Record<string, string> = {
-        'delivered': 'delivered',
-        'returned': 'returned',
-        'in_transit': 'in_transit',
-        'processing': 'submitted',
-        'printed': 'submitted',
-        'mailed': 'submitted',
-      };
-      newStatus = statusMapping[validatedInput.lobStatus] || mailPiece.status;
+      newStatus = mapLobStatus(validatedInput.lobStatus, mailPiece.status);
     }
 
     // Update the mail piece
@@ -1172,19 +1165,7 @@ export const syncMailPieceStatus: SyncMailPieceStatus<SyncMailPieceStatusInput, 
     const lobStatus = await getLobMailPieceStatus(mailPiece.lobId);
 
     // Map Lob status to internal status
-    const statusMapping: Record<string, string> = {
-      'delivered': 'delivered',
-      'returned': 'returned',
-      'in_transit': 'in_transit',
-      'processing': 'submitted',
-      'printed': 'submitted',
-      'mailed': 'submitted',
-      'created': 'submitted',
-      'cancelled': 'failed',
-      'failed': 'failed',
-    };
-
-    const newStatus = statusMapping[lobStatus.status] || lobStatus.status || mailPiece.status;
+    const newStatus = mapLobStatus(lobStatus.status, mailPiece.status);
 
     // Update mail piece if status has changed
     if (newStatus !== mailPiece.status) {

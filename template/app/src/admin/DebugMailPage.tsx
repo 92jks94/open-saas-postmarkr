@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from 'wasp/client/operations';
-import { debugMailPieces, fixPaidOrders } from 'wasp/client/operations';
+import { debugMailPieces, fixPaidOrders, debugMailPieceStatus } from 'wasp/client/operations';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { ScrollArea } from '../components/ui/scroll-area';
 
 type FixResult = {
   fixedCount: number;
@@ -17,6 +20,220 @@ type FixResult = {
     lobId?: string;
   }>;
 };
+
+type DetailedMailPiece = {
+  mailPiece: any;
+  stripeStatus: any;
+  webhookLogs: any[];
+};
+
+// Component for detailed mail piece view
+function DetailedMailPieceView({ mailPieceId }: { mailPieceId: string }) {
+  const [detailedData, setDetailedData] = useState<DetailedMailPiece | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadDetailedData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await debugMailPieceStatus({ mailPieceId });
+      setDetailedData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load detailed data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <Button onClick={loadDetailedData} disabled={isLoading} variant="outline">
+        {isLoading ? 'Loading...' : 'Load Detailed Information'}
+      </Button>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {detailedData && (
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="stripe">Stripe Status</TabsTrigger>
+            <TabsTrigger value="lob">Lob Details</TabsTrigger>
+            <TabsTrigger value="history">Status History</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mail Piece Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm text-gray-500">ID:</span>
+                    <p className="font-mono text-sm">{detailedData.mailPiece.id}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">User:</span>
+                    <p className="text-sm">{detailedData.mailPiece.user.email}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Mail Type:</span>
+                    <p className="text-sm">{detailedData.mailPiece.mailType}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Mail Class:</span>
+                    <p className="text-sm">{detailedData.mailPiece.mailClass}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Status:</span>
+                    <Badge className={getStatusColor(detailedData.mailPiece.status)}>
+                      {detailedData.mailPiece.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Payment Status:</span>
+                    <Badge className={getStatusColor(detailedData.mailPiece.paymentStatus)}>
+                      {detailedData.mailPiece.paymentStatus}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Cost:</span>
+                    <p className="text-sm">${detailedData.mailPiece.cost || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Customer Price:</span>
+                    <p className="text-sm">${detailedData.mailPiece.customerPrice || 'N/A'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stripe" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Stripe Payment Status</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {detailedData.stripeStatus ? (
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-sm text-gray-500">Payment Intent ID:</span>
+                      <p className="font-mono text-sm">{detailedData.stripeStatus.id}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Status:</span>
+                      <Badge className={getStatusColor(detailedData.stripeStatus.status)}>
+                        {detailedData.stripeStatus.status}
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Amount:</span>
+                      <p className="text-sm">${(detailedData.stripeStatus.amount / 100).toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Currency:</span>
+                      <p className="text-sm">{detailedData.stripeStatus.currency}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-gray-500">Created:</span>
+                      <p className="text-sm">{new Date(detailedData.stripeStatus.created * 1000).toLocaleString()}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No Stripe payment information available</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="lob" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Lob API Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm text-gray-500">Lob ID:</span>
+                    <p className="font-mono text-sm">{detailedData.mailPiece.lobId || 'Not submitted'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Lob Status:</span>
+                    <Badge className={getStatusColor(detailedData.mailPiece.lobStatus || 'unknown')}>
+                      {detailedData.mailPiece.lobStatus || 'Unknown'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-sm text-gray-500">Tracking Number:</span>
+                    <p className="font-mono text-sm">{detailedData.mailPiece.lobTrackingNumber || 'Not available'}</p>
+                  </div>
+                  {detailedData.mailPiece.metadata && (
+                    <div>
+                      <span className="text-sm text-gray-500">Metadata:</span>
+                      <pre className="text-xs bg-gray-100 p-2 rounded mt-1 overflow-auto">
+                        {JSON.stringify(detailedData.mailPiece.metadata, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Status History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-96">
+                  <div className="space-y-3">
+                    {detailedData.mailPiece.statusHistory.map((history: any, index: number) => (
+                      <div key={index} className="border rounded p-3">
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge className={getStatusColor(history.status)}>
+                            {history.status}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {new Date(history.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        {history.description && (
+                          <p className="text-sm text-gray-700 mb-2">{history.description}</p>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          <span>Source: {history.source}</span>
+                          {history.previousStatus && (
+                            <span className="ml-2">Previous: {history.previousStatus}</span>
+                          )}
+                        </div>
+                        {history.lobData && (
+                          <details className="mt-2">
+                            <summary className="text-xs text-blue-600 cursor-pointer">Lob Data</summary>
+                            <pre className="text-xs bg-gray-100 p-2 rounded mt-1 overflow-auto">
+                              {JSON.stringify(history.lobData, null, 2)}
+                            </pre>
+                          </details>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
+  );
+}
 
 export default function DebugMailPage() {
   const [fixResult, setFixResult] = useState<FixResult | null>(null);
@@ -80,6 +297,26 @@ export default function DebugMailPage() {
       case 'error': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper function to detect potential duplicate Lob submissions
+  const hasPotentialDuplicateSubmissions = (piece: any) => {
+    if (!piece.statusHistory) return false;
+    
+    const submissionHistory = piece.statusHistory.filter((h: any) => 
+      h.status === 'submitted' && h.source === 'system'
+    );
+    
+    return submissionHistory.length > 1;
+  };
+
+  // Helper function to get Lob submission count
+  const getLobSubmissionCount = (piece: any) => {
+    if (!piece.statusHistory) return 0;
+    
+    return piece.statusHistory.filter((h: any) => 
+      h.status === 'submitted' && h.source === 'system'
+    ).length;
   };
 
   return (
@@ -207,63 +444,109 @@ export default function DebugMailPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {debugData?.recentMailPieces?.map((piece) => (
-              <div key={piece.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-semibold">Mail Piece {piece.id.slice(-8)}</h3>
-                    <p className="text-sm text-gray-600">{piece.user.email}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge className={getStatusColor(piece.status)}>
-                      {piece.status}
-                    </Badge>
-                    <Badge className={getStatusColor(piece.paymentStatus)}>
-                      Payment: {piece.paymentStatus}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-500">Type:</span>
-                    <p className="font-medium">{piece.mailType}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Created:</span>
-                    <p className="font-medium">
-                      {new Date(piece.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Payment Intent:</span>
-                    <p className="font-medium text-xs">
-                      {piece.paymentIntentId ? `${piece.paymentIntentId.slice(-8)}` : 'None'}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Lob ID:</span>
-                    <p className="font-medium text-xs">
-                      {piece.lobId ? `${piece.lobId.slice(-8)}` : 'None'}
-                    </p>
-                  </div>
-                </div>
-
-                {piece.statusHistory.length > 0 && (
-                  <div className="mt-3 pt-3 border-t">
-                    <p className="text-sm text-gray-500 mb-2">Recent Status History:</p>
-                    <div className="space-y-1">
-                      {piece.statusHistory.map((history: any, index: number) => (
-                        <div key={index} className="text-xs text-gray-600">
-                          {new Date(history.createdAt).toLocaleString()} - {history.status} 
-                          {history.description && ` (${history.description})`}
-                        </div>
-                      ))}
+            {debugData?.recentMailPieces?.map((piece) => {
+              const hasDuplicates = hasPotentialDuplicateSubmissions(piece);
+              const submissionCount = getLobSubmissionCount(piece);
+              
+              return (
+                <div key={piece.id} className={`border rounded-lg p-4 ${hasDuplicates ? 'border-orange-300 bg-orange-50' : ''}`}>
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold">Mail Piece {piece.id.slice(-8)}</h3>
+                        {hasDuplicates && (
+                          <Badge variant="destructive" className="text-xs">
+                            ⚠️ {submissionCount} Lob Submissions
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">{piece.user.email}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Badge className={getStatusColor(piece.status)}>
+                        {piece.status}
+                      </Badge>
+                      <Badge className={getStatusColor(piece.paymentStatus)}>
+                        Payment: {piece.paymentStatus}
+                      </Badge>
                     </div>
                   </div>
-                )}
-              </div>
-            ))}
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                    <div>
+                      <span className="text-gray-500">Type:</span>
+                      <p className="font-medium">{piece.mailType}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Created:</span>
+                      <p className="font-medium">
+                        {new Date(piece.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Payment Intent:</span>
+                      <p className="font-medium text-xs">
+                        {piece.paymentIntentId ? `${piece.paymentIntentId.slice(-8)}` : 'None'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Lob ID:</span>
+                      <p className="font-medium text-xs">
+                        {piece.lobId ? `${piece.lobId.slice(-8)}` : 'None'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Quick Status History Preview */}
+                  {piece.statusHistory.length > 0 && (
+                    <div className="mb-3 pt-3 border-t">
+                      <div className="flex justify-between items-center mb-2">
+                        <p className="text-sm text-gray-500">Recent Status History:</p>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              View Details
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>Mail Piece Details - {piece.id.slice(-8)}</DialogTitle>
+                            </DialogHeader>
+                            <DetailedMailPieceView mailPieceId={piece.id} />
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <div className="space-y-1">
+                        {piece.statusHistory.slice(0, 3).map((history: any, index: number) => (
+                          <div key={index} className="text-xs text-gray-600 flex justify-between">
+                            <span>
+                              {new Date(history.createdAt).toLocaleString()} - {history.status} 
+                              {history.description && ` (${history.description})`}
+                            </span>
+                            <span className="text-gray-400">{history.source}</span>
+                          </div>
+                        ))}
+                        {piece.statusHistory.length > 3 && (
+                          <div className="text-xs text-gray-400 italic">
+                            ... and {piece.statusHistory.length - 3} more entries
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duplicate Submission Warning */}
+                  {hasDuplicates && (
+                    <Alert className="border-orange-200 bg-orange-50">
+                      <AlertDescription className="text-orange-800">
+                        ⚠️ This order has been submitted to Lob {submissionCount} times. 
+                        This may indicate a duplicate submission issue. Check the detailed view for more information.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

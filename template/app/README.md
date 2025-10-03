@@ -1,10 +1,59 @@
-# <YOUR_APP_NAME>
+# Postmarkr - Physical Mail Service Platform
 
-Built with [Wasp](https://wasp.sh), based on the [Open Saas](https://opensaas.sh) template.
+Built with [Wasp](https://wasp.sh), evolved from the [Open Saas](https://opensaas.sh) template.
+
+**Postmarkr** is a comprehensive physical mail service platform that enables remote workers, freelancers, and businesses to send physical mail from anywhere in the world. Upload PDF documents, manage addresses, process payments, and track delivery - all through a modern web interface powered by Lob API integration.
 
 ## UI Components
 
 This template includes [ShadCN UI](https://ui.shadcn.com/) v2 for beautiful, accessible React components. See [SHADCN_SETUP.md](./SHADCN_SETUP.md) for details on how to use ShadCN components in your app.
+
+## 📮 Mail Service Features
+
+Postmarkr provides a complete physical mail service platform with the following core features:
+
+### Document Management
+- **PDF Upload & Processing** - Secure file upload to AWS S3 with metadata extraction
+- **File Validation** - Automatic PDF validation and page count detection
+- **Document Preview** - Preview documents before sending
+- **File Organization** - Manage and organize uploaded documents
+
+### Address Management
+- **Address Book** - Store and manage sender/recipient addresses
+- **Address Validation** - Real-time address validation via Lob API
+- **Default Addresses** - Set default sender addresses for quick sending
+- **Address History** - Track frequently used addresses
+
+### Mail Creation Workflow
+- **Mail Piece Creation** - Create mail pieces with document and address selection
+- **Service Options** - Choose from First Class, Express, and Priority mail
+- **Printing Preferences** - Configure color printing and double-sided options
+- **Service Add-ons** - Signature confirmation, return receipt, tracking
+
+### Payment Processing
+- **Stripe Integration** - Secure payment processing for mail services
+- **Cost Calculation** - Real-time pricing based on mail type and options
+- **Payment History** - Track payment status and transaction history
+- **Refund Support** - Process refunds for cancelled or failed mail pieces
+
+### Delivery Tracking
+- **Real-time Status Updates** - Webhook-based status updates from Lob API
+- **Delivery Tracking** - Track mail pieces from creation to delivery
+- **Status History** - Complete audit trail of mail piece status changes
+- **Notification System** - Email and in-app notifications for status changes
+
+### Admin & Monitoring
+- **Admin Dashboard** - Comprehensive admin interface for system management
+- **User Management** - Manage user accounts and access levels
+- **Mail Analytics** - Track mail volume, success rates, and performance metrics
+- **System Monitoring** - Health checks, webhook monitoring, and error tracking
+- **Debug Tools** - Debug mail pieces and troubleshoot issues
+
+### Background Processing
+- **Job Queue System** - PgBoss-powered background job processing
+- **PDF Processing** - Automated PDF metadata extraction
+- **Mail Submission** - Background submission to Lob API
+- **File Cleanup** - Automated cleanup of orphaned S3 files
 
 ## Development
 
@@ -14,21 +63,133 @@ This template includes [ShadCN UI](https://ui.shadcn.com/) v2 for beautiful, acc
  - Run `wasp start` and leave it running.
  - [OPTIONAL]: If this is the first time starting the app, or you've just made changes to your entities/prisma schema, also run `wasp db migrate-dev`.
 
+## 🚀 Deployment
+
+Deploy to Fly.io with a single command:
+
+```bash
+npm run deploy
+```
+
+**Quick deployment** (no health checks):
+```bash
+npm run deploy:quick
+```
+
+**Note**: Make sure you're authenticated with Fly.io first:
+```bash
+flyctl auth login
+```
+**Deployment Features**:
+- ✅ Comprehensive health checks and monitoring
+- ✅ Built-in retry mechanism for network issues
+- ✅ Production readiness checks and validation
+- ✅ Environment variable synchronization
+- ✅ Network resilience and error handling
+
+#### Available Commands
+
+- **`npm run deploy`** - Basic deployment script (checks auth, provides instructions)
+- **`npm run deploy:quick`** - Quick deployment script from scripts directory
+- **`npm run sync:secrets`** - Sync environment variables to Fly.io
+- **`npm run check:production`** - Pre-deployment production readiness check
+- **`npm run check:health`** - Check application health status
+
+#### Available Shell Scripts
+
+- **`./deploy-simple.sh`** - Simplified deployment for quick updates
+- **`./deploy-full.sh`** - Full deployment with comprehensive checks
+- **`./deploy-fixed.sh`** - Deployment with known fixes applied
+- **`./deploy-wsl-fix.sh`** - WSL2-specific deployment fixes
+- **`./set-fly-urls.sh`** - Configure Fly.io URLs for the application
+
+#### Health Check Endpoints
+
+The deployed application includes comprehensive health monitoring:
+
+- **`/health`** - Basic health check endpoint
+- **`/health/simple`** - Minimal health status
+- **`/health/detailed`** - Comprehensive system metrics
+- **`/api/webhooks/health`** - Webhook processing health
+- **`/api/webhooks/metrics`** - Webhook performance metrics
+- **`/api/webhooks/events`** - Recent webhook events
+
+#### Production Monitoring
+
+The deployment includes built-in monitoring capabilities:
+
+- **System Metrics** - CPU, memory, and disk usage
+- **Database Health** - Connection status and query performance
+- **API Endpoints** - Response times and error rates
+- **Webhook Processing** - Success rates and processing times
+- **Mail Service Status** - Lob API connectivity and performance
+
+#### Environment Configuration
+
+Production deployment requires the following environment variables:
+
+```sh
+# Database
+DATABASE_URL=postgresql://...
+
+# Authentication
+JWT_SECRET=your_jwt_secret_here
+
+# Application URLs
+WASP_SERVER_URL=https://api.postmarkr.com
+WASP_CLIENT_URL=https://postmarkr.com
+
+# Lob API
+LOB_TEST_KEY=test_your_test_key_here
+LOB_PROD_KEY=live_your_prod_key_here
+LOB_ENVIRONMENT=production
+LOB_WEBHOOK_SECRET=your_webhook_secret_here
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_your_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_live_your_publishable_key_here
+STRIPE_CUSTOMER_PORTAL_URL=https://billing.stripe.com/p/login/your_portal_url
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+# AWS S3
+AWS_S3_IAM_ACCESS_KEY=your_access_key_here
+AWS_S3_IAM_SECRET_KEY=your_secret_key_here
+AWS_S3_FILES_BUCKET=your_bucket_name_here
+AWS_S3_REGION=us-east-2
+
+# Email
+SENDGRID_API_KEY=your_sendgrid_key_here
+
+# Analytics (Optional)
+GOOGLE_ANALYTICS_CLIENT_EMAIL=your_client_email_here
+GOOGLE_ANALYTICS_PROPERTY_ID=your_property_id_here
+GOOGLE_ANALYTICS_PRIVATE_KEY=your_private_key_here
+
+# Error Monitoring (Optional)
+SENTRY_DSN=your_sentry_dsn_here
+```
+
+For detailed deployment instructions, troubleshooting, and advanced options, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
 #Change to create fork
 
 
 # Introduction
 
-## Welcome to your new SaaS App!
+## Welcome to Postmarkr!
 
-You've decided to build a SaaS app with this template. Great choice! 
+Postmarkr is a physical mail service that lets you send mail from anywhere in the world. Perfect for:
+- **Remote workers** who need to send business correspondence
+- **Freelancers** sending contracts and invoices  
+- **Small businesses** managing client communications
+- **Digital nomads** maintaining professional mail service
 
-This template is:
+This application is:
 
 1. fully open-source
 2. completely free to use and distribute
-3. comes with a ton of features out of the box
-4. community-driven and constantly improving!
+3. built with modern, production-ready features
+4. powered by Lob API for reliable mail delivery
 
 Check it out in action here: [OpenSaaS.sh](https://opensaas.sh)  
 Check out the Code: [Open SaaS GitHub Repo](https://github.com/wasp-lang/open-saas)
@@ -41,16 +202,40 @@ If you find this template useful, consider giving us [a star on GitHub](https://
 
 ## What's inside?
 
-The template itself is built on top of some very powerful tools and frameworks, including:
-  -  [Wasp](https://wasp.sh) - a full-stack React, NodeJS, Prisma framework with superpowers
-  -  [Astro](https://starlight.astro.build/) - Astro's lightweight "Starlight" template for documentation and blog
-  -  [Stripe](https://stripe.com) or [Lemon Squeezy](https://lemonsqueezy.com/) - for products and payments
-  -  [Plausible](https://plausible.io) or [Google](https://analytics.google.com/) Analytics
-  -  [OpenAI](https://openai.com) - OpenAI API integrated into the app or [Replicate](https://replicate.com/) (coming soon )
-  -  [AWS S3](https://aws.amazon.com/s3/) - for file uploads
-  -  [SendGrid](https://sendgrid.com), [MailGun](https://mailgun.com), or SMTP - for email sending
-  -  [TailwindCSS](https://tailwindcss.com) - for styling
-  -  [TailAdmin](https://tailadmin.com/) - admin dashboard & components for TailwindCSS
+Postmarkr is built on a robust technology stack designed for physical mail processing and delivery:
+
+### Core Framework & Database
+  -  [Wasp](https://wasp.sh) - Full-stack React, NodeJS, Prisma framework with type-safe operations
+  -  [PostgreSQL](https://postgresql.org) - Production-ready database with advanced features
+  -  [PgBoss](https://github.com/timgit/pg-boss) - Background job processing for mail operations
+  -  [Prisma](https://prisma.io) - Type-safe database ORM with migrations
+
+### Mail Service Integration
+  -  [Lob API](https://lob.com) - Professional mail printing and delivery services
+  -  [Stripe](https://stripe.com) - Payment processing for mail services
+  -  [AWS S3](https://aws.amazon.com/s3/) - Secure file storage for PDF documents
+
+### Frontend & UI
+  -  [React](https://reactjs.org) - Modern UI framework
+  -  [TailwindCSS](https://tailwindcss.com) - Utility-first CSS framework
+  -  [ShadCN UI](https://ui.shadcn.com/) - Beautiful, accessible React components
+  -  [Radix UI](https://radix-ui.com) - Unstyled, accessible UI primitives
+
+### Email & Communication
+  -  [SendGrid](https://sendgrid.com) - Transactional email delivery
+  -  [React Hook Form](https://react-hook-form.com) - Form management
+  -  [Zod](https://zod.dev) - Schema validation
+
+### Development & Deployment
+  -  [TypeScript](https://typescriptlang.org) - Type-safe JavaScript
+  -  [Vitest](https://vitest.dev) - Fast unit testing framework
+  -  [Fly.io](https://fly.io) - Cloud deployment platform
+  -  [Docker](https://docker.com) - Containerization
+
+### Optional Integrations
+  -  [OpenAI](https://openai.com) - AI-powered features (demo app)
+  -  [Google Analytics](https://analytics.google.com/) - Usage analytics
+  -  [Sentry](https://sentry.io) - Error monitoring and performance tracking
 
 Because we're using Wasp as the full-stack framework, we can leverage a lot of its features to build our SaaS in record time, including:
   -  [Full-stack Authentication](https://wasp.sh/docs/auth/overview) - Email verified + social Auth in a few lines of code.
@@ -384,18 +569,19 @@ If you are using an older version of the Open SaaS template with Wasp `v0.13.x` 
  .wasp/                 # Output dir for Wasp. DON'T MODIFY THESE FILES!
  public/                # Public assets dir, e.g. www.yourdomain.com/public-banner.webp
  src/                   # Your code goes here.
-    admin/             # Admin dashboard related pages and components.
+    address-management/ # Address book and validation for mail recipients/senders.
+    admin/             # Admin dashboard for monitoring and user management.
     analytics/         # Logic and background jobs for processing analytics.
     auth/              # All auth-related pages/components and logic.
-    client/            # Shared components, hooks, landing page, and other client code (React).
-    demo-ai-app/       # Logic for the example AI-powered demo app.
-    file-upload/       # Logic for uploading files to S3.
-    landing-page       # Landing page related code
-    messages           # Logic for app user messages.
-    payment/           # Logic for handling payments and webhooks.
-    server/            # Scripts, shared server utils, and other server-specific code (NodeJS).
+    client/            # Shared components, hooks, and other client code (React).
+    file-upload/       # Logic for uploading PDF files to S3.
+    landing-page/      # Landing page and marketing content.
+    mail/              # Mail piece creation, tracking, and history (CORE FEATURE).
+    payment/           # Stripe payment processing for mail services.
+    server/            # Server-side code including Lob integration and webhooks.
+      lob/            # Lob API integration for mail processing.
     shared/            # Shared constants and util functions.
-    user/              # Logic related to users and their accounts.
+    user/              # User account management and settings.
  .env.server            # Dev environment variables for your server code.
  .env.client            # Dev environment variables for your client code.
  .prettierrc            # Prettier configuration.
@@ -467,24 +653,39 @@ This template comes with a fully functional auth flow out of the box. It takes a
     userEntity: User,
     methods: {
       email: { 
-        //...
+        fromField: {
+          name: "Postmarkr",
+          email: "nathan@postmarkr.com"
+        },
+        emailVerification: {
+          clientRoute: EmailVerificationRoute,
+          getEmailContentFn: import { getVerificationEmailContent } from "@src/auth/email-and-pass/emails",
+        },
+        passwordReset: {
+          clientRoute: PasswordResetRoute,
+          getEmailContentFn: import { getPasswordResetEmailContent } from "@src/auth/email-and-pass/emails",
+        },
       },
-      google: {},
-      github: {},
-      discord: {}
     },
-    onAuthFailedRedirectTo: "/",
+    onAuthFailedRedirectTo: "/login",
+  },
+  emailSender: {
+    provider: SendGrid,
+    defaultFrom: {
+      name: "Postmarkr",
+      email: "nathan@postmarkr.com"
+    }
   },
 ```
 
 By defining the auth structure in your `main.wasp` file, Wasp manages all the necessary code for you, including:
 - Email verified login with reset password
-- Social login with Google and/or GitHub
-- Auth-related database entities for user credentials, sessions, and social logins 
+- SendGrid email sender for production use
+- Auth-related database entities for user credentials and sessions
 - Custom-generated AuthUI components for login, signup, and reset password
 - Auth hooks for fetching user data
 
-We've set the template up with Wasp's `email`, `google`, and `gitHub` methods, which are all battle-tested and suitable for production. 
+Postmarkr uses email authentication with SendGrid as the email provider. 
 
 You can get started developing your app with the `email` method right away! 
 
@@ -506,58 +707,154 @@ For development purposes, Wasp provides a `Dummy` email sender which Open SaaS c
 
 We will explain more about these auth methods, and how to properly integrate them into your app, in the [Authentication Guide](/guides/authentication/).
 
-### Subscription Payments with Stripe or Lemon Squeezy
+### Payment Integration with Stripe for Mail Services
 
-No SaaS is complete without payments, specifically subscription payments. That's why this template comes with a fully functional Stripe or Lemon Squeezy integration. 
+Postmarkr features a comprehensive payment system specifically designed for mail services, powered by Stripe. The payment integration handles both subscription payments and per-mail-piece transactions.
 
-Let's take a quick look at how payments are handled in this template.
+#### Mail-Specific Payment Features
 
-1. a user clicks the `BUY` button and a **Checkout session** is created on the server
-2. the user is redirected to the Checkout page where they enter their payment info
-3. the user is redirected back to the app and the Checkout session is completed
-4. Stripe / Lemon Squeezy sends a webhook event to the server with the payment info
-5. The app server's **webhook handler** handles the event and updates the user's subscription status
+1. **Per-Mail Payment Processing** - Individual payment for each mail piece before Lob submission
+2. **Dynamic Pricing Engine** - Page-based pricing with automatic cost calculation
+3. **Payment Intent Management** - Secure payment processing with Stripe Payment Intents
+4. **Refund System** - Automated refund processing for failed mail deliveries
+5. **Customer Portal Integration** - Self-service billing management for users
+6. **Webhook Processing** - Real-time payment status updates and subscription management
+7. **Circuit Breaker Protection** - Built-in resilience against Stripe API failures
+8. **Rate Limiting** - Protection against payment processing abuse
 
-The payment processor you choose (Stripe or Lemon Squeezy) and its related functions can be found at `src/payment/paymentProcessor.ts`. The `Payment Processor` object holds the logic for creating checkout sessions, webhooks, etc.
+#### Payment Flow for Mail Services
 
-The logic for creating the Checkout session is defined in the `src/payment/operation.ts` file. [Actions](https://wasp.sh/docs/data-model/operations/actions) are a type of Wasp Operation, specifically your server-side functions that are used to **write** or **update** data to the database. Once they're defined in the `main.wasp` file, you can easily call them on the client-side:
+1. User creates a mail piece and uploads PDF
+2. System calculates pricing based on page count and mail specifications
+3. **Payment Intent** is created for the specific mail piece cost
+4. User completes payment through Stripe Checkout
+5. Payment confirmation triggers mail piece submission to Lob API
+6. Webhook handlers update payment status and mail piece tracking
+7. Failed deliveries trigger automatic refund processing
 
-a) define the action in the `main.wasp` file
-```js title="main.wasp"
-action generateCheckoutSession {
-  fn: import { generateCheckoutSession } from "@src/payment/operations",
-  entities: [User]
-}
-```
+#### Key Implementation Details
 
-b) implement the action in the `src/payment/operations` file
-```js title="src/server/actions.ts"
-export const generateCheckoutSession = async (paymentPlanId, context) => { 
-  //...
- }
-```
+The payment system is implemented across multiple files:
 
-c) call the action on the client-side
-```js title="src/client/app/SubscriptionPage.tsx"
+- **`src/payment/operations.ts`** - Core payment operations and checkout session creation
+- **`src/mail/operations.ts`** - Mail-specific payment operations (createMailPaymentIntent, confirmMailPayment, refundMailPayment)
+- **`src/payment/stripe/`** - Stripe client configuration and webhook handling
+- **`src/server/mail/payments.ts`** - Mail-specific payment service layer
 
-const handleBuyClick = async (paymentPlanId) => {
-  const checkoutSession = await generateCheckoutSession(paymentPlanId);
-};
-```
+#### Stripe Configuration
 
-The webhook handler is defined in the `src/payment/webhook.ts` file. Unlike Actions and Queries in Wasp which are only to be used internally, we define the webhook handler in the `main.wasp` file as an API endpoint in order to expose it externally to Stripe
+The payment processor configuration can be found at `src/payment/paymentProcessor.ts`. The `PaymentProcessor` object handles:
+
+- Checkout session creation for subscriptions
+- Customer portal access
+- Webhook event processing
+- Payment intent management
+
+#### Webhook Integration
+
+The webhook handler processes multiple Stripe events:
 
 ```js title="main.wasp"
 api paymentsWebhook {
   fn: import { paymentsWebhook } from "@src/payment/webhook",
   httpRoute: (POST, "/payments-webhook") 
   entities: [User],
+  middlewareConfigFn: import { paymentsMiddlewareConfigFn } from "@src/payment/webhook",
 }
 ```
 
-Within the webhook handler, we look for specific events that the Payment Processor sends us to let us know which payment was completed and for which user. Then we update the user's subscription status in the database.
+**Supported Webhook Events:**
+- `checkout.session.completed` - Subscription payments
+- `payment_intent.succeeded` - Mail piece payments
+- `payment_intent.payment_failed` - Failed payment handling
+- `invoice.paid` - Subscription renewals
+- `customer.subscription.updated` - Subscription changes
+- `customer.subscription.deleted` - Subscription cancellations
+
+#### Mail Payment Operations
+
+Mail-specific payment operations are defined in `src/mail/operations.ts`:
+
+```js title="main.wasp"
+action createMailPaymentIntent {
+  fn: import { createMailPaymentIntent } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, MailPieceStatusHistory]
+}
+
+action confirmMailPayment {
+  fn: import { confirmMailPayment } from "@src/mail/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
+}
+
+action refundMailPayment {
+  fn: import { refundMailPayment } from "@src/mail/operations",
+  entities: [MailPiece, MailPieceStatusHistory]
+}
+```
+
+#### Environment Configuration
+
+Add your Stripe keys to `.env.server`:
+
+```sh
+STRIPE_SECRET_KEY=sk_test_your_secret_key_here
+STRIPE_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+STRIPE_CUSTOMER_PORTAL_URL=https://billing.stripe.com/p/login/test_your_portal_url
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+```
 
 To learn more about configuring the app to handle your products and payments, check out the [Payments Integration guide](/guides/payments-integration/).
+
+### Lob API Integration for Physical Mail
+
+Postmarkr's core functionality is powered by the [Lob API](https://lob.com), which handles the complete physical mail processing pipeline, including printing, packaging, and delivery.
+
+The comprehensive Lob integration is implemented in the `src/server/lob/` directory and includes:
+
+1. **Complete Mail Lifecycle Management** - Full workflow from PDF upload to delivery tracking
+2. **Advanced Address Validation** - Real-time address verification with Lob's validation API
+3. **Dynamic Pricing Engine** - Page-based pricing tiers with automatic cost calculation
+4. **Real-time Status Tracking** - Webhook-based tracking with comprehensive status mapping
+5. **Error Handling & Retry Logic** - Circuit breaker patterns and exponential backoff
+6. **Rate Limiting** - Built-in rate limiting to handle Lob API constraints
+7. **Webhook Security** - HMAC-SHA256 signature verification for secure webhook processing
+8. **Mail Piece Types** - Support for letters, postcards, and various USPS mail classes
+9. **Printing Options** - Color/black & white, single/double-sided printing preferences
+10. **Service Options** - Certified mail, priority mail, express mail, and tracking services
+
+#### Key Features Implemented
+
+- **Address Management System** - Complete CRUD operations for sender/recipient addresses
+- **File Processing Pipeline** - PDF metadata extraction and validation
+- **Payment Integration** - Stripe-powered payment processing before Lob submission
+- **Status History Tracking** - Complete audit trail of mail piece status changes
+- **Webhook Metrics** - Comprehensive monitoring of webhook processing performance
+- **Admin Debug Tools** - Built-in debugging and monitoring capabilities
+
+#### Setting Up Lob
+
+To use the mail service features, you need to:
+
+a) Sign up for a Lob account at [https://dashboard.lob.com/signup](https://dashboard.lob.com/signup)
+
+b) Get your API keys (test and production) from the Lob dashboard
+
+c) Add the keys to your `.env.server` file:
+```sh
+LOB_TEST_KEY=test_your_test_key_here
+LOB_PROD_KEY=live_your_prod_key_here
+LOB_ENVIRONMENT=test  # Change to 'production' when ready
+LOB_WEBHOOK_SECRET=your_webhook_secret_here
+```
+
+d) Configure the webhook endpoint in the Lob dashboard to point to:
+```
+https://yourdomain.com/webhooks/lob
+```
+
+The webhook handler is defined in `src/server/lob/webhook.ts` and processes events from Lob to update mail delivery status in real-time. It includes HMAC signature verification for security and comprehensive error handling.
+
+For detailed setup instructions and testing, see the [docs/LOB_SETUP_GUIDE.md](docs/LOB_SETUP_GUIDE.md) file.
 
 :::tip[Star our Repo on GitHub! ]
 We've packed in a ton of features and love into this SaaS starter, and offer it all to you for free!
@@ -565,11 +862,32 @@ We've packed in a ton of features and love into this SaaS starter, and offer it 
 If you're finding this template and its guides useful, consider giving us [a star on GitHub](https://github.com/wasp-lang/wasp)
 :::
 
-### Analytics and Admin Dashboard
+### Comprehensive Admin Dashboard and Analytics
 
-Keeping an eye on your metrics is crucial for any SaaS. That's why we've built an administrator's dashboard where you can view your app's stats, user data, and revenue all in one place.
+Postmarkr features a sophisticated admin dashboard with comprehensive monitoring, analytics, and management capabilities. The dashboard provides real-time insights into system performance, user activity, and business metrics.
 
-To do that, we've leveraged Wasp's [Jobs feature](https://wasp.sh/docs/advanced/jobs) to run a cron job that calculates your daily stats. The app stats, such as page views and sources, can be pulled from either Plausible or Google Analytics. All you have to do is create a project with the analytics provider of your choice and import the respective pre-built helper functions!
+#### Admin Dashboard Features
+
+1. **Analytics Dashboard** - Comprehensive metrics including page views, revenue, user growth, and conversion rates
+2. **User Management** - Complete user administration with role management and access control
+3. **System Monitoring** - Real-time health checks, performance metrics, and system status
+4. **Mail Management** - Debug tools for mail pieces, status tracking, and order management
+5. **Settings Management** - Application configuration and feature toggles
+6. **Calendar Integration** - Event tracking and scheduling capabilities
+7. **UI Components Library** - Built-in component showcase and testing tools
+8. **Webhook Monitoring** - Real-time webhook processing metrics and event tracking
+
+#### Key Dashboard Components
+
+- **`src/admin/dashboards/analytics/`** - Revenue charts, user metrics, and growth analytics
+- **`src/admin/dashboards/users/`** - User management and role administration
+- **`src/admin/dashboards/monitoring/`** - System health and performance monitoring
+- **`src/admin/dashboards/settings/`** - Application configuration management
+- **`src/admin/elements/`** - Reusable UI components and utilities
+
+#### Analytics and Monitoring Features
+
+The system includes comprehensive analytics powered by background jobs:
 
 ```js title="main.wasp"
 job dailyStatsJob {
@@ -583,6 +901,59 @@ job dailyStatsJob {
   entities: [User, DailyStats, Logs, PageViewSource]
 }
 ```
+
+#### Health Check Endpoints
+
+The system includes multiple health check endpoints for monitoring:
+
+```js title="main.wasp"
+api healthCheck {
+  fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
+  httpRoute: (GET, "/health"),
+  auth: false
+}
+
+api healthCheckDetailed {
+  fn: import { healthCheckEndpoint } from "@src/server/healthCheckEndpoint",
+  httpRoute: (GET, "/health/detailed"),
+  auth: false
+}
+
+api webhookMetrics {
+  fn: import { webhookMetricsEndpoint } from "@src/server/lob/webhook",
+  entities: [WebhookMetrics],
+  httpRoute: (GET, "/api/webhooks/metrics"),
+  auth: true
+}
+```
+
+#### Admin Dashboard Pages
+
+- **`/admin`** - Main analytics dashboard with revenue and user metrics
+- **`/admin/users`** - User management and administration
+- **`/admin/monitoring`** - System health and performance monitoring
+- **`/admin/settings`** - Application configuration and settings
+- **`/admin/debug-mail`** - Mail piece debugging and management tools
+- **`/admin/calendar`** - Event tracking and scheduling
+- **`/admin/ui/buttons`** - UI component showcase
+
+#### Analytics Integration
+
+The system supports both Plausible and Google Analytics integration:
+
+- **Plausible Analytics** - Privacy-friendly, cookie-free analytics
+- **Google Analytics** - Comprehensive web analytics with detailed reporting
+- **Custom Metrics** - Mail-specific metrics and business intelligence
+- **Real-time Monitoring** - Live system performance and user activity tracking
+
+#### Admin Access Control
+
+Admin functionality is protected by role-based access control:
+
+- **Admin Role** - Full access to all dashboard features
+- **Beta Access** - Limited access to new features
+- **User Management** - Ability to grant/revoke access levels
+- **Audit Logging** - Complete activity tracking for admin actions
 
 For more info on integrating Plausible or Google Analytics, check out the [Analytics guide](/guides/analytics/).
 
@@ -1585,15 +1956,115 @@ If you're finding this template and its guides useful, consider giving us [a sta
 
 With your S3 bucket set up and your AWS credentials in place, you can now start uploading files in your app using presigned URLs by navigating to `localhost:3000/file-upload` and uploading a file.
 
-To begin customizing file uploads, is important to know where everything lives in your app. Here's a quick overview:
-- `main.wasp`:
-  - The `File entity` can be found here. Here you can modify the fields to suit your needs.
-- `src/file-upload/FileUploadPage.tsx`:
-  - The `FileUploadPage` component is where the file upload form lives. It also allows you to download the file from S3 by calling the `getDownloadFileSignedURL` based on that files `key` in the app DB.
-- `src/file-upload/operations.ts`:
-  - The `createFile` action lives here and calls the `getUploadFileSignedURLFromS3` within it using your AWS credentials before passing it to the client. This function stores the files in the S3 bucket within folders named after the user's ID, so that each user's files are stored separately.
-  - The `getAllFilesByUser` fetches all File information uploaded by the user. Note that the files do not exist in the app database, but rather the file data, its name and its `key`, which is used to fetch the file from S3.
-  - The `getDownloadFileSignedURL` query fetches the presigned URL for a file to be downloaded from S3 using the file's `key` stored in the app's database.
+#### Advanced File Upload Features
+
+Postmarkr's file upload system includes comprehensive PDF processing capabilities:
+
+1. **PDF Metadata Extraction** - Automatic extraction of page count, document properties, and metadata
+2. **Background Processing** - Asynchronous PDF processing using Wasp Jobs
+3. **File Validation** - Comprehensive validation for PDF files and mail-specific requirements
+4. **Rate Limiting** - Built-in protection against upload abuse (10 uploads per hour per user)
+5. **S3 Cleanup** - Automated cleanup of orphaned files with daily scheduled jobs
+6. **Progress Tracking** - Real-time upload progress with visual feedback
+7. **File Management** - Complete CRUD operations for uploaded files
+8. **Mail Integration** - Seamless integration with mail piece creation workflow
+
+#### Key Implementation Details
+
+The file upload system is implemented across multiple files:
+
+- **`main.wasp`**:
+  - The `File entity` includes fields for PDF metadata, validation status, and mail integration
+  - Background jobs for PDF processing and S3 cleanup
+- **`src/file-upload/FileUploadPage.tsx`**:
+  - Advanced file upload component with progress tracking
+  - File management interface with download capabilities
+  - Integration with mail piece creation workflow
+- **`src/file-upload/operations.ts`**:
+  - `createFile` action with S3 presigned URL generation
+  - `triggerPDFProcessing` action for background metadata extraction
+  - `getAllFilesByUser` with filtering for mail-specific files
+  - `getDownloadFileSignedURL` for secure file downloads
+  - `deleteFile` with S3 cleanup
+- **`src/file-upload/pdfMetadata.ts`**:
+  - PDF metadata extraction using PDF-lib
+  - Page count calculation and document analysis
+  - Validation for mail-specific requirements
+- **`src/file-upload/s3Utils.ts`**:
+  - S3 client configuration and presigned URL generation
+  - File cleanup utilities and orphaned file detection
+
+#### Background Processing Jobs
+
+The system includes several background jobs for file processing:
+
+```js title="main.wasp"
+job processPDFMetadata {
+  executor: PgBoss,
+  perform: {
+    fn: import { processPDFMetadata } from "@src/file-upload/operations"
+  },
+  entities: [File]
+}
+
+job cleanupOrphanedS3Files {
+  executor: PgBoss,
+  perform: {
+    fn: import { cleanupOrphanedS3Files } from "@src/file-upload/operations"
+  },
+  entities: [File],
+  schedule: {
+    cron: "0 2 * * *" // Run daily at 2 AM
+  }
+}
+```
+
+#### File Entity Schema
+
+The File entity includes comprehensive metadata fields:
+
+```prisma
+model File {
+  id               String      @id @default(uuid())
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  userId           String
+  name             String
+  type             String
+  key              String
+  uploadUrl        String
+  size             Int?
+  isMailFile       Boolean     @default(false)
+  validationStatus String?
+  validationError  String?
+  pageCount        Int?
+  pdfMetadata      Json?
+  lastProcessedAt  DateTime?
+  user             User        @relation(fields: [userId], references: [id])
+  mailPieces       MailPiece[]
+}
+```
+
+#### Environment Configuration
+
+Add your AWS S3 credentials to `.env.server`:
+
+```sh
+AWS_S3_IAM_ACCESS_KEY=your_access_key_here
+AWS_S3_IAM_SECRET_KEY=your_secret_key_here
+AWS_S3_FILES_BUCKET=your_bucket_name_here
+AWS_S3_REGION=us-east-2
+```
+
+#### File Upload Workflow
+
+1. User selects PDF file for upload
+2. System generates presigned URL for S3 upload
+3. File is uploaded directly to S3 with progress tracking
+4. Background job processes PDF metadata (page count, properties)
+5. File is validated for mail-specific requirements
+6. File becomes available for mail piece creation
+7. Daily cleanup job removes orphaned files
 
 ## Using Multer to upload files to your server
 

@@ -173,15 +173,38 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
       return;
     }
 
-    // Update mail piece to paid status
-    const updatedMailPiece = await context.entities.MailPiece.update({
-      where: { id: mailPieceId },
+    // Check if already processed to prevent duplicate processing
+    if (mailPiece.paymentStatus === 'paid' && mailPiece.status === 'paid') {
+      console.log(`ℹ️ Mail piece ${mailPieceId} already processed, skipping`);
+      return;
+    }
+
+    // Check if already submitted to Lob
+    if (mailPiece.lobId) {
+      console.log(`ℹ️ Mail piece ${mailPieceId} already submitted to Lob (ID: ${mailPiece.lobId}), skipping`);
+      return;
+    }
+
+    // Update mail piece to paid status using conditional update to prevent race conditions
+    const updateResult = await context.entities.MailPiece.updateMany({
+      where: { 
+        id: mailPieceId,
+        paymentStatus: 'pending', // Only update if still pending
+        status: 'pending_payment', // Only update if still pending
+        lobId: null // Only update if not already submitted to Lob
+      },
       data: {
         paymentStatus: 'paid',
         status: 'paid',
         paymentIntentId: session.id,
       },
     });
+
+    // Check if the update succeeded (count will be 0 if already processed)
+    if (updateResult.count === 0) {
+      console.log(`ℹ️ Mail piece ${mailPieceId} was already processed by another process, skipping`);
+      return;
+    }
 
     console.log('✅ Updated mail piece status:', {
       mailPieceId,

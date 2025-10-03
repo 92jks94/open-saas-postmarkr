@@ -15,6 +15,7 @@ interface FilePreviewCardProps {
 export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: FilePreviewCardProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   // Determine if file is an image
   const isImage = file.type.startsWith('image/');
@@ -36,6 +37,22 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
         });
     }
   }, [isImage, file.key, previewUrl]);
+
+  // Handle PDF preview
+  const handlePreviewPDF = async () => {
+    if (!isPDF) return;
+    setIsPreviewing(true);
+    try {
+      const url = await getDownloadFileSignedURL({ key: file.key });
+      if (url) {
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to preview PDF:', error);
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
 
   return (
     <Card className='p-4'>
@@ -75,18 +92,31 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
             </div>
           )}
           {isPDF && (
-            <div className='w-24 h-24 bg-red-50 rounded-lg overflow-hidden flex items-center justify-center border border-red-200'>
-              <svg
-                className='w-12 h-12 text-red-600'
-                fill='currentColor'
-                viewBox='0 0 20 20'
+            <div className='relative'>
+              <div 
+                onClick={handlePreviewPDF}
+                className='w-24 h-24 bg-red-50 rounded-lg overflow-hidden flex items-center justify-center border border-red-200 cursor-pointer hover:bg-red-100 transition-colors'
+                title='Click to preview PDF'
               >
-                <path
-                  fillRule='evenodd'
-                  d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z'
-                  clipRule='evenodd'
-                />
-              </svg>
+                {isPreviewing ? (
+                  <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-red-600'></div>
+                ) : (
+                  <svg
+                    className='w-12 h-12 text-red-600'
+                    fill='currentColor'
+                    viewBox='0 0 20 20'
+                  >
+                    <path
+                      fillRule='evenodd'
+                      d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z'
+                      clipRule='evenodd'
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className='absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded shadow-sm'>
+                Preview
+              </div>
             </div>
           )}
           {!isImage && !isPDF && (
@@ -165,6 +195,16 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
 
         {/* Actions */}
         <div className='flex gap-2 flex-shrink-0'>
+          {isPDF && (
+            <Button
+              onClick={handlePreviewPDF}
+              disabled={isPreviewing}
+              variant='default'
+              size='sm'
+            >
+              {isPreviewing ? 'Opening...' : 'Preview'}
+            </Button>
+          )}
           <Button
             onClick={onDownload}
             disabled={isDownloading}

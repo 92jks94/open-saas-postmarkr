@@ -4,6 +4,7 @@ import { emailSender } from 'wasp/server/email';
 import express from 'express';
 import crypto from 'crypto';
 import { requireNodeEnvVar } from '../utils';
+import { mapLobStatus } from '../../shared/statusMapping';
 
 // Webhook processing metrics
 interface WebhookMetrics {
@@ -185,21 +186,7 @@ export const lobWebhook = async (request: express.Request, response: express.Res
     }
 
     // Map Lob status to internal status
-    const statusMapping: Record<string, string> = {
-      'delivered': 'delivered',
-      'returned': 'returned',
-      'returned_to_sender': 'returned',
-      're-routed': 'in_transit',
-      'in_transit': 'in_transit',
-      'processing': 'submitted',
-      'printed': 'submitted',
-      'mailed': 'submitted',
-      'created': 'submitted',
-      'cancelled': 'failed',
-      'failed': 'failed',
-    };
-
-    const internalStatus = statusMapping[status] || status || 'unknown';
+    const internalStatus = mapLobStatus(status, 'unknown');
 
     // Update mail piece status in database
     await updateMailPieceStatus({

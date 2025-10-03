@@ -162,44 +162,29 @@ describe('Lob Webhook Tests', () => {
   describe('Status Mapping', () => {
     
     it('should map all Lob statuses to internal statuses', () => {
-      const statusMapping: Record<string, string> = {
-        'delivered': 'delivered',
-        'returned': 'returned',
-        'returned_to_sender': 'returned',
-        're-routed': 'in_transit',
-        'in_transit': 'in_transit',
-        'processing': 'submitted',
-        'printed': 'submitted',
-        'mailed': 'submitted',
-        'created': 'submitted',
-        'cancelled': 'failed',
-        'failed': 'failed',
-      };
+      const { LOB_STATUS_MAPPING } = require('../../shared/statusMapping');
 
       // Test each mapping
-      expect(statusMapping['delivered']).toBe('delivered');
-      expect(statusMapping['returned']).toBe('returned');
-      expect(statusMapping['returned_to_sender']).toBe('returned');
-      expect(statusMapping['re-routed']).toBe('in_transit');
-      expect(statusMapping['in_transit']).toBe('in_transit');
-      expect(statusMapping['processing']).toBe('submitted');
-      expect(statusMapping['printed']).toBe('submitted');
-      expect(statusMapping['mailed']).toBe('submitted');
-      expect(statusMapping['created']).toBe('submitted');
-      expect(statusMapping['cancelled']).toBe('failed');
-      expect(statusMapping['failed']).toBe('failed');
+      expect(LOB_STATUS_MAPPING['delivered']).toBe('delivered');
+      expect(LOB_STATUS_MAPPING['returned']).toBe('returned');
+      expect(LOB_STATUS_MAPPING['returned_to_sender']).toBe('returned');
+      expect(LOB_STATUS_MAPPING['re-routed']).toBe('in_transit');
+      expect(LOB_STATUS_MAPPING['in_transit']).toBe('in_transit');
+      expect(LOB_STATUS_MAPPING['processing']).toBe('submitted');
+      expect(LOB_STATUS_MAPPING['printed']).toBe('submitted');
+      expect(LOB_STATUS_MAPPING['mailed']).toBe('submitted');
+      expect(LOB_STATUS_MAPPING['created']).toBe('submitted');
+      expect(LOB_STATUS_MAPPING['cancelled']).toBe('failed');
+      expect(LOB_STATUS_MAPPING['failed']).toBe('failed');
     });
 
     it('should handle unknown status with fallback', () => {
-      const statusMapping: Record<string, string> = {
-        'delivered': 'delivered',
-        'returned': 'returned',
-      };
+      const { mapLobStatus } = require('../../shared/statusMapping');
 
       const unknownStatus = 'some_new_status';
-      const mappedStatus = statusMapping[unknownStatus] || unknownStatus || 'unknown';
+      const mappedStatus = mapLobStatus(unknownStatus, 'unknown');
 
-      expect(mappedStatus).toBe('some_new_status');
+      expect(mappedStatus).toBe('unknown');
     });
 
     it('should construct event type from object and status', () => {

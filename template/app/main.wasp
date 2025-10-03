@@ -96,10 +96,6 @@ page LoginPage {
   component: import Login from "@src/auth/LoginPage"
 }
 
-route LoginDebugRoute { path: "/login-debug", to: LoginDebugPage }
-page LoginDebugPage {
-  component: import LoginDebug from "@src/auth/LoginDebugPage"
-}
 
 route SignupRoute { path: "/signup", to: SignupPage }
 page SignupPage {
@@ -277,6 +273,28 @@ job submitPaidMailToLob {
     fn: import { submitPaidMailToLob } from "@src/mail/jobs"
   },
   entities: [MailPiece, MailAddress, File, MailPieceStatusHistory]
+}
+
+job verifyPaymentStatus {
+  executor: PgBoss,
+  perform: {
+    fn: import { verifyPaymentStatus } from "@src/mail/paymentVerificationJob"
+  },
+  entities: [MailPiece, MailPieceStatusHistory, User],
+  schedule: {
+    cron: "*/5 * * * *" // Run every 5 minutes
+  }
+}
+
+job monitorWebhookHealth {
+  executor: PgBoss,
+  perform: {
+    fn: import { monitorWebhookHealth } from "@src/mail/webhookMonitoringJob"
+  },
+  entities: [MailPiece, User],
+  schedule: {
+    cron: "0 * * * *" // Run every hour
+  }
 }
 //#endregion
 
@@ -458,7 +476,7 @@ action createMailCheckoutSession {
 }
 
 action confirmMailPayment {
-  fn: import { confirmMailPayment } from "@src/mail/operations",
+  fn: import { confirmMailPayment } from "@src/mail/paymentConfirmation",
   entities: [MailPiece, MailPieceStatusHistory]
 }
 

@@ -39,7 +39,10 @@ export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) =
   const corsOptions = {
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
       // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+      if (!origin) {
+        console.log('🔍 CORS: Allowing request with no origin');
+        return callback(null, true);
+      }
       
       // Get allowed origins from environment variables
       const clientUrl = process.env.WASP_WEB_CLIENT_URL;
@@ -62,12 +65,12 @@ export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) =
         allowedOrigins.push(serverUrl);
       }
       
-      // Log CORS check for debugging (only in development or for blocked requests)
-      if (process.env.NODE_ENV === 'development' || !allowedOrigins.includes(origin)) {
-        console.log(`🔍 CORS check: origin="${origin}", allowed=${allowedOrigins.includes(origin)}`);
-      }
+      // Always log CORS checks in production for debugging
+      console.log(`🔍 CORS check: origin="${origin}", allowed=${allowedOrigins.includes(origin)}`);
+      console.log(`🔍 Allowed origins: ${allowedOrigins.join(', ')}`);
       
       if (allowedOrigins.includes(origin)) {
+        console.log(`✅ CORS: Allowing origin: ${origin}`);
         callback(null, true);
       } else {
         console.warn(`❌ CORS blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
@@ -78,7 +81,7 @@ export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) =
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: [
       'Content-Type', 
-      'Authorization', 
+      'Authorization',
       'X-Requested-With',
       'Accept',
       'Origin',
