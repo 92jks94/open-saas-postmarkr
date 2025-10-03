@@ -29,11 +29,31 @@ export default function SentryTestPage() {
 
   const testServerError = async () => {
     try {
-      // This will trigger a server-side error through a Wasp operation
-      // You'll need to create a test operation that throws an error
-      alert('Server error test - check your operations for a test endpoint');
+      // Import the test operation
+      const { testSentryError } = await import('wasp/client/operations');
+      
+      // Call the test operation
+      const result = await testSentryError({});
+      
+      alert(`Server error test completed: ${result.message}`);
     } catch (error) {
       console.error('Server error test failed:', error);
+      alert('Server error test failed - check console for details');
+    }
+  };
+
+  const testServerMessage = async () => {
+    try {
+      // Import the test operation
+      const { testSentryMessage } = await import('wasp/client/operations');
+      
+      // Call the test operation
+      const result = await testSentryMessage({});
+      
+      alert(`Server message test completed: ${result.message}`);
+    } catch (error) {
+      console.error('Server message test failed:', error);
+      alert('Server message test failed - check console for details');
     }
   };
 
@@ -100,8 +120,15 @@ export default function SentryTestPage() {
                     Test Server Error
                   </button>
                   
+                  <button
+                    onClick={testServerMessage}
+                    className="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-medium py-2 px-4 rounded transition-colors"
+                  >
+                    Test Server Message
+                  </button>
+                  
                   <p className="text-sm text-purple-700">
-                    Create a test operation that throws an error to test server-side Sentry integration.
+                    Test server-side Sentry integration with error capture and message logging.
                   </p>
                 </div>
               </div>

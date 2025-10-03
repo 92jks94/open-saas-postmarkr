@@ -1,8 +1,8 @@
 #!/bin/bash
-# Development Deployment Script - Fast Server-Only Deployment with WSL2 Optimizations
-# Combines: deploy-simple.sh + deploy-wsl-fix.sh + scripts/deploy-quick.sh
+# Development Deployment Script - Proper Wasp Deployment
+# Uses Wasp's built-in deployment commands for reliable deployment
 
-set +e  # Don't exit on error - we'll handle retries
+set -e
 
 # Colors
 RED='\033[0;31m'
@@ -15,14 +15,12 @@ print_status() {
     echo -e "${1}${2}${NC}"
 }
 
-# Configuration
-SERVER_URL="https://postmarkr-server.fly.dev"
-SERVER_APP="postmarkr-server"
-MAX_RETRIES=3
-RETRY_DELAY=10
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-print_status $BLUE "🚀 Development Deployment - Server Only"
-print_status $BLUE "======================================="
+print_status $BLUE "🚀 Development Deployment - Wasp Full-Stack"
+print_status $BLUE "==========================================="
 echo ""
 
 # Check directory
@@ -31,110 +29,76 @@ if [ ! -f "main.wasp" ]; then
     exit 1
 fi
 
-# WSL2 Network Optimizations
-print_status $YELLOW "🔧 Applying WSL2 network optimizations..."
-if command -v sysctl >/dev/null 2>&1; then
-    sudo sysctl -w net.ipv4.tcp_keepalive_time=60 2>/dev/null || true
-    sudo sysctl -w net.ipv4.tcp_keepalive_intvl=10 2>/dev/null || true
-    sudo sysctl -w net.ipv4.tcp_keepalive_probes=6 2>/dev/null || true
-    print_status $GREEN "✅ WSL2 optimizations applied"
-else
-    print_status $YELLOW "⚠️  sysctl not available, skipping WSL2 optimizations"
+# Check prerequisites
+print_status $YELLOW "📋 Checking prerequisites..."
+if ! command_exists wasp; then
+    print_status $RED "❌ Wasp CLI not found. Please install Wasp first."
+    print_status $YELLOW "💡 Install: curl -sSL https://get.wasp-lang.dev/installer.sh | sh"
+    exit 1
 fi
 
-# Verify flyctl connectivity with retry
-print_status $BLUE "🌐 Testing Fly.io connectivity..."
-MAX_CONN_RETRIES=3
-for i in $(seq 1 $MAX_CONN_RETRIES); do
-    if flyctl auth whoami > /dev/null 2>&1; then
-        print_status $GREEN "✅ Connected to Fly.io"
-        break
-    else
-        if [ $i -eq $MAX_CONN_RETRIES ]; then
-            print_status $RED "❌ Cannot connect to Fly.io after $MAX_CONN_RETRIES attempts"
-            print_status $YELLOW "💡 Try: flyctl auth login"
-            exit 1
-        fi
-        print_status $YELLOW "⏳ Retry $i/$MAX_CONN_RETRIES..."
-        sleep 5
-    fi
-done
+if ! command_exists flyctl; then
+    print_status $RED "❌ Fly CLI not found. Please install Fly CLI first."
+    print_status $YELLOW "💡 Install: https://fly.io/docs/hands-on/install-flyctl/"
+    exit 1
+fi
 
-# Build
-print_status $BLUE "📦 Building Wasp application..."
-wasp build
+print_status $GREEN "✅ All prerequisites found"
 
-# Navigate to build directory
-cd .wasp/build
-
-# Set longer timeouts for WSL2
-export FLY_API_READ_TIMEOUT=600
-export FLY_API_CONNECT_TIMEOUT=120
-
-# Retry loop for deployment
-print_status $BLUE "🚀 Deploying server with retry logic..."
-for ((i=1; i<=MAX_RETRIES; i++)); do
-    print_status $BLUE "🚀 Deployment attempt $i/$MAX_RETRIES..."
+# Check if apps are already configured
+print_status $YELLOW "📋 Checking existing Fly.io apps..."
+if flyctl apps list 2>/dev/null | grep -q "postmarkr"; then
+    print_status $GREEN "✅ Found existing Postmarkr apps"
     
-    # Use --detach to avoid WSL2 connection timeouts
-    if flyctl deploy \
-      --config ../../fly-server.toml \
-      --app ${SERVER_APP} \
-      --detach \
-      --verbose; then
-        print_status $GREEN "✅ Deployment completed successfully!"
-        break
+    # Check if we have the proper configuration files
+    if [ -f "fly-server.toml" ] && [ -f "fly-client.toml" ]; then
+        print_status $GREEN "✅ Found Wasp-generated Fly.io configuration files"
+        print_status $BLUE "🚀 Deploying using existing configuration..."
+        
+        # Use Wasp's deploy command
+        wasp deploy fly deploy
+        
+        print_status $GREEN "✅ Deployment completed!"
+        echo ""
+        print_status $BLUE "🌐 Your app should be available at:"
+        print_status $YELLOW "   Check Fly.io dashboard for URLs"
+        print_status $BLUE "   Or run: flyctl apps list"
+        echo ""
+        print_status $YELLOW "📊 Monitor deployment:"
+        print_status $BLUE "   Server logs: flyctl logs --app postmarkr-server"
+        print_status $BLUE "   Client logs: flyctl logs --app postmarkr-client"
+        print_status $BLUE "   Status: flyctl status --app postmarkr-server"
+        
     else
-        if [ $i -lt $MAX_RETRIES ]; then
-            print_status $YELLOW "⚠️  Attempt $i failed, retrying in $RETRY_DELAY seconds..."
-            sleep $RETRY_DELAY
-            RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
-        else
-            print_status $RED "❌ Deployment failed after $MAX_RETRIES attempts"
-            print_status $BLUE "💡 Network issues detected. Wait a few minutes and try again."
-            exit 1
-        fi
+        print_status $YELLOW "⚠️  Apps exist but missing configuration files"
+        print_status $YELLOW "💡 This suggests the apps were created manually"
+        print_status $YELLOW "💡 Consider using: wasp deploy fly launch postmarkr ord"
+        exit 1
     fi
-done
-
-# Wait a bit for deployment to process
-print_status $YELLOW "⏳ Waiting 15 seconds for deployment to stabilize..."
-sleep 15
-
-# Check status with retry
-print_status $BLUE "📊 Checking deployment status..."
-for i in {1..3}; do
-    if flyctl status --app ${SERVER_APP} 2>/dev/null; then
-        break
-    else
-        print_status $YELLOW "⏳ Waiting for status... (attempt $i/3)"
-        sleep 10
-    fi
-done
-
-# Quick health check
-print_status $BLUE "🏥 Running quick health check..."
-for i in {1..3}; do
-    if curl -f -s ${SERVER_URL}/health/simple > /dev/null; then
-        print_status $GREEN "✅ Server is responding"
-        break
-    else
-        if [ $i -eq 3 ]; then
-            print_status $YELLOW "⚠️  Server may still be starting up"
-        else
-            print_status $YELLOW "⏳ Health check attempt $i/3..."
-            sleep 5
-        fi
-    fi
-done
+else
+    print_status $YELLOW "📋 No existing Postmarkr apps found"
+    print_status $BLUE "🚀 Setting up new deployment..."
+    echo ""
+    print_status $YELLOW "This will create new Fly.io apps. Choose a region:"
+    print_status $BLUE "   ord (Chicago) - Recommended for US"
+    print_status $BLUE "   mia (Miami) - Good for US East"
+    print_status $BLUE "   ams (Amsterdam) - Good for Europe"
+    echo ""
+    read -p "Enter region (default: ord): " REGION
+    REGION=${REGION:-ord}
+    
+    print_status $BLUE "🚀 Launching Wasp app with region: $REGION"
+    print_status $YELLOW "This may take several minutes..."
+    
+    wasp deploy fly launch postmarkr $REGION
+    
+    print_status $GREEN "✅ Initial deployment completed!"
+    echo ""
+    print_status $BLUE "🌐 Your app should now be available"
+    print_status $YELLOW "📊 Check status with: flyctl status --app postmarkr-server"
+fi
 
 print_status $GREEN "🎉 Development deployment completed!"
 print_status $BLUE "====================================="
 echo ""
-print_status $BLUE "🌐 Server URL: ${SERVER_URL}"
-print_status $YELLOW "📊 Monitor deployment:"
-print_status $BLUE "   Logs: flyctl logs --app ${SERVER_APP}"
-print_status $BLUE "   Status: flyctl status --app ${SERVER_APP}"
-print_status $BLUE "   Health: curl -f ${SERVER_URL}/health/simple"
-echo ""
-print_status $YELLOW "💡 For full-stack deployment, use: ./deploy-production.sh"
+print_status $YELLOW "💡 For production deployment, use: ./deploy-production.sh"

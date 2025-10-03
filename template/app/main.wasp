@@ -170,6 +170,17 @@ action updateTask {
   entities: [Task]
 }
 
+// Sentry test operations
+action testSentryError {
+  fn: import { testSentryError } from "@src/server/sentry-test-operation",
+  entities: [User]
+}
+
+action testSentryMessage {
+  fn: import { testSentryMessage } from "@src/server/sentry-test-operation",
+  entities: [User]
+}
+
 query getGptResponses {
   fn: import { getGptResponses } from "@src/demo-ai-app/operations",
   entities: [User, GptResponse]
