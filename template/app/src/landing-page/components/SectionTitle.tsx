@@ -1,14 +1,16 @@
 export default function SectionTitle({
   title,
   description,
+  id,
 }: {
   title: string | React.ReactNode;
   description?: string | React.ReactNode;
   titleComponent?: React.ReactNode;
+  id?: string;
 }) {
   const titleElement =
     typeof title === 'string' ? (
-      <h3 className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>{title}</h3>
+      <h2 id={id} className='mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl'>{title}</h2>
     ) : (
       title
     );

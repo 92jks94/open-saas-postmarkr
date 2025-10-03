@@ -1,0 +1,36 @@
+# Cache static assets for 1 year
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache images for 1 month
+/images/*
+  Cache-Control: public, max-age=2592000
+
+# Cache fonts for 1 year
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache CSS and JS for 1 week
+/*.css
+  Cache-Control: public, max-age=604800
+
+/*.js
+  Cache-Control: public, max-age=604800
+
+# Cache HTML pages for 1 hour
+/*.html
+  Cache-Control: public, max-age=3600
+
+# Cache root and blog pages for 30 minutes
+/
+  Cache-Control: public, max-age=1800
+
+/blog/*
+  Cache-Control: public, max-age=1800
+
+# Security headers
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

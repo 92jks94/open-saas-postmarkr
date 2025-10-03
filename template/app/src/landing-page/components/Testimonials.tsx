@@ -18,7 +18,7 @@ export default function Testimonials({ testimonials }: { testimonials: Testimoni
 
   return (
     <div className='mx-auto mt-32 max-w-7xl sm:mt-56 sm:px-6 lg:px-8'>
-      <SectionTitle title='What Our Users Say' />
+      <SectionTitle id="testimonials-heading" title='What Our Users Say' />
 
       <div className='relative w-full z-10 px-4 md:px-0 columns-1 md:columns-2 lg:columns-3 gap-2 md:gap-6'>
         {testimonials.slice(0, itemsToShow).map((testimonial, idx) => (

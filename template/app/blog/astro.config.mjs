@@ -1,48 +1,84 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightBlog from 'starlight-blog';
-
 import tailwind from '@astrojs/tailwind';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://blog.postmarkr.com',
   trailingSlash: 'always',
+  // Performance optimizations
+  compress: true,
+  build: {
+    inlineStylesheets: 'auto',
+    assets: '_astro',
+  },
+  image: {
+    service: {
+      entrypoint: 'astro/assets/services/sharp',
+      config: {
+        limitInputPixels: false,
+      },
+    },
+  },
+  vite: {
+    build: {
+      cssCodeSplit: false,
+      rollupOptions: {
+        output: {
+          manualChunks: undefined,
+        },
+      },
+    },
+  },
   redirects: {
-    // Redirect .md URLs to clean URLs
-    '/blog/2025-11-19-secure-mail-without-po-box.md/': '/blog/2025-11-19-secure-mail-without-po-box/',
-    '/blog/2025-10-14-digital-mail-vs-virtual-mailbox.md/': '/blog/2025-10-14-digital-mail-vs-virtual-mailbox/',
-    '/blog/2025-09-03-digital-mailbox-home-business.md/': '/blog/2025-09-03-digital-mailbox-home-business/',
-    '/blog/2025-08-09-digital-mailroom.md/': '/blog/2025-08-09-digital-mailroom/',
-    '/blog/2025-07-30-professional-business-address.md/': '/blog/2025-07-30-professional-business-address/',
-    '/blog/2025-07-21-bypass-the-post-office.md/': '/blog/2025-07-21-bypass-the-post-office/',
-    '/blog/2025-06-12-mail-without-printer.md/': '/blog/2025-06-12-mail-without-printer/',
-    '/blog/2025-06-07-certified-mail-made-easy.md/': '/blog/2025-06-07-certified-mail-made-easy/',
-    '/blog/2025-05-07-send-mail-without-home-address.md/': '/blog/2025-05-07-send-mail-without-home-address/',
-    '/blog/2025-04-18-virtual-mailbox-vs-po-box.md/': '/blog/2025-04-18-virtual-mailbox-vs-po-box/',
-    '/blog/2025-03-18-hidden-costs-of-diy-mailing.md/': '/blog/2025-03-18-hidden-costs-of-diy-mailing/',
-    '/blog/2025-02-11-forward-business-mail.md/': '/blog/2025-02-11-forward-business-mail/',
-    '/blog/2025-01-24-future-of-business-mail.md/': '/blog/2025-01-24-future-of-business-mail/',
-    '/blog/2024-02-05-delivery-tracking-guide.md/': '/blog/2024-02-05-delivery-tracking-guide/',
-    '/blog/2024-01-29-address-management-best-practices.md/': '/blog/2024-01-29-address-management-best-practices/',
-    '/blog/2024-01-22-mail-service-types-guide.md/': '/blog/2024-01-22-mail-service-types-guide/',
-    '/blog/2024-01-15-future-of-business-mail.md/': '/blog/2024-01-15-future-of-business-mail/',
+    // Redirect .md URLs to clean URLs (301 permanent redirects for better performance)
+    '/blog/2025-11-19-secure-mail-without-po-box.md/': { status: 301, destination: '/blog/2025-11-19-secure-mail-without-po-box/' },
+    '/blog/2025-10-14-digital-mail-vs-virtual-mailbox.md/': { status: 301, destination: '/blog/2025-10-14-digital-mail-vs-virtual-mailbox/' },
+    '/blog/2025-09-03-digital-mailbox-home-business.md/': { status: 301, destination: '/blog/2025-09-03-digital-mailbox-home-business/' },
+    '/blog/2025-08-09-digital-mailroom.md/': { status: 301, destination: '/blog/2025-08-09-digital-mailroom/' },
+    '/blog/2025-07-30-professional-business-address.md/': { status: 301, destination: '/blog/2025-07-30-professional-business-address/' },
+    '/blog/2025-07-21-bypass-the-post-office.md/': { status: 301, destination: '/blog/2025-07-21-bypass-the-post-office/' },
+    '/blog/2025-06-12-mail-without-printer.md/': { status: 301, destination: '/blog/2025-06-12-mail-without-printer/' },
+    '/blog/2025-06-07-certified-mail-made-easy.md/': { status: 301, destination: '/blog/2025-06-07-certified-mail-made-easy/' },
+    '/blog/2025-05-07-send-mail-without-home-address.md/': { status: 301, destination: '/blog/2025-05-07-send-mail-without-home-address/' },
+    '/blog/2025-04-18-virtual-mailbox-vs-po-box.md/': { status: 301, destination: '/blog/2025-04-18-virtual-mailbox-vs-po-box/' },
+    '/blog/2025-03-18-hidden-costs-of-diy-mailing.md/': { status: 301, destination: '/blog/2025-03-18-hidden-costs-of-diy-mailing/' },
+    '/blog/2025-02-11-forward-business-mail.md/': { status: 301, destination: '/blog/2025-02-11-forward-business-mail/' },
+    '/blog/2025-01-24-future-of-business-mail.md/': { status: 301, destination: '/blog/2025-01-24-future-of-business-mail/' },
+    '/blog/2024-02-05-delivery-tracking-guide.md/': { status: 301, destination: '/blog/2024-02-05-delivery-tracking-guide/' },
+    '/blog/2024-01-29-address-management-best-practices.md/': { status: 301, destination: '/blog/2024-01-29-address-management-best-practices/' },
+    '/blog/2024-01-22-mail-service-types-guide.md/': { status: 301, destination: '/blog/2024-01-22-mail-service-types-guide/' },
+    '/blog/2024-01-15-future-of-business-mail.md/': { status: 301, destination: '/blog/2024-01-15-future-of-business-mail/' },
   },
   integrations: [
+    sitemap({
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+    }),
     starlight({
       title: 'Postmarkr Blog',
       customCss: ['./src/styles/tailwind.css'],
-      description: 'Professional mail service insights, tips, and industry updates from Postmarkr.',
+      description: 'Expert guides on virtual mailboxes, certified mail, digital mail services, and remote business mail solutions. Tips and best practices from Postmarkr mail service professionals.',
       logo: {
         src: '/src/assets/logo.webp',
         alt: 'Postmarkr',
       },
+      defaultLocale: 'root',
+      locales: {
+        root: {
+          label: 'English',
+          lang: 'en',
+        },
+      },
       head: [
-        // Google Analytics - uses same environment variable as main website
+        // Google Analytics - uses environment variable
         {
           tag: 'script',
           attrs: {
-            src: 'https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX',
+            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.PUBLIC_GA_ID || 'G-XXXXXXXXXX'}`,
           },
         },
         {
@@ -52,7 +88,7 @@ export default defineConfig({
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
         
-          gtag('config', 'G-XXXXXXXXXX');
+          gtag('config', '${process.env.PUBLIC_GA_ID || 'G-XXXXXXXXXX'}');
           `,
         },
       ],

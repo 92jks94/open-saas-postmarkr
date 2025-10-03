@@ -1,6 +1,6 @@
 import { HttpError } from 'wasp/server';
 import { stripe } from '../payment/stripe/stripeClient';
-import { submitPaidMailToLob } from './jobs';
+import { submitPaidMailToLob } from 'wasp/server/jobs';
 
 /**
  * Background job to verify payment status for stuck mail pieces

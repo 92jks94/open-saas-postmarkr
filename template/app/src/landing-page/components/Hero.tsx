@@ -11,10 +11,13 @@ export default function Hero() {
       <div className='md:p-24'>
         <div className='mx-auto max-w-8xl px-6 lg:px-8'>
           <div className='lg:mb-18 mx-auto max-w-3xl text-center'>
-            <h1 className='text-5xl font-bold text-foreground sm:text-6xl'>
-              Transform <span className='italic'>digital</span> documents into{' '}
-              <span className='text-gradient-primary'>professional mail</span>
+            <h1 id="hero-heading" className='text-5xl font-bold text-foreground sm:text-6xl'>
+              <span className="block">Send mail from <span className='text-gradient-primary'>anywhere</span>.</span>{' '}
+              <span className='block italic mt-2'>No post office trips.</span>
             </h1>
+            <p className='mt-4 text-sm font-medium text-primary'>
+              Trusted by 1,000+ remote workers and professionals
+            </p>
             <p className='mt-6 mx-auto max-w-2xl text-lg leading-8 text-muted-foreground'>
               Perfect for remote workers and home offices. Send important documents, contracts, and packages with tracking and delivery confirmation. No more trips to the post office.
             </p>

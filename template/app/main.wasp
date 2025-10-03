@@ -8,9 +8,11 @@ app OpenSaaS {
   head: [
     "<link rel='icon' href='/favicon.ico' />",
     "<meta charset='utf-8' />",
+    "<meta name='viewport' content='width=device-width, initial-scale=1.0' />",
     "<meta name='description' content='Postmarkr - Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
     "<meta name='author' content='Postmarkr' />",
     "<meta name='keywords' content='mail service, remote work, startup, small business, document delivery, business mail, package tracking, certified mail, business documents, contract delivery, startup mail, remote worker, business correspondence, mail tracking, document management' />",
+    "<link rel='canonical' href='https://postmarkr.com' />",
     
     "<meta property='og:type' content='website' />",
     "<meta property='og:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",

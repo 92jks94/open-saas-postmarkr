@@ -102,7 +102,7 @@ const WorkflowSteps = ({ steps }: { steps: WorkflowStep[] }) => {
       id="how-it-works"
       className='relative w-screen left-1/2 -translate-x-1/2 flex flex-col items-center my-16'
     >
-      <h2 className='mb-6 text-center font-semibold tracking-wide text-muted-foreground'>How It Works</h2>
+      <h2 id="workflow-heading" className='mb-6 text-center font-semibold tracking-wide text-muted-foreground'>How It Works</h2>
       <div className='w-full max-w-full overflow-hidden'>
         <div
           className='flex overflow-x-auto no-scrollbar scroll-smooth pb-10 pt-4 gap-4 px-4 snap-x snap-mandatory'

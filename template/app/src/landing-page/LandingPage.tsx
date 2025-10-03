@@ -26,17 +26,19 @@ export default function LandingPage() {
   return (
     <div className='bg-background text-foreground'>
       <main className='isolate'>
-        <div id="hero">
+        <section id="hero" aria-labelledby="hero-heading">
           <Hero />
-        </div>
-        <WorkflowSteps steps={workflowSteps} />
-        <div id="features">
+        </section>
+        <section id="workflow" aria-labelledby="workflow-heading">
+          <WorkflowSteps steps={workflowSteps} />
+        </section>
+        <section id="features" aria-labelledby="features-heading">
           <FeaturesGrid features={features} />
-        </div>
-        <div id="pricing" className="py-16">
+        </section>
+        <section id="pricing" aria-labelledby="pricing-heading" className="py-16">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-4xl text-center">
-              <h2 className="mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <h2 id="pricing-heading" className="mt-2 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
                 Simple <span className="text-primary">pricing</span>
               </h2>
               <p className="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-muted-foreground">
@@ -52,8 +54,13 @@ export default function LandingPage() {
                       <span className="text-muted-foreground">1-5 pages</span>
                       <span className="font-semibold">$0.50 per page</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">6-20 pages</span>
+                    <div className="flex justify-between items-center relative">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">6-20 pages</span>
+                        <span className="bg-primary text-primary-foreground text-xs font-medium px-2 py-1 rounded-full">
+                          Most Popular
+                        </span>
+                      </div>
                       <span className="font-semibold">$0.375 per page</span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -61,20 +68,31 @@ export default function LandingPage() {
                       <span className="font-semibold">$0.25 per page</span>
                     </div>
                   </div>
-                  <p className="mt-6 text-sm text-muted-foreground">
-                    Plus postage costs. All mail includes tracking and delivery confirmation.
+                  <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                    <div className="text-sm text-muted-foreground">
+                      <div className="flex justify-between items-center mb-1">
+                        <span>Plus postage:</span>
+                        <span className="font-medium">~$0.60 per mail</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground/80">
+                        Example: 5 pages = $2.50 + $0.60 postage = $3.10 total
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    All mail includes tracking and delivery confirmation.
                   </p>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div id="testimonials">
+        </section>
+        <section id="testimonials" aria-labelledby="testimonials-heading">
           <Testimonials testimonials={testimonials} />
-        </div>
-        <div id="faq">
+        </section>
+        <section id="faq" aria-labelledby="faq-heading">
           <FAQ faqs={faqs} />
-        </div>
+        </section>
       </main>
       <Footer footerNavigation={footerNavigation} />
     </div>

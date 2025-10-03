@@ -1,6 +1,7 @@
 import { HttpError } from 'wasp/server';
+import type { ConfirmMailPayment } from 'wasp/server/operations';
 import { stripe } from '../payment/stripe/stripeClient';
-import { submitPaidMailToLob } from './jobs';
+import { submitPaidMailToLob } from 'wasp/server/jobs';
 
 /**
  * Client-side payment confirmation operation

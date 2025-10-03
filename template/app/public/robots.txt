@@ -1,0 +1,24 @@
+# Postmarkr - Robots.txt
+# Main application robots configuration
+
+User-agent: *
+Allow: /
+Allow: /pricing
+
+# Disallow authenticated user areas
+Disallow: /mail/*
+Disallow: /account/*
+Disallow: /admin/*
+Disallow: /api/*
+Disallow: /login
+Disallow: /signup
+Disallow: /email-verification
+Disallow: /password-reset
+Disallow: /request-password-reset
+
+# Sitemap location
+Sitemap: https://postmarkr.com/sitemap.xml
+
+# Crawl delay to be respectful of server resources
+Crawl-delay: 1
+
