@@ -13,7 +13,7 @@ export const createUser = (overrides: Partial<User> = {}): User => ({
   email: faker.internet.email(),
   username: faker.internet.userName(),
   isAdmin: false,
-  hasBetaAccess: true,
+  hasBetaAccess: false, // Deprecated field - kept for schema compatibility
   hasFullAccess: false,
   paymentProcessorUserId: null,
   subscriptionStatus: null,
@@ -38,13 +38,10 @@ export const createAuthUser = (overrides: any = {}) => ({
 });
 
 export const createAdminUser = (overrides: Partial<User> = {}): User => 
-  createUser({ isAdmin: true, hasBetaAccess: true, ...overrides });
-
-export const createBetaUser = (overrides: Partial<User> = {}): User => 
-  createUser({ hasBetaAccess: true, ...overrides });
+  createUser({ isAdmin: true, ...overrides });
 
 export const createFullAccessUser = (overrides: Partial<User> = {}): User => 
-  createUser({ hasFullAccess: true, hasBetaAccess: true, ...overrides });
+  createUser({ hasFullAccess: true, ...overrides });
 
 // MailAddress Factory
 export const createMailAddress = (userId: string, overrides: Partial<MailAddress> = {}): MailAddress => ({

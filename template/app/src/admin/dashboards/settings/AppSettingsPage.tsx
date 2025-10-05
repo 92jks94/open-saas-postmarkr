@@ -65,8 +65,6 @@ export default function AppSettingsPage({ user }: { user: AuthUser }) {
 
   const getSettingIcon = (key: string) => {
     switch (key) {
-      case 'beta_access_code':
-        return '🔐';
       case 'maintenance_mode':
         return '🔧';
       case 'max_file_size_mb':
@@ -216,7 +214,6 @@ export default function AppSettingsPage({ user }: { user: AuthUser }) {
               <CardTitle>💡 Tips</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
-              <p>• <strong>Beta Access Code:</strong> Users need this code to sign up for the application</p>
               <p>• <strong>Maintenance Mode:</strong> Set to "true" to enable maintenance mode (disable user access)</p>
               <p>• <strong>Max File Size:</strong> Maximum file upload size in megabytes</p>
               <p>• Changes take effect immediately after saving</p>

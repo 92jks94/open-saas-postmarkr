@@ -423,9 +423,27 @@ page SentryTestPage {
   component: import SentryTestPage from "@src/client/SentryTestPage"
 }
 
+// Serve sitemap.xml as static content
+api sitemap {
+  fn: import { serveSitemap } from "@src/server/sitemap",
+  httpRoute: (GET, "/sitemap.xml"),
+  auth: false
+}
+
 route NotFoundRoute { path: "*", to: NotFoundPage }
 page NotFoundPage {
   component: import NotFoundPage from "@src/client/components/NotFoundPage"
+}
+
+//#region Legal Pages
+route PrivacyPolicyRoute { path: "/privacy", to: PrivacyPolicyPage }
+page PrivacyPolicyPage {
+  component: import PrivacyPolicyPage from "@src/legal/PrivacyPolicyPage"
+}
+
+route TermsOfServiceRoute { path: "/terms", to: TermsOfServicePage }
+page TermsOfServicePage {
+  component: import TermsOfServicePage from "@src/legal/TermsOfServicePage"
 }
 //#endregion
 
@@ -571,27 +589,6 @@ page AdminMessagesPage {
 }
 //#endregion
 
-//#region Beta Access Management
-route UpgradeAccessRoute { path: "/upgrade", to: UpgradeAccessPage }
-page UpgradeAccessPage {
-  authRequired: true,
-  component: import UpgradeAccessPage from "@src/beta/UpgradeAccessPage"
-}
-
-action grantBetaAccess {
-  fn: import { grantBetaAccess } from "@src/beta/operations",
-  entities: [User]
-}
-
-action grantFullAccess {
-  fn: import { grantFullAccess } from "@src/beta/operations",
-  entities: [User]
-}
-
-query checkUserAccess {
-  fn: import { checkUserAccess } from "@src/beta/operations",
-  entities: [User]
-}
 
 query getAppSettings {
   fn: import { getAppSettings } from "@src/admin/operations",

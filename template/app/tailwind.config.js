@@ -273,6 +273,30 @@ export default {
             transform: 'rotate(0deg)',
           },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        'fade-in-up': {
+          '0%': {
+            opacity: '0',
+            transform: 'translateY(30px)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateY(0)',
+          },
+        },
+        'scale-in': {
+          '0%': {
+            opacity: '0',
+            transform: 'scale(0.9)',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'scale(1)',
+          },
+        },
       },
       animation: {
         'ping-once': 'ping 5s cubic-bezier(0, 0, 0.2, 1)',
@@ -280,6 +304,34 @@ export default {
         'spin-1.5': 'spin 1.5s linear infinite',
         'spin-2': 'spin 2s linear infinite',
         'spin-3': 'spin 3s linear infinite',
+        float: 'float 6s ease-in-out infinite',
+        'fade-in-up': 'fade-in-up 0.6s ease-out',
+        'scale-in': 'scale-in 0.5s ease-out',
+      },
+      backgroundImage: {
+        'gradient-primary': 'var(--gradient-primary)',
+        'gradient-accent': 'var(--gradient-accent)',
+        'gradient-subtle': 'var(--gradient-subtle)',
+      },
+      boxShadow: {
+        ...{
+          1: '0px 1px 3px rgba(0, 0, 0, 0.08)',
+          2: '0px 1px 4px rgba(0, 0, 0, 0.12)',
+          3: '0px 1px 5px rgba(0, 0, 0, 0.14)',
+          4: '0px 4px 10px rgba(0, 0, 0, 0.12)',
+          5: '0px 1px 1px rgba(0, 0, 0, 0.15)',
+          6: '0px 3px 15px rgba(0, 0, 0, 0.1)',
+          7: '-5px 0 0 #313D4A, 5px 0 0 #313D4A',
+          8: '1px 0 0 #313D4A, -1px 0 0 #313D4A, 0 1px 0 #313D4A, 0 -1px 0 #313D4A, 0 3px 13px rgb(0 0 0 / 8%)',
+          default: '0px 8px 13px -3px rgba(0, 0, 0, 0.07)',
+          card: '0px 1px 3px rgba(0, 0, 0, 0.12)',
+          'card-2': '0px 1px 2px rgba(0, 0, 0, 0.05)',
+          switcher:
+            '0px 2px 4px rgba(0, 0, 0, 0.2), inset 0px 2px 2px #FFFFFF, inset 0px -1px 1px rgba(0, 0, 0, 0.1)',
+          'switch-1': '0px 0px 5px rgba(0, 0, 0, 0.15)',
+        },
+        glass: 'var(--shadow-md)',
+        glow: 'var(--shadow-glow)',
       },
       borderRadius: {
         lg: 'var(--radius)',

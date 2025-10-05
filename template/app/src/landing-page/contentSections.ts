@@ -4,7 +4,14 @@ import payments from '../client/static/assets/payments.webp';
 import email from '../client/static/assets/email.webp';
 import admin from '../client/static/assets/admin.webp';
 import { BlogUrl, DocsUrl } from '../shared/common';
-import type { GridFeature } from './components/FeaturesGrid';
+
+export type GridFeature = {
+  name: string;
+  description: string;
+  emoji: string;
+  size: 'small' | 'medium' | 'large';
+  href: string | undefined;
+};
 
 export const features: GridFeature[] = [
   {
@@ -157,8 +164,8 @@ export const footerNavigation = {
   company: [
     { name: 'About Postmarkr', href: '#' },
     { name: 'Blog', href: BlogUrl },
-    { name: 'Privacy Policy', href: '#' },
-    { name: 'Terms of Service', href: '#' },
+    { name: 'Privacy Policy', href: '/privacy' },
+    { name: 'Terms of Service', href: '/terms' },
   ],
 };
 

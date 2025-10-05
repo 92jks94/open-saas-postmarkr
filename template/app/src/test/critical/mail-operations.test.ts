@@ -158,25 +158,6 @@ describe('Mail Operations - Critical Tests', () => {
       ).rejects.toThrow(HttpError);
     });
 
-    it('should validate beta access requirement', async () => {
-      // Arrange
-      const nonBetaUser = createUser({ hasBetaAccess: false });
-      const nonBetaContext = createMockWaspContext(nonBetaUser);
-      
-      const mailData = {
-        mailType: 'letter',
-        mailClass: 'first_class',
-        mailSize: '6x9',
-        senderAddressId: testSenderAddress.id,
-        recipientAddressId: testRecipientAddress.id,
-        description: 'Test mail piece',
-      };
-
-      // Act & Assert
-      await expect(
-        createMailPiece(mailData, nonBetaContext)
-      ).rejects.toThrow(HttpError);
-    });
 
     it('should validate page count for pricing', async () => {
       // Arrange

@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { defineUserSignupFields } from 'wasp/auth/providers/types';
 
 const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
-const BETA_ACCESS_CODE = '312'; // Beta access code
 
 // Check if we're in development mode
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
@@ -28,11 +27,6 @@ export const getEmailUserFields = defineUserSignupFields({
   isAdmin: (data) => {
     const emailData = emailDataSchema.parse(data);
     return adminEmails.includes(emailData.email);
-  },
-  hasBetaAccess: (data) => {
-    const emailData = emailDataSchema.parse(data);
-    // Grant beta access to admin emails, or to all users during beta phase
-    return adminEmails.includes(emailData.email) || true;
   },
   hasFullAccess: () => false, // No one gets full access initially
 });
@@ -60,14 +54,6 @@ export const getGoogleUserFields = defineUserSignupFields({
       return false;
     }
     return adminEmails.includes(googleData.profile.email);
-  },
-  hasBetaAccess: (data) => {
-    const googleData = googleDataSchema.parse(data);
-    if (!googleData.profile.email_verified) {
-      return false;
-    }
-    // Google users get beta access by default since they're verified
-    return true;
   },
   hasFullAccess: () => false, // No one gets full access initially
 });

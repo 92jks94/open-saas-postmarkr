@@ -1,68 +1,87 @@
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardTitle } from '../../components/ui/card';
-import SectionTitle from './SectionTitle';
+import { Star } from 'lucide-react';
+import { Card } from '../../components/ui/card';
 
-interface Testimonial {
-  name: string;
-  role: string;
-  avatarSrc: string;
-  socialUrl: string;
-  quote: string;
-}
+const testimonials = [
+  {
+    quote:
+      'Postmarkr has completely transformed how I handle client contracts. I can send documents from my home office in Barcelona to clients anywhere in the US. Game changer!',
+    author: 'Sarah Chen',
+    role: 'Freelance Consultant',
+    rating: 5,
+  },
+  {
+    quote:
+      'As a digital nomad, I was always struggling with sending physical documents. Postmarkr solved this perfectly. Now I can send certified mail from a beach in Bali!',
+    author: 'Marcus Rivera',
+    role: 'Remote Software Developer',
+    rating: 5,
+  },
+  {
+    quote:
+      'The tracking feature gives me peace of mind. I always know exactly where my important documents are and when they will arrive. The interface is incredibly intuitive.',
+    author: 'Emily Thompson',
+    role: 'Real Estate Agent',
+    rating: 5,
+  },
+  {
+    quote:
+      'I save hours every week not having to go to the post office. The address validation catches errors before sending, which has saved me from costly mistakes.',
+    author: 'David Park',
+    role: 'Small Business Owner',
+    rating: 5,
+  },
+];
 
-export default function Testimonials({ testimonials }: { testimonials: Testimonial[] }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const shouldShowExpand = testimonials.length > 5;
-  const mobileItemsToShow = 3;
-  const itemsToShow = shouldShowExpand && !isExpanded ? mobileItemsToShow : testimonials.length;
-
+export default function Testimonials() {
   return (
-    <div className='mx-auto mt-32 max-w-7xl sm:mt-56 sm:px-6 lg:px-8'>
-      <SectionTitle id="testimonials-heading" title='What Our Users Say' />
+    <section className='py-24 relative overflow-hidden'>
+      {/* Background gradient */}
+      <div className='absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background -z-10' />
 
-      <div className='relative w-full z-10 px-4 md:px-0 columns-1 md:columns-2 lg:columns-3 gap-2 md:gap-6'>
-        {testimonials.slice(0, itemsToShow).map((testimonial, idx) => (
-          <div key={idx} className='break-inside-avoid mb-6'>
-            <Card className='flex flex-col justify-between'>
-              <CardContent className='p-6'>
-                <blockquote className='leading-6 mb-4'>
-                  <p className='italic text-sm'>{testimonial.quote}</p>
-                </blockquote>
-              </CardContent>
-              <CardFooter className='pt-0 flex flex-col'>
-                <a
-                  href={testimonial.socialUrl}
-                  className='flex items-center gap-x-3 group transition-all duration-200 hover:opacity-80 w-full'
-                >
-                  <img
-                    src={testimonial.avatarSrc}
-                    loading='lazy'
-                    alt={`${testimonial.name}'s avatar`}
-                    className='h-10 w-10 rounded-full ring-2 ring-border/20 group-hover:ring-primary/30 transition-all duration-200 flex-shrink-0'
-                  />
-                  <div className='min-w-0 flex-1'>
-                    <CardTitle className='text-sm font-semibold group-hover:text-card-foreground transition-colors duration-200 truncate'>
-                      {testimonial.name}
-                    </CardTitle>
-                    <CardDescription className='text-xs truncate'>{testimonial.role}</CardDescription>
-                  </div>
-                </a>
-              </CardFooter>
-            </Card>
-          </div>
-        ))}
-      </div>
-
-      {shouldShowExpand && (
-        <div className='flex justify-center mt-8 md:hidden'>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className='px-6 py-3 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors duration-200'
-          >
-            {isExpanded ? 'Show Less' : `Show ${testimonials.length - mobileItemsToShow} More`}
-          </button>
+      <div className='container mx-auto px-4'>
+        <div className='text-center mb-16 animate-fade-in-up'>
+          <h2 id='testimonials-heading' className='text-4xl md:text-5xl font-bold mb-4'>
+            Loved by <span className='bg-gradient-accent bg-clip-text text-transparent'>thousands</span> worldwide
+          </h2>
+          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+            See what our customers have to say about Postmarkr
+          </p>
         </div>
-      )}
-    </div>
+
+        <div className='grid md:grid-cols-2 gap-6 max-w-6xl mx-auto'>
+          {testimonials.map((testimonial, index) => (
+            <Card
+              key={testimonial.author}
+              className='p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass animate-fade-in-up'
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              {/* Star Rating */}
+              <div className='flex gap-1 mb-4'>
+                {[...Array(testimonial.rating)].map((_, i) => (
+                  <Star key={i} className='w-5 h-5 fill-accent text-accent' />
+                ))}
+              </div>
+
+              {/* Quote */}
+              <blockquote className='text-lg mb-6 leading-relaxed'>"{testimonial.quote}"</blockquote>
+
+              {/* Author */}
+              <div className='flex items-center gap-4'>
+                <div className='w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-lg'>
+                  {testimonial.author
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')}
+                </div>
+                <div>
+                  <div className='font-semibold'>{testimonial.author}</div>
+                  <div className='text-sm text-muted-foreground'>{testimonial.role}</div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }

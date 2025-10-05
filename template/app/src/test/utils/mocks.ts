@@ -100,7 +100,7 @@ export const createMockPrismaClient = () => ({
     aggregate: vi.fn(),
     groupBy: vi.fn(),
     fields: createFieldMocks([
-      'id', 'createdAt', 'email', 'username', 'isAdmin', 'hasBetaAccess', 
+      'id', 'createdAt', 'email', 'username', 'isAdmin', 
       'hasFullAccess', 'paymentProcessorUserId', 'subscriptionStatus', 
       'subscriptionPlan', 'datePaid', 'credits'
     ]),

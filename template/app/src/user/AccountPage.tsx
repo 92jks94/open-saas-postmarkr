@@ -173,7 +173,7 @@ function BuyMoreButton() {
         to={routes.PricingPageRoute.to}
         className='font-medium text-sm text-primary hover:text-primary/80 transition-colors duration-200'
       >
-        Buy More/Upgrade
+        Buy More
       </WaspRouterLink>
     </div>
   );

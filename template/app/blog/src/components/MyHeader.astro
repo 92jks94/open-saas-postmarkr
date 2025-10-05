@@ -4,87 +4,128 @@ import config from 'virtual:starlight/user-config';
 import blogConfig from 'virtual:starlight-blog-config'
 import type { Props } from '@astrojs/starlight/props';
 
-const href = Astro.site
+const appUrl = 'https://postmarkr.com';
 const { siteTitle } = Astro.props;
 ---
-<a {href} class="site-title sl-flex">
-	{
-		config.logo && logos.dark && (
-			<>
-				<img
-					class:list={{ 'light:sl-hidden': !('src' in config.logo) }}
-					alt={config.logo.alt}
-					src={logos.dark.src}
-					width={logos.dark.width}
-					height={logos.dark.height}
-				/>
-				{/* Show light alternate if a user configure both light and dark logos. */}
-				{!('src' in config.logo) && (
-					<img
-						class="dark:sl-hidden"
-						alt={config.logo.alt}
-						src={logos.light?.src}
-						width={logos.light?.width}
-						height={logos.light?.height}
-					/>
-				)}
-			</>
-		)
-	}
-	<span class:list={{ 'sr-only': config.logo?.replacesTitle }} class="dark:text-white hover:text-blue-600">
-		{siteTitle}
-	</span>
-</a>
-<div>
-  <a href="/" class="text-gray-900 hover:text-blue-600 dark:text-white">Docs</a>
-</div>
-<div>
-  <a href="/blog/" class="text-gray-900 hover:text-blue-600 dark:text-white">{blogConfig.title}</a>
+<div class="unified-header-container">
+  <a href={appUrl} class="site-title sl-flex">
+    {
+      config.logo && logos.dark && (
+        <>
+          <img
+            class:list={{ 'light:sl-hidden': !('src' in config.logo) }}
+            alt={config.logo.alt}
+            src={logos.dark.src}
+            width={logos.dark.width}
+            height={logos.dark.height}
+          />
+          {/* Show light alternate if a user configure both light and dark logos. */}
+          {!('src' in config.logo) && (
+            <img
+              class="dark:sl-hidden"
+              alt={config.logo.alt}
+              src={logos.light?.src}
+              width={logos.light?.width}
+              height={logos.light?.height}
+            />
+          )}
+        </>
+      )
+    }
+    <span class:list={{ 'sr-only': config.logo?.replacesTitle }} class="logo-text">
+      {siteTitle}
+    </span>
+  </a>
+  
+  <nav class="blog-nav">
+    <a href={`${appUrl}/#features`} class="nav-link">Features</a>
+    <a href={`${appUrl}/pricing`} class="nav-link">Pricing</a>
+    <a href="/blog/" class="nav-link active">Blog</a>
+    <a href={`${appUrl}/login`} class="nav-link cta-link">Sign In</a>
+  </nav>
 </div>
 
 <style>
+  .unified-header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 2rem;
+  }
+
 	.site-title {
-		justify-self: flex-start;
-		max-width: 100%;
-		overflow: hidden;
+		display: flex;
 		align-items: center;
-		color: var(--sl-color-gray-9);
-		gap: var(--sl-nav-gap);
+		gap: 0.5rem;
+		color: var(--sl-color-text);
 		font-size: var(--sl-text-h4);
 		font-weight: 600;
 		text-decoration: none;
 		white-space: nowrap;
-    padding-inline-end: 1rem;
-    border-inline-end: 1px solid var(--sl-color-gray-5);
+    transition: color 0.2s ease;
 	}
+
+  .site-title:hover {
+    color: var(--sl-color-text-accent);
+  }
+
+  .logo-text {
+    font-weight: 600;
+    color: var(--sl-color-text);
+  }
+
 	img {
-		height: calc(var(--sl-nav-height) - 2 * var(--sl-nav-pad-y));
+		height: 2rem;
 		width: auto;
 		max-width: 100%;
 		object-fit: contain;
 		object-position: 0 50%;
 	}
-  div {
-    border-inline-end: 1px solid var(--sl-color-gray-5);
-    margin-left: 1rem;
-    align-self: center;
-    gap: 1rem;
-    height: 100%;
-    padding-inline-end: 1rem;
+
+  .blog-nav {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
   }
 
-  @media (min-width: 50rem) {
-    div {
-      align-items: center;
-      display: flex;
+  .nav-link {
+    color: var(--sl-color-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    color: var(--sl-color-text-accent);
+  }
+
+  .cta-link {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+  }
+
+  .cta-link:hover {
+    background-color: var(--sl-color-gray-6);
+    border-color: var(--sl-color-text-accent);
+  }
+
+  @media (max-width: 50rem) {
+    .unified-header-container {
+      flex-direction: column;
+      gap: 1rem;
+      padding: 0.5rem 0;
+    }
+
+    .blog-nav {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
     }
   }
-  a {
-    color: var(--sl-color-text-accent);
-    font-weight: 600;
-    text-decoration: none;
-  }
-  a:hover {
-		opacity: 0.66;
-	}
 </style>

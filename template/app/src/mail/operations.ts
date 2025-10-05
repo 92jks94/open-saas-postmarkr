@@ -33,7 +33,7 @@ import type {
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
 import { AddressPlacement } from '@prisma/client';
 import type { MailPieceWithRelations } from './types';
-import { hasFullAccess, hasBetaAccess } from '../beta/accessHelpers';
+import { hasFullAccess } from '../shared/accessHelpers';
 import { 
   createMailPieceSchema, 
   updateMailPieceSchema, 
@@ -201,10 +201,6 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
     }
 
-    // Beta access check
-    if (!hasBetaAccess(context.user)) {
-      throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
-    }
 
     // Rate limiting: 10 mail pieces per hour
     checkOperationRateLimit('createMailPiece', 'mail', context.user.id);
@@ -757,10 +753,6 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
     }
 
-    // Beta access check
-    if (!hasBetaAccess(context.user)) {
-      throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
-    }
 
     // Find the mail piece and verify ownership
     const mailPiece = await context.entities.MailPiece.findFirst({
@@ -1003,10 +995,6 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       throw new HttpError(401, validationErrors.UNAUTHORIZED);
     }
 
-    // Beta access check
-    if (!hasBetaAccess(context.user)) {
-      throw new HttpError(403, 'Beta access required to create mail pieces. Please contact support for access.');
-    }
 
     // Rate limiting: 10 Lob submissions per hour
     checkOperationRateLimit('submitMailPieceToLob', 'mail', context.user.id);

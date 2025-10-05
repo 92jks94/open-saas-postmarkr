@@ -32,26 +32,6 @@ export default defineConfig({
       },
     },
   },
-  redirects: {
-    // Redirect .md URLs to clean URLs (301 permanent redirects for better performance)
-    '/blog/2025-11-19-secure-mail-without-po-box.md/': { status: 301, destination: '/blog/2025-11-19-secure-mail-without-po-box/' },
-    '/blog/2025-10-14-digital-mail-vs-virtual-mailbox.md/': { status: 301, destination: '/blog/2025-10-14-digital-mail-vs-virtual-mailbox/' },
-    '/blog/2025-09-03-digital-mailbox-home-business.md/': { status: 301, destination: '/blog/2025-09-03-digital-mailbox-home-business/' },
-    '/blog/2025-08-09-digital-mailroom.md/': { status: 301, destination: '/blog/2025-08-09-digital-mailroom/' },
-    '/blog/2025-07-30-professional-business-address.md/': { status: 301, destination: '/blog/2025-07-30-professional-business-address/' },
-    '/blog/2025-07-21-bypass-the-post-office.md/': { status: 301, destination: '/blog/2025-07-21-bypass-the-post-office/' },
-    '/blog/2025-06-12-mail-without-printer.md/': { status: 301, destination: '/blog/2025-06-12-mail-without-printer/' },
-    '/blog/2025-06-07-certified-mail-made-easy.md/': { status: 301, destination: '/blog/2025-06-07-certified-mail-made-easy/' },
-    '/blog/2025-05-07-send-mail-without-home-address.md/': { status: 301, destination: '/blog/2025-05-07-send-mail-without-home-address/' },
-    '/blog/2025-04-18-virtual-mailbox-vs-po-box.md/': { status: 301, destination: '/blog/2025-04-18-virtual-mailbox-vs-po-box/' },
-    '/blog/2025-03-18-hidden-costs-of-diy-mailing.md/': { status: 301, destination: '/blog/2025-03-18-hidden-costs-of-diy-mailing/' },
-    '/blog/2025-02-11-forward-business-mail.md/': { status: 301, destination: '/blog/2025-02-11-forward-business-mail/' },
-    '/blog/2025-01-24-future-of-business-mail.md/': { status: 301, destination: '/blog/2025-01-24-future-of-business-mail/' },
-    '/blog/2024-02-05-delivery-tracking-guide.md/': { status: 301, destination: '/blog/2024-02-05-delivery-tracking-guide/' },
-    '/blog/2024-01-29-address-management-best-practices.md/': { status: 301, destination: '/blog/2024-01-29-address-management-best-practices/' },
-    '/blog/2024-01-22-mail-service-types-guide.md/': { status: 301, destination: '/blog/2024-01-22-mail-service-types-guide/' },
-    '/blog/2024-01-15-future-of-business-mail.md/': { status: 301, destination: '/blog/2024-01-15-future-of-business-mail/' },
-  },
   integrations: [
     sitemap({
       changefreq: 'weekly',
@@ -102,19 +82,9 @@ export default defineConfig({
       },
       social: [
         {
-          icon: 'github',
-          label: 'GitHub',
-          href: 'https://github.com/wasp-lang/open-saas-postmarkr',
-        },
-        {
           icon: 'twitter',
           label: 'Twitter',
           href: 'https://twitter.com/postmarkr',
-        },
-        {
-          icon: 'linkedin',
-          label: 'LinkedIn',
-          href: 'https://linkedin.com/company/postmarkr',
         },
       ],
       sidebar: [

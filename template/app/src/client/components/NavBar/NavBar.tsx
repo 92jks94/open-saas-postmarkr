@@ -40,7 +40,7 @@ export default function NavBar({ navigationItems }: { navigationItems: Navigatio
       <header className={cn('sticky top-0 z-50 transition-all duration-300', isScrolled && 'top-4')}>
         <div
           className={cn('transition-all duration-300', {
-            'mx-4 md:mx-20 pr-2 lg:pr-0 rounded-full shadow-lg bg-background/90 backdrop-blur-lg border border-border':
+            'mx-4 md:mx-20 pr-2 lg:pr-0 rounded-full shadow-glass bg-background/90 backdrop-blur-lg border border-border':
               isScrolled,
             'mx-0 bg-background/80 backdrop-blur-lg border-b border-border': !isScrolled,
           })}
@@ -189,13 +189,15 @@ function renderNavigationItems(
   });
 
   return navigationItems.map((item) => {
+    const isExternalLink = item.to.startsWith('http');
+    
     return (
       <li key={item.name}>
         <ReactRouterLink
           to={item.to}
           className={menuStyles}
           onClick={setMobileMenuOpen && (() => setMobileMenuOpen(false))}
-          target={item.to.startsWith('http') ? '_blank' : undefined}
+          target={isExternalLink ? '_blank' : undefined}
         >
           {item.name}
         </ReactRouterLink>

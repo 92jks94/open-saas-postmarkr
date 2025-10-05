@@ -11,10 +11,12 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { routes } from 'wasp/client/router';
 import './Main.css';
 import NavBar from './components/NavBar/NavBar';
-import { demoNavigationitems, marketingNavigationItems } from './components/NavBar/constants';
+import { demoNavigationitems, marketingNavigationItems, adminNavigationItems } from './components/NavBar/constants';
 import CookieConsentBanner from './components/cookie-consent/Banner';
 import { initSentry } from './sentry';
 import './chromeExtensionErrorHandler'; // Import error handler
+import Footer from '../landing-page/components/Footer';
+import { footerNavigation } from '../landing-page/contentSections';
 
 /**
  * Root application component that handles layout and navigation
@@ -41,7 +43,15 @@ export default function App() {
     return location.pathname === '/' || location.pathname.startsWith('/pricing');
   }, [location]);
 
-  const navigationItems = isMarketingPage ? marketingNavigationItems : demoNavigationitems;
+  const isAdminDashboard = useMemo(() => {
+    return location.pathname.startsWith('/admin');
+  }, [location]);
+
+  const navigationItems = useMemo(() => {
+    if (isAdminDashboard) return adminNavigationItems;
+    if (isMarketingPage) return marketingNavigationItems;
+    return demoNavigationitems;
+  }, [isMarketingPage, isAdminDashboard]);
 
   const shouldDisplayAppNavBar = useMemo(() => {
     return (
@@ -49,10 +59,6 @@ export default function App() {
       location.pathname !== routes.SignupRoute.build() &&
       location.pathname !== routes.EmailVerificationRoute.build()
     );
-  }, [location]);
-
-  const isAdminDashboard = useMemo(() => {
-    return location.pathname.startsWith('/admin');
   }, [location]);
 
   useEffect(() => {
@@ -67,17 +73,21 @@ export default function App() {
 
   return (
     <>
-      <div className='min-h-screen bg-background text-foreground'>
-        {isAdminDashboard ? (
-          <Outlet />
-        ) : (
-          <>
-            {shouldDisplayAppNavBar && <NavBar navigationItems={navigationItems} />}
-            <div className='mx-auto max-w-screen-2xl'>
-              <Outlet />
-            </div>
-          </>
-        )}
+      <div className='min-h-screen bg-background text-foreground flex flex-col'>
+        {shouldDisplayAppNavBar && <NavBar navigationItems={navigationItems} />}
+        
+        <div className='flex-1 flex flex-col'>
+          {isAdminDashboard ? (
+            <Outlet />
+          ) : (
+            <>
+              <div className='mx-auto max-w-screen-2xl flex-1'>
+                <Outlet />
+              </div>
+              <Footer footerNavigation={footerNavigation} />
+            </>
+          )}
+        </div>
       </div>
       <CookieConsentBanner />
     </>

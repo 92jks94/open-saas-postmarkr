@@ -20,11 +20,6 @@ export async function seedMockUsers(prismaClient: PrismaClient) {
 async function seedAppSettings(prismaClient: PrismaClient) {
   const defaultSettings = [
     {
-      key: 'beta_access_code',
-      value: '312',
-      description: 'Beta access code required for new user signups',
-    },
-    {
       key: 'maintenance_mode',
       value: 'false',
       description: 'Enable/disable maintenance mode for the application',
@@ -66,7 +61,7 @@ function generateMockUserData(): MockUserData {
     username: faker.internet.userName({ firstName, lastName }),
     createdAt,
     isAdmin: false,
-    hasBetaAccess: faker.datatype.boolean({ probability: 0.7 }), // 70% chance of beta access
+    hasBetaAccess: false, // Deprecated field - kept for schema compatibility
     hasFullAccess: faker.datatype.boolean({ probability: 0.3 }), // 30% chance of full access
     credits,
     subscriptionStatus,

@@ -48,7 +48,6 @@ export const getAppSettings: GetAppSettings<void, AppSettings[]> = async (_args,
 
 function getSettingDescription(key: string): string {
   const descriptions: Record<string, string> = {
-    'beta_access_code': 'Beta access code required for new user signups',
     'maintenance_mode': 'Enable/disable maintenance mode for the application',
     'max_file_size_mb': 'Maximum file upload size in megabytes',
     'email_from_name': 'Default sender name for emails',

@@ -68,7 +68,6 @@ export const testUtils = {
     email: faker.internet.email(),
     username: faker.internet.userName(),
     isAdmin: false,
-    hasBetaAccess: true,
     hasFullAccess: false,
     createdAt: new Date(),
   }),

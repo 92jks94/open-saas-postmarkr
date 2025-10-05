@@ -13,7 +13,7 @@ model User {
   email                         String?              @unique
   username                      String?              @unique
   isAdmin                       Boolean              @default(false)
-  hasBetaAccess                 Boolean              @default(false)  // Set by BETA_EMAILS env var
+  hasBetaAccess                 Boolean              @default(false)  // Deprecated - kept for migration compatibility
   hasFullAccess                 Boolean              @default(false)  // Upgraded via code
   paymentProcessorUserId        String?              @unique
   subscriptionStatus            String?

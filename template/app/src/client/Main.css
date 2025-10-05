@@ -106,67 +106,93 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222 47% 11%;
     --card-accent: 0 0% 100%;
     --card-accent-foreground: 0 0% 3.9%;
     --card-subtle: 31 57% 96%;
     --card-subtle-foreground: 0 0% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 210 100% 13%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 32 100% 37%;
-    --secondary-foreground: 0 0% 9%;
-    --secondary-muted: 32 75% 78%;
-    --secondary-muted-foreground: 0 0% 3.9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 33 74% 62%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Modern SaaS Purple-Blue Palette from lovable.dev */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-muted: 217 91% 60%;
+    --secondary-muted-foreground: 0 0% 100%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Warm accent colors */
+    --coral: 27 92% 55%;
+    --peach: 30 85% 70%;
+    --amber: 43 96% 56%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
     --success: 141 71% 48%;
     --success-foreground: 0 0% 98%;
     --warning: 36 100% 50%;
     --warning-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
+    --radius: 0.75rem;
+    
+    /* Gradient tokens - blend of cool and warm */
+    --gradient-primary: linear-gradient(135deg, hsl(239 84% 67%), hsl(217 91% 60%));
+    --gradient-accent: linear-gradient(135deg, hsl(271 91% 65%), hsl(239 84% 67%));
+    --gradient-warm: linear-gradient(135deg, hsl(27 92% 65%), hsl(30 85% 70%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
+    
+    /* Glass effect */
+    --glass-bg: hsla(0 0% 100% / 0.7);
+    --glass-border: hsla(220 13% 91% / 0.5);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsla(239 84% 67% / 0.08);
+    --shadow-md: 0 4px 16px hsla(239 84% 67% / 0.12);
+    --shadow-lg: 0 8px 32px hsla(239 84% 67% / 0.16);
+    --shadow-glow: 0 0 40px hsla(239 84% 67% / 0.3);
   }
 
   .dark {
-    --background: 210 50% 5%;
+    --background: 222 47% 11%;
     --foreground: 0 0% 98%;
-    --card: 210 50% 5%;
+    --card: 222 47% 11%;
     --card-foreground: 0 0% 98%;
     --card-accent: 31 57% 93%;
     --card-accent-foreground: 0 0% 3.9%;
-    --card-subtle: 233 24% 15%;
+    --card-subtle: 217 33% 17%;
     --card-subtle-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 222 47% 11%;
     --popover-foreground: 0 0% 98%;
-    --primary: 31 57% 93%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 209 91% 61%;
-    --secondary-foreground: 0 0% 98%;
-    --secondary-muted: 210 67% 94%;
-    --secondary-muted-foreground: 0 0% 3.9%;
-    --muted: 210 100% 13%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 31 57% 93%;
-    --accent-foreground: 210 100% 13%;
-    --destructive: 0 62.8% 63%;
+    
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-muted: 217 91% 60%;
+    --secondary-muted-foreground: 0 0% 100%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
     --success: 141 71% 48%;
     --success-foreground: 0 0% 98%;
     --warning: 36 100% 50%;
     --warning-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 239 84% 67%;
   }
 }
 
