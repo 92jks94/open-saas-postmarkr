@@ -1,0 +1,40 @@
+﻿name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build Wasp application
+      run: npm run build
+      
+    - name: Apply server binding patch
+      run: |
+        chmod +x scripts/build-for-fly.sh
+        ./scripts/build-for-fly.sh
+        
+    - name: Setup Fly.io CLI
+      uses: superfly/flyctl-actions/setup-flyctl@master
+      
+    - name: Deploy to Fly.io
+      run: |
+        flyctl deploy --config fly-server.toml --app postmarkr-server --remote-only
+      env:
+        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
