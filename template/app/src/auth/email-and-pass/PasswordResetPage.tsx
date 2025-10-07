@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link as WaspRouterLink, routes, useNavigate, useSearchParams } from 'wasp/client/router';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { ResetPasswordForm } from 'wasp/client/auth';
 import AuthPageLayout from '../AuthPageLayout';
 import { Alert, AlertDescription } from '../../components/ui/alert';
@@ -50,7 +51,7 @@ export default function PasswordResetPage() {
     }, 1000);
 
     const redirectTimer = setTimeout(() => {
-      navigate(routes.LoginRoute.to);
+      navigate('/login');
     }, REDIRECT_DELAY_MS);
 
     return () => {

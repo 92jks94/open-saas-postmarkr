@@ -3,9 +3,6 @@ import { validateServerStartup } from './startupValidation';
 import type { MiddlewareConfigFn } from 'wasp/server';
 import cors from 'cors';
 
-// Initialize Sentry on server startup
-initSentry();
-
 // Validate CORS environment variables
 function validateCorsEnvironment(): void {
   const clientUrl = process.env.WASP_WEB_CLIENT_URL;
@@ -24,14 +21,23 @@ function validateCorsEnvironment(): void {
   }
 }
 
-// Validate CORS environment
-validateCorsEnvironment();
-
-// Run comprehensive startup validation
-validateServerStartup().catch((error) => {
-  console.error('❌ Startup validation failed:', error);
-  process.exit(1);
-});
+// Server setup function called by Wasp on server startup
+export async function setupServer(): Promise<void> {
+  // Initialize Sentry on server startup
+  initSentry();
+  
+  // Validate CORS environment
+  validateCorsEnvironment();
+  
+  // Run comprehensive startup validation
+  try {
+    await validateServerStartup();
+    console.log('✅ Server startup validation completed successfully');
+  } catch (error) {
+    console.error('❌ Startup validation failed:', error);
+    throw error;
+  }
+}
 
 // Server middleware configuration function
 export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) => {

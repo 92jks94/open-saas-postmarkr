@@ -48,7 +48,8 @@ primary_region = 'ord'
   cpu_kind = 'shared'
   cpus = 1
 
-# Metrics configuration for monitoring (temporarily disabled due to deployment issues)
-# [metrics]
-#   port = 9091
-#   path = "/metrics"
+# Metrics configuration for monitoring
+# Port 9091 is the standard Fly.io metrics port for Prometheus scraping
+[metrics]
+  port = 9091
+  path = "/metrics"

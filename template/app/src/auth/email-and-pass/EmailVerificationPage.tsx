@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link as WaspRouterLink, routes, useNavigate } from 'wasp/client/router';
+import { useNavigate } from 'react-router-dom';
+import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { VerifyEmailForm } from 'wasp/client/auth';
 import { resendVerificationEmail } from 'wasp/client/operations';
 import { useAuth } from 'wasp/client/auth';
@@ -39,7 +40,7 @@ export default function EmailVerificationPage() {
     }, 1000);
 
     const redirectTimer = setTimeout(() => {
-      navigate(routes.LoginRoute.to);
+      navigate('/login');
     }, REDIRECT_DELAY_MS);
 
     return () => {

@@ -43,7 +43,7 @@ export default defineConfig({
       customCss: ['./src/styles/tailwind.css'],
       description: 'Expert guides on virtual mailboxes, certified mail, digital mail services, and remote business mail solutions. Tips and best practices from Postmarkr mail service professionals.',
       logo: {
-        src: '/src/assets/logo.webp',
+        src: '/src/assets/logo.png',
         alt: 'Postmarkr',
       },
       defaultLocale: 'root',

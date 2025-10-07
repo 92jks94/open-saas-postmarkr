@@ -7,6 +7,10 @@ app OpenSaaS {
 
   head: [
     "<link rel='icon' href='/favicon.ico' />",
+    "<link rel='icon' type='image/png' sizes='32x32' href='/favicon-32x32.png' />",
+    "<link rel='icon' type='image/png' sizes='16x16' href='/favicon-16x16.png' />",
+    "<link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />",
+    "<link rel='manifest' href='/site.webmanifest' />",
     "<meta charset='utf-8' />",
     "<meta name='viewport' content='width=device-width, initial-scale=1.0' />",
     "<meta name='description' content='Postmarkr - Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
@@ -74,7 +78,7 @@ app OpenSaaS {
   },
 
   server: {
-    setupFn: import { setupServer } from "@src/server/serverSetup",
+    setupFn: import { setupServer } from "@src/server/setup",
     middlewareConfigFn: import { serverMiddlewareConfigFn } from "@src/server/setup",
   },
 

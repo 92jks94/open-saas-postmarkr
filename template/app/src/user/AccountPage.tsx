@@ -169,12 +169,12 @@ function prettyPrintEndOfBillingPeriod(date: Date) {
 function BuyMoreButton() {
   return (
     <div className='ml-4 flex-shrink-0 sm:col-span-1 sm:mt-0'>
-      <WaspRouterLink
-        to='/#pricing'
+      <a
+        href='/#pricing'
         className='font-medium text-sm text-primary hover:text-primary/80 transition-colors duration-200'
       >
         Buy More
-      </WaspRouterLink>
+      </a>
     </div>
   );
 }

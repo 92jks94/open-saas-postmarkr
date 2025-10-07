@@ -9,7 +9,7 @@ import { throttleWithTrailingInvocation } from '../../../shared/utils';
 import UserDropdown from '../../../user/UserDropdown';
 import { UserMenuItems } from '../../../user/UserMenuItems';
 import { useIsLandingPage } from '../../../client/hooks/useIsLandingPage';
-import logo from '../../static/logo.webp';
+import logo from '../../static/logo.png';
 import { Announcement } from './Announcement';
 
 export interface NavigationItem {
