@@ -149,9 +149,6 @@ export default function FileUploadPage() {
         <PageHeader
           title="File Upload"
           description="Upload files to use with your mail pieces. Supports PDF, images, and documents."
-          breadcrumbs={[
-            { label: 'Upload Files', current: true }
-          ]}
         />
         <Card className='my-8'>
           <CardContent className='space-y-10 my-10 py-8 px-4 mx-auto sm:max-w-lg'>

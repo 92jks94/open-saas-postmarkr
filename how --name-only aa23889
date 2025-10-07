@@ -1,0 +1,51 @@
+[33mcommit 3e7895cfb41519e13f05f70a1b26916a8b3f5e0f[m
+Author: Your Name <you@example.com>
+Date:   Thu Oct 2 19:13:45 2025 -0500
+
+    Website working - lots of changes + blog fixes
+
+template/app/IMPROVEMENTS_SUMMARY.md
+template/app/README.md
+template/app/blog/public/banner-images/README.md
+template/app/deploy-check.sh
+template/app/deploy-dev.sh
+template/app/deploy-full.sh
+template/app/deploy-production.sh
+template/app/deploy-simple.sh
+template/app/docs/BUILD_FIX_SUMMARY.md
+template/app/docs/GITHUB_ACTIONS_DEPLOYMENT_SETUP.md
+template/app/docs/IMPLEMENTATION_REVIEW.md
+template/app/docs/IMPLEMENTATION_VERIFICATION.md
+template/app/docs/LOB_INTEGRATION_IMPROVEMENTS.md
+template/app/docs/LOB_INTEGRATION_REVIEW_SUMMARY.md
+template/app/docs/LOB_INTEGRATION_TEST_REPORT.md
+template/app/docs/MAIL_CREATION_WORKFLOW_DATABASE.md
+template/app/docs/PRODUCTION_DEPLOYMENT_CHECKLIST.md
+template/app/docs/PRODUCTION_ENVIRONMENT_SETUP.md
+template/app/docs/RATE_LIMITING_IMPLEMENTATION.md
+template/app/docs/TODO.md
+template/app/docs/WSL2_DEPLOYMENT_FIX.md
+template/app/fly-server.toml
+template/app/main.wasp
+template/app/package.json
+template/app/scripts/README.md
+template/app/scripts/deploy-simple-retry.sh
+template/app/scripts/deploy-with-health-checks.sh
+template/app/scripts/deploy-with-network-resilience.sh
+template/app/scripts/deploy-with-retry.sh
+template/app/scripts/deploy-with-server-fix.sh
+template/app/scripts/wasp-deploy-with-checks.sh
+template/app/set-fly-urls.sh
+template/app/src/admin/DebugMailPage.tsx
+template/app/src/auth/LoginDebugPage.tsx
+template/app/src/file-upload/FilePreviewCard.tsx
+template/app/src/mail/operations.ts
+template/app/src/mail/paymentConfirmation.ts
+template/app/src/mail/paymentVerificationJob.ts
+template/app/src/mail/webhookMonitoringJob.ts
+template/app/src/payment/stripe/webhook.ts
+template/app/src/server/lob/webhook.ts
+template/app/src/server/rate-limiting/README.md
+template/app/src/server/setup.ts
+template/app/src/shared/statusMapping.ts
+template/app/src/test/lob/lobWebhook.test.ts

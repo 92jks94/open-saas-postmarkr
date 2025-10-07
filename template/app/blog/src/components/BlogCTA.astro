@@ -1,0 +1,128 @@
+---
+// Reusable CTA component for blog posts
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { 
+  title = "Ready to send physical mail from anywhere?",
+  description = "Join thousands of remote workers and businesses using Postmarkr for professional mail services."
+} = Astro.props;
+---
+
+<div class="blog-cta">
+  <div class="cta-content">
+    <h3 class="cta-title">{title}</h3>
+    <p class="cta-description">{description}</p>
+    <div class="cta-buttons">
+      <a href="https://postmarkr.com/signup" class="cta-button-primary">
+        Get Started Now →
+      </a>
+      <a href="https://postmarkr.com/#pricing" class="cta-button-secondary">
+        View Pricing
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .blog-cta {
+    margin: 3rem 0;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, hsl(239 84% 67% / 0.05), hsl(217 91% 60% / 0.05));
+    border: 2px solid hsl(var(--primary) / 0.2);
+    border-radius: 1rem;
+    text-align: center;
+  }
+
+  .cta-content {
+    max-width: 42rem;
+    margin: 0 auto;
+  }
+
+  .cta-title {
+    font-size: 1.875rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .cta-description {
+    font-size: 1.125rem;
+    color: hsl(var(--muted-foreground));
+    margin-bottom: 2rem;
+    line-height: 1.6;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .cta-button-primary {
+    padding: 0.875rem 2rem;
+    background: linear-gradient(135deg, hsl(239 84% 67%), hsl(217 91% 60%));
+    color: white;
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px hsla(239 84% 67% / 0.25);
+  }
+
+  .cta-button-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px hsla(239 84% 67% / 0.35);
+  }
+
+  .cta-button-secondary {
+    padding: 0.875rem 2rem;
+    border: 2px solid hsl(239 84% 67%);
+    color: hsl(239 84% 67%);
+    text-decoration: none;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s;
+    background: transparent;
+  }
+
+  .cta-button-secondary:hover {
+    background: hsl(239 84% 67% / 0.1);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 640px) {
+    .blog-cta {
+      padding: 2rem 1.5rem;
+    }
+
+    .cta-title {
+      font-size: 1.5rem;
+    }
+
+    .cta-description {
+      font-size: 1rem;
+    }
+
+    .cta-buttons {
+      flex-direction: column;
+    }
+
+    .cta-button-primary,
+    .cta-button-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+

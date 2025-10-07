@@ -11,7 +11,7 @@ const bannerImageFileName = getBannerImageFilename({ path: id })
 const imageExists = checkBannerImageExists({ bannerImageFileName })
 ---
 
-<h1 id='_top'>{title}</h1>
+<h1 id='_top' class="gradient-title">{title}</h1>
 {subtitle && <p class="subtitle">{subtitle}</p>}
 {imageExists && <div class="image-container">
   <Image src={`${BANNER_PATH}/${bannerImageFileName}`} loading="eager" alt={title || 'Banner image'} width="50" height="50" class={!hideBannerImage ? 'cover-image' : 'hidden'} />
@@ -37,11 +37,14 @@ const imageExists = checkBannerImageExists({ bannerImageFileName })
     display: block;
   }
 
-	h1 {
+	h1.gradient-title {
 		margin: 1rem 0;
 		font-size: var(--sl-text-h1);
 		line-height: var(--sl-line-height-headings);
 		font-weight: 600;
-		color: var(--sl-color-white);
+		background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
 	}
 </style>

@@ -32,7 +32,7 @@ const { siteTitle } = Astro.props;
         </>
       )
     }
-    <span class:list={{ 'sr-only': config.logo?.replacesTitle }} class="logo-text">
+    <span class:list={{ 'sr-only': config.logo?.replacesTitle }} class="logo-text font-satoshi">
       {siteTitle}
     </span>
   </a>
@@ -52,80 +52,132 @@ const { siteTitle } = Astro.props;
     justify-content: space-between;
     width: 100%;
     gap: 2rem;
+    font-family: 'Satoshi', system-ui, sans-serif;
   }
 
 	.site-title {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		color: var(--sl-color-text);
-		font-size: var(--sl-text-h4);
+		gap: 0.75rem;
+		color: hsl(var(--foreground));
+		font-size: 1.25rem;
 		font-weight: 600;
 		text-decoration: none;
 		white-space: nowrap;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
 	}
 
   .site-title:hover {
-    color: var(--sl-color-text-accent);
+    color: hsl(var(--primary));
+    transform: translateY(-1px);
   }
 
   .logo-text {
     font-weight: 600;
-    color: var(--sl-color-text);
+    color: hsl(var(--foreground));
+    font-family: 'Satoshi', system-ui, sans-serif;
   }
 
 	img {
-		height: 2rem;
+		height: 2.5rem;
 		width: auto;
 		max-width: 100%;
 		object-fit: contain;
 		object-position: 0 50%;
+    transition: transform 0.2s ease;
 	}
+
+  .site-title:hover img {
+    transform: scale(1.05);
+  }
 
   .blog-nav {
     display: flex;
-    gap: 1.5rem;
+    gap: 2rem;
     align-items: center;
   }
 
   .nav-link {
-    color: var(--sl-color-text);
+    color: hsl(var(--foreground));
     text-decoration: none;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     font-weight: 500;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
     white-space: nowrap;
+    position: relative;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+  }
+
+  .nav-link:hover::after,
+  .nav-link.active::after {
+    transform: scaleX(1);
   }
 
   .nav-link:hover,
   .nav-link.active {
-    color: var(--sl-color-text-accent);
+    color: hsl(var(--primary));
   }
 
   .cta-link {
-    padding: 0.5rem 1rem;
-    border: 1px solid var(--sl-color-gray-5);
-    border-radius: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border: 1.5px solid hsl(var(--primary));
+    border-radius: calc(var(--radius) - 2px);
     transition: all 0.2s ease;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+  }
+
+  .cta-link::after {
+    display: none;
   }
 
   .cta-link:hover {
-    background-color: var(--sl-color-gray-6);
-    border-color: var(--sl-color-text-accent);
+    color: hsl(var(--primary-foreground));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px hsla(239 84% 67% / 0.25);
+  }
+
+  .cta-link:hover::before {
+    opacity: 1;
   }
 
   @media (max-width: 50rem) {
     .unified-header-container {
       flex-direction: column;
-      gap: 1rem;
-      padding: 0.5rem 0;
+      gap: 1.25rem;
+      padding: 0.75rem 0;
     }
 
     .blog-nav {
       flex-wrap: wrap;
       justify-content: center;
-      gap: 1rem;
+      gap: 1.25rem;
+    }
+
+    .nav-link {
+      font-size: 0.875rem;
     }
   }
 </style>

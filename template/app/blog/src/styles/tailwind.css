@@ -1,3 +1,151 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  /* Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Text gradient utilities */
+  .text-gradient-primary {
+    background: linear-gradient(to right, hsl(var(--secondary-muted)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-primary-diagonal {
+    background: linear-gradient(135deg, hsl(var(--secondary-muted)), hsl(var(--secondary)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Border gradient utilities */
+  .border-gradient-primary {
+    background: linear-gradient(to right, hsl(var(--secondary-muted)), hsl(var(--secondary)));
+    padding: 1px;
+  }
+
+  .border-gradient-primary > * {
+    background: hsl(var(--background));
+  }
+}
+
+/* Satoshi Font */
+@font-face {
+  font-family: 'Satoshi';
+  src: url('/fonts/Satoshi-Regular.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --card-accent: 0 0% 100%;
+    --card-accent-foreground: 0 0% 3.9%;
+    --card-subtle: 31 57% 96%;
+    --card-subtle-foreground: 0 0% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Modern SaaS Purple-Blue Palette */
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-muted: 217 91% 60%;
+    --secondary-muted-foreground: 0 0% 100%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Warm accent colors */
+    --coral: 27 92% 55%;
+    --peach: 30 85% 70%;
+    --amber: 43 96% 56%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 141 71% 48%;
+    --success-foreground: 0 0% 98%;
+    --warning: 36 100% 50%;
+    --warning-foreground: 0 0% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
+    --radius: 0.75rem;
+    
+    /* Gradient tokens - blend of cool and warm */
+    --gradient-primary: linear-gradient(135deg, hsl(239 84% 67%), hsl(217 91% 60%));
+    --gradient-accent: linear-gradient(135deg, hsl(271 91% 65%), hsl(239 84% 67%));
+    --gradient-warm: linear-gradient(135deg, hsl(27 92% 65%), hsl(30 85% 70%));
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
+    
+    /* Glass effect */
+    --glass-bg: hsla(0 0% 100% / 0.7);
+    --glass-border: hsla(220 13% 91% / 0.5);
+    
+    /* Shadows */
+    --shadow-sm: 0 2px 8px hsla(239 84% 67% / 0.08);
+    --shadow-md: 0 4px 16px hsla(239 84% 67% / 0.12);
+    --shadow-lg: 0 8px 32px hsla(239 84% 67% / 0.16);
+    --shadow-glow: 0 0 40px hsla(239 84% 67% / 0.3);
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 0 0% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 0 0% 98%;
+    --card-accent: 31 57% 93%;
+    --card-accent-foreground: 0 0% 3.9%;
+    --card-subtle: 217 33% 17%;
+    --card-subtle-foreground: 0 0% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 91% 60%;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-muted: 217 91% 60%;
+    --secondary-muted-foreground: 0 0% 100%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 271 91% 65%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --success: 141 71% 48%;
+    --success-foreground: 0 0% 98%;
+    --warning: 36 100% 50%;
+    --warning-foreground: 0 0% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 239 84% 67%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

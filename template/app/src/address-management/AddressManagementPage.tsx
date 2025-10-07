@@ -188,9 +188,6 @@ export default function AddressManagementPage() {
         <PageHeader
           title="Address Management"
           description="Manage your saved addresses for quick mail sending and easy access."
-          breadcrumbs={[
-            { label: 'Addresses', current: true }
-          ]}
         />
 
         {/* Enhanced Card structure with better layout */}

@@ -71,13 +71,6 @@ export default function MailCreationPage() {
         <PageHeader
           title="Create Mail Piece"
           description="Send physical mail with professional tracking and delivery confirmation."
-          breadcrumbs={[
-            { label: 'Mail History', href: '/mail/history' },
-            { label: 'Create Mail Piece', current: true }
-          ]}
-          showBackButton={true}
-          backButtonText="Back to Mail History"
-          backButtonHref="/mail/history"
         />
 
         {/* Simplified Implementation Notice */}

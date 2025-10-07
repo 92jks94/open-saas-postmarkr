@@ -146,9 +146,6 @@ export default function MailHistoryPage() {
           <PageHeader
             title="Mail History"
             description="View your physical mail pieces"
-            breadcrumbs={[
-              { label: 'Mail History', current: true }
-            ]}
           />
           <PageLoadingSpinner text="Loading mail pieces..." />
         </div>
@@ -163,9 +160,6 @@ export default function MailHistoryPage() {
           <PageHeader
             title="Mail History"
             description="View your physical mail pieces"
-            breadcrumbs={[
-              { label: 'Mail History', current: true }
-            ]}
           />
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -184,9 +178,6 @@ export default function MailHistoryPage() {
         <PageHeader
           title="Mail History"
           description="View your physical mail pieces"
-          breadcrumbs={[
-            { label: 'Mail History', current: true }
-          ]}
           actions={
             <Button onClick={() => navigate('/mail/create')}>
               <Plus className="h-4 w-4 mr-2" />

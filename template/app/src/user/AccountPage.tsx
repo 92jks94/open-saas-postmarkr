@@ -13,9 +13,6 @@ export default function AccountPage({ user }: { user: User }) {
       <PageHeader
         title="Account Settings"
         description="Manage your account information and subscription details."
-        breadcrumbs={[
-          { label: 'Account', current: true }
-        ]}
       />
       <Card className='mb-4 lg:m-8'>
         <CardHeader>
