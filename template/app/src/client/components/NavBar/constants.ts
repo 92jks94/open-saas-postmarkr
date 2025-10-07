@@ -9,7 +9,7 @@ const staticNavigationItems: NavigationItem[] = [
 
 export const marketingNavigationItems: NavigationItem[] = [
   { name: 'Features', to: '/#features' },
-  { name: 'Pricing', to: routes.PricingPageRoute.to },
+  { name: 'Pricing', to: '/#pricing' },
   { name: 'Testimonials', to: '/#testimonials' },
   { name: 'FAQ', to: '/#faq' },
   { name: 'Blog', to: BlogUrl },

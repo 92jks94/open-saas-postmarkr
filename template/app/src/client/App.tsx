@@ -22,7 +22,7 @@ import { footerNavigation } from '../landing-page/contentSections';
  * Root application component that handles layout and navigation
  * 
  * Layout Modes:
- * - Marketing: Landing page and pricing (no app navigation)
+ * - Marketing: Landing page (no app navigation)
  * - App: Authenticated user interface with main navigation
  * - Admin: Admin dashboard with specialized layout
  * 
@@ -40,7 +40,7 @@ export default function App() {
 
   const location = useLocation();
   const isMarketingPage = useMemo(() => {
-    return location.pathname === '/' || location.pathname.startsWith('/pricing');
+    return location.pathname === '/';
   }, [location]);
 
   const isAdminDashboard = useMemo(() => {

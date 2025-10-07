@@ -44,10 +44,10 @@ export default function Hero() {
               className='text-lg px-8 py-6 shadow-glow hover:shadow-glow hover:scale-105 transition-all bg-gradient-primary border-0'
               asChild
             >
-              <WaspRouterLink to={routes.PricingPageRoute.to}>
+              <a href='#pricing' className='inline-flex items-center'>
                 View Pricing
                 <ArrowRight className='ml-2 h-5 w-5' />
-              </WaspRouterLink>
+              </a>
             </Button>
             <Button
               size='lg'

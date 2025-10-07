@@ -51,8 +51,10 @@ export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) =
       const allowedOrigins = [
         'http://localhost:3000', // Development
         'http://localhost:3001', // Development server
-        'https://postmarkr-client.fly.dev', // Production client
-        'https://postmarkr-server.fly.dev', // Production server
+        'https://postmarkr-client.fly.dev', // Production client (old)
+        'https://postmarkr-server.fly.dev', // Production server (old)
+        'https://postmarkr-server-client.fly.dev', // Production client (current)
+        'https://postmarkr-server-server.fly.dev', // Production server (current)
         'https://postmarkr.com', // Production domain
         'https://www.postmarkr.com', // Production domain with www
       ];

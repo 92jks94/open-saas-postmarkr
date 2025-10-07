@@ -58,8 +58,7 @@ app OpenSaaS {
       // },
     },
     onAuthFailedRedirectTo: "/login",
-    // Remove the redirect to email verification - let users go to the main app
-    // onAuthSucceededRedirectTo: "/mail/create",
+    onAuthSucceededRedirectTo: "/mail/create",
   },
 
   db: {
@@ -75,6 +74,7 @@ app OpenSaaS {
   },
 
   server: {
+    setupFn: import { setupServer } from "@src/server/serverSetup",
     middlewareConfigFn: import { serverMiddlewareConfigFn } from "@src/server/setup",
   },
 
@@ -193,11 +193,6 @@ query getAllTasksByUser {
 //#endregion
 
 //#region Payment
-route PricingPageRoute { path: "/pricing", to: PricingPage }
-page PricingPage {
-  component: import PricingPage from "@src/payment/PricingPage"
-}
-
 route CheckoutResultRoute { path: "/checkout", to: CheckoutResultPage }
 page CheckoutResultPage {
   authRequired: true,
