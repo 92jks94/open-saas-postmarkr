@@ -1,43 +1,29 @@
-# fly.toml app configuration file generated for postmarkr-server on 2025-10-01T09:06:56-05:00
+# fly.toml app configuration file generated for postmarkr-server-server on 2025-10-06T20:00:04-05:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'postmarkr-server'
+app = 'postmarkr-server-server'
 primary_region = 'ord'
 
 [build]
 
-[env]
-  PORT = "8080"
-  NODE_ENV = "production"
-  SERVER_HOST = "0.0.0.0"
-
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = false
+  auto_stop_machines = 'stop'
   auto_start_machines = true
   min_machines_running = 1
   processes = ['app']
 
-  # Health check configuration - simplified for deployment
   [[http_service.checks]]
-    grace_period = "60s"    # Longer grace period for startup
-    interval = "15s"        # Less frequent checks during deployment
+    grace_period = "10s"
+    interval = "30s"
     method = "GET"
-    timeout = "5s"          # Shorter timeout for simple checks
+    timeout = "5s"
     path = "/health/simple"
-    
-    [http_service.checks.headers]
-      User-Agent = "Fly-Health-Check"
 
 [[vm]]
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
-
-# Metrics configuration for monitoring (temporarily disabled due to deployment issues)
-# [metrics]
-#   port = 9091
-#   path = "/metrics"
