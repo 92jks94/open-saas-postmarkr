@@ -16,10 +16,10 @@ print_status() {
 }
 
 # Configuration
-SERVER_URL="https://postmarkr-server.fly.dev"
-CLIENT_URL="https://postmarkr-client.fly.dev"
-SERVER_APP="postmarkr-server"
-CLIENT_APP="postmarkr-client"
+SERVER_URL="https://postmarkr-server-server.fly.dev"
+CLIENT_URL="https://postmarkr-server-client.fly.dev"
+SERVER_APP="postmarkr-server-server"
+CLIENT_APP="postmarkr-server-client"
 
 print_status $BLUE "🚀 Full Stack Deployment to Fly.io"
 print_status $BLUE "===================================="
@@ -71,9 +71,9 @@ export WASP_SERVER_URL="${SERVER_URL}"
 # Build the application
 wasp build
 
-# Apply server binding patch for Fly.io compatibility
+# Apply server binding patch for Fly.io compatibility (BEFORE cd into build dir)
 print_status $BLUE "🔧 Applying server binding patch..."
-bash ../../scripts/patch-server-binding.sh
+bash scripts/patch-server-binding.sh
 
 # Navigate to build directory
 cd .wasp/build

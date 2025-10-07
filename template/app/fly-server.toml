@@ -11,7 +11,6 @@ primary_region = 'ord'
 [env]
   PORT = "8080"
   NODE_ENV = "production"
-  SERVER_HOST = "0.0.0.0"
 
 [http_service]
   internal_port = 8080
@@ -23,10 +22,10 @@ primary_region = 'ord'
 
   # Health check configuration
   [[http_service.checks]]
-    grace_period = "30s"
-    interval = "10s"  # More frequent checks
+    grace_period = "60s"  # Increased grace period for startup validation
+    interval = "15s"
     method = "GET"
-    timeout = "10s"   # Longer timeout for database checks
+    timeout = "10s"
     path = "/health/simple"
     
     [http_service.checks.headers]
@@ -34,7 +33,7 @@ primary_region = 'ord'
 
   # Additional comprehensive health check
   [[http_service.checks]]
-    grace_period = "60s"
+    grace_period = "90s"  # Longer grace period for comprehensive checks
     interval = "30s"
     method = "GET"
     timeout = "15s"

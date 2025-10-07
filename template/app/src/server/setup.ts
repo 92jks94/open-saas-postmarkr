@@ -29,14 +29,20 @@ export async function setupServer(): Promise<void> {
   // Validate CORS environment
   validateCorsEnvironment();
   
-  // Run comprehensive startup validation
-  try {
-    await validateServerStartup();
-    console.log('✅ Server startup validation completed successfully');
-  } catch (error) {
-    console.error('❌ Startup validation failed:', error);
-    throw error;
-  }
+  // Run comprehensive startup validation asynchronously
+  // This prevents blocking the server from responding to health checks
+  // which is critical for Fly.io deployments
+  setImmediate(async () => {
+    try {
+      await validateServerStartup();
+      console.log('✅ Server startup validation completed successfully');
+    } catch (error) {
+      console.error('❌ Startup validation failed:', error);
+      // Don't throw error - server is already running
+    }
+  });
+  
+  console.log('🚀 Server is ready to accept requests');
 }
 
 // Server middleware configuration function

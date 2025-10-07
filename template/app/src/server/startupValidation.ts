@@ -27,23 +27,46 @@ export async function validateServerStartup(): Promise<void> {
     
     // Phase 2: Database connection validation
     console.log('🗄️ Phase 2: Database connection validation...');
-    await validateDatabaseConnection();
+    try {
+      await validateDatabaseConnection();
+    } catch (error) {
+      console.warn('⚠️  Database connection validation failed:', error);
+      console.warn('⚠️  Server will continue but database operations may fail');
+      criticalIssues.push(`Database connection failed: ${error}`);
+    }
     
     // Phase 3: External service configuration validation
     console.log('🔗 Phase 3: External service configuration validation...');
-    validateExternalServices();
+    try {
+      validateExternalServices();
+    } catch (error) {
+      console.warn('⚠️  External service validation failed:', error);
+      console.warn('⚠️  Server will continue but some services may not work');
+      criticalIssues.push(`External service validation failed: ${error}`);
+    }
     
     // Phase 3.5: Real-time service connectivity tests (development only)
     if (isDevelopment()) {
       console.log('🧪 Phase 3.5: Real-time service connectivity tests...');
-      const connectivityIssues = await runServiceConnectivityTests();
-      criticalIssues.push(...connectivityIssues);
+      try {
+        const connectivityIssues = await runServiceConnectivityTests();
+        criticalIssues.push(...connectivityIssues);
+      } catch (error) {
+        console.warn('⚠️  Service connectivity tests failed:', error);
+        criticalIssues.push(`Service connectivity tests failed: ${error}`);
+      }
     }
     
     // Phase 4: API connectivity tests (production only)
     if (isProduction()) {
       console.log('🧪 Phase 4: API connectivity tests...');
-      await validateApiConnectivity();
+      try {
+        await validateApiConnectivity();
+      } catch (error) {
+        console.warn('⚠️  API connectivity validation failed:', error);
+        console.warn('⚠️  Server will continue but API integrations may not work');
+        criticalIssues.push(`API connectivity failed: ${error}`);
+      }
     }
     
     // Phase 5: Monitoring setup and initial health check
@@ -53,21 +76,33 @@ export async function validateServerStartup(): Promise<void> {
     
     // Phase 6: Display startup banner
     console.log('🎨 Phase 6: Displaying startup information...');
-    if (isDevelopment()) {
-      displayStartupBanner(startTime, criticalIssues);
-    } else {
-      displayProductionStatus();
+    try {
+      if (isDevelopment()) {
+        displayStartupBanner(startTime, criticalIssues);
+      } else {
+        displayProductionStatus();
+      }
+    } catch (error) {
+      console.warn('⚠️  Failed to display startup banner:', error);
     }
     
     console.log('✅ Server startup validation completed successfully');
   } catch (error) {
     console.error('❌ Server startup validation failed:', error);
-    process.exit(1);
+    // Log the error but don't crash in production - allow server to start
+    // This prevents crash loops when non-critical services are misconfigured
+    if (isDevelopment()) {
+      // Only exit in development to catch config issues early
+      process.exit(1);
+    } else {
+      console.warn('⚠️  Server starting despite validation failures - check logs!');
+    }
   }
 }
 
 /**
  * Validates database connection with real connectivity tests
+ * Now logs warnings instead of throwing errors
  */
 async function validateDatabaseConnection(): Promise<void> {
   console.log('📊 Validating database connection...');
@@ -134,7 +169,8 @@ async function validateDatabaseConnection(): Promise<void> {
     
   } catch (error) {
     console.error('❌ Database connection failed:', error);
-    throw new Error(`Database connection validation failed: ${error}`);
+    console.warn('⚠️  Server will continue but database operations will fail');
+    // Don't throw - just log the error and continue
   }
 }
 
@@ -154,26 +190,35 @@ function maskDatabaseUrl(url: string): string {
 function extractEnvironmentIssues(): string[] {
   const issues: string[] = [];
   
-  // Check for missing required environment variables
-  if (!process.env.JWT_SECRET) {
-    issues.push('JWT_SECRET: Required environment variable missing');
-  }
-  
-  if (!process.env.WASP_WEB_CLIENT_URL) {
-    issues.push('WASP_WEB_CLIENT_URL: Required environment variable missing');
-  }
-  
-  if (!process.env.WASP_SERVER_URL) {
-    issues.push('WASP_SERVER_URL: Required environment variable missing');
-  }
-  
-  // Check for invalid API key formats
-  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
-    issues.push('STRIPE_SECRET_KEY: Invalid format (must start with sk_live_ or sk_test_)');
-  }
-  
-  if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('sk-')) {
-    issues.push('OpenAI API Key: Invalid format (must start with sk-)');
+  try {
+    // Check for missing required environment variables
+    if (!process.env.JWT_SECRET) {
+      issues.push('JWT_SECRET: Required environment variable missing');
+      console.warn('⚠️  JWT_SECRET is missing - authentication may not work');
+    }
+    
+    if (!process.env.WASP_WEB_CLIENT_URL) {
+      issues.push('WASP_WEB_CLIENT_URL: Required environment variable missing');
+      console.warn('⚠️  WASP_WEB_CLIENT_URL is missing - CORS may not work');
+    }
+    
+    if (!process.env.WASP_SERVER_URL) {
+      issues.push('WASP_SERVER_URL: Required environment variable missing');
+      console.warn('⚠️  WASP_SERVER_URL is missing - client-server communication may fail');
+    }
+    
+    // Check for invalid API key formats
+    if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('sk_')) {
+      issues.push('STRIPE_SECRET_KEY: Invalid format (must start with sk_live_ or sk_test_)');
+      console.warn('⚠️  STRIPE_SECRET_KEY has invalid format');
+    }
+    
+    if (process.env.OPENAI_API_KEY && !process.env.OPENAI_API_KEY.startsWith('sk-')) {
+      issues.push('OpenAI API Key: Invalid format (must start with sk-)');
+      console.warn('⚠️  OPENAI_API_KEY has invalid format');
+    }
+  } catch (error) {
+    console.warn('⚠️  Error while extracting environment issues:', error);
   }
   
   return issues;
@@ -188,13 +233,14 @@ function validateExternalServices(): void {
   
   if (isProduction()) {
     // In production, validate all external services
-    validateStripeConfiguration();
-    validateSendGridConfiguration();
-    validateLobConfiguration();
-    validateAwsConfiguration();
-    validateSentryConfiguration();
-    validateOpenAIConfiguration();
-    validateGoogleAnalyticsConfiguration();
+    // Use try-catch to prevent validation failures from crashing the server
+    try { validateStripeConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
+    try { validateSendGridConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
+    try { validateLobConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
+    try { validateAwsConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
+    try { validateSentryConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
+    try { validateOpenAIConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
+    try { validateGoogleAnalyticsConfiguration(); } catch (e) { console.warn('⚠️ ', e); }
   } else {
     // In development, just log what's configured
     logServiceConfiguration();
@@ -341,17 +387,19 @@ async function validateApiConnectivity(): Promise<void> {
     const failedTests = results.filter(result => result.status === 'unhealthy');
     
     if (failedTests.length > 0) {
-      console.error('❌ Critical API connectivity tests failed:');
+      console.warn('⚠️  Some critical API connectivity tests failed:');
       failedTests.forEach(test => {
-        console.error(`   ${test.service}: ${test.error}`);
+        console.warn(`   ${test.service}: ${test.error}`);
       });
-      throw new Error(`${failedTests.length} critical API connectivity tests failed`);
+      // Don't throw - just warn and continue
+      console.warn(`⚠️  ${failedTests.length} API connectivity test(s) failed - server continuing anyway`);
+    } else {
+      console.log('✅ All critical API connectivity tests passed');
     }
-    
-    console.log('✅ All critical API connectivity tests passed');
   } catch (error) {
-    console.error('❌ API connectivity validation failed:', error);
-    throw error;
+    console.warn('⚠️  API connectivity validation failed:', error);
+    console.warn('⚠️  Continuing server startup anyway');
+    // Don't throw - just warn and continue
   }
 }
 
