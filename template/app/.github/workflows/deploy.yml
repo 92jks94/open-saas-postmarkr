@@ -1,296 +1,135 @@
-name: Deploy to Fly.io
+name: Deploy Wasp App to Fly.io
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ saas-template-nathan-now-postmarkr, main ]
     paths:
       - 'src/**'
       - 'main.wasp'
       - 'schema.prisma'
       - 'package.json'
       - 'package-lock.json'
+      - 'fly-*.toml'
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - production
-          - staging
-      force_deploy:
-        description: 'Force deployment even if tests fail'
-        required: false
-        default: false
-        type: boolean
 
 env:
   WASP_TELEMETRY_DISABLE: 1
   WASP_VERSION: 0.18.0
 
 jobs:
-  # Pre-deployment checks
-  pre-deploy-checks:
-    runs-on: ubuntu-latest
-    outputs:
-      should-deploy: ${{ steps.check.outputs.should-deploy }}
-      environment: ${{ steps.check.outputs.environment }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Determine deployment environment
-      id: check
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "should-deploy=true" >> $GITHUB_OUTPUT
-          echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
-        elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
-          echo "should-deploy=true" >> $GITHUB_OUTPUT
-          echo "environment=production" >> $GITHUB_OUTPUT
-        elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
-          echo "should-deploy=true" >> $GITHUB_OUTPUT
-          echo "environment=staging" >> $GITHUB_OUTPUT
-        else
-          echo "should-deploy=false" >> $GITHUB_OUTPUT
-          echo "environment=none" >> $GITHUB_OUTPUT
-        fi
-
-  # Run tests before deployment
-  test:
-    runs-on: ubuntu-latest
-    needs: pre-deploy-checks
-    if: needs.pre-deploy-checks.outputs.should-deploy == 'true'
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Setup test environment
-      run: |
-        cp .env.server.example .env.server
-        cp .env.client.example .env.client
-        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_db" >> .env.server
-        echo "JWT_SECRET=test-jwt-secret-that-is-at-least-32-characters-long" >> .env.server
-        echo "WASP_WEB_CLIENT_URL=http://localhost:3000" >> .env.server
-        echo "WASP_SERVER_URL=http://localhost:3001" >> .env.server
-
-    - name: Run critical tests
-      run: npm run test:critical-only
-      env:
-        NODE_ENV: test
-      continue-on-error: ${{ github.event.inputs.force_deploy == 'true' }}
-
-  # Deploy to Fly.io
   deploy:
     runs-on: ubuntu-latest
-    needs: [pre-deploy-checks, test]
-    if: |
-      needs.pre-deploy-checks.outputs.should-deploy == 'true' && 
-      (needs.test.result == 'success' || github.event.inputs.force_deploy == 'true')
-    
-    environment: ${{ needs.pre-deploy-checks.outputs.environment }}
     
     steps:
-    - name: Checkout code
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
+    - name: 🔧 Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         cache: 'npm'
 
-    - name: Install dependencies
+    - name: 📦 Install dependencies
       run: npm ci
 
-    - name: Install Wasp
-      run: curl -sSL https://get.wasp.sh/installer.sh | sh -s -- -v ${{ env.WASP_VERSION }}
+    - name: 🐝 Install Wasp
+      run: |
+        curl -sSL https://get.wasp.sh/installer.sh | sh -s -- -v ${{ env.WASP_VERSION }}
+        echo "$HOME/.wasp/bin" >> $GITHUB_PATH
 
-    - name: Add Wasp to PATH
-      run: echo "$HOME/.wasp/bin" >> $GITHUB_PATH
-
-    - name: Verify Wasp installation
+    - name: ✅ Verify Wasp installation
       run: wasp version
 
-    - name: Setup Fly.io CLI
+    - name: ✈️ Setup Fly.io CLI
       uses: superfly/flyctl-actions/setup-flyctl@master
 
-    - name: Login to Fly.io
-      run: flyctl auth login --api-token ${{ secrets.FLY_API_TOKEN }}
-
-    - name: Verify Fly.io authentication
-      run: flyctl auth whoami
-
-    - name: Check Fly.io app status
-      run: |
-        echo "Checking server app status..."
-        flyctl status --app ${{ secrets.FLY_SERVER_APP_NAME }}
-        echo "Checking client app status..."
-        flyctl status --app ${{ secrets.FLY_CLIENT_APP_NAME }}
-
-    - name: Deploy server to Fly.io
-      run: |
-        echo "Deploying server app: ${{ secrets.FLY_SERVER_APP_NAME }}"
-        flyctl deploy --app ${{ secrets.FLY_SERVER_APP_NAME }} --verbose
+    - name: 🔐 Authenticate with Fly.io
+      run: flyctl auth token ${{ secrets.FLY_API_TOKEN }}
       env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        JWT_SECRET: ${{ secrets.JWT_SECRET }}
-        PORT: ${{ secrets.PORT }}
-        WASP_SERVER_URL: ${{ secrets.WASP_SERVER_URL }}
-        WASP_WEB_CLIENT_URL: ${{ secrets.WASP_WEB_CLIENT_URL }}
-        NODE_ENV: ${{ secrets.NODE_ENV }}
-        SENTRY_RELEASE: ${{ github.sha }}
-        SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-        SENTRY_SERVER_NAME: ${{ secrets.SENTRY_SERVER_NAME }}
-        LOB_ENVIRONMENT: ${{ secrets.LOB_ENVIRONMENT }}
-        SMTP_HOST: ${{ secrets.SMTP_HOST }}
-        SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-        SMTP_PORT: ${{ secrets.SMTP_PORT }}
-        SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-        SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
-        ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
-        AWS_S3_FILES_BUCKET: ${{ secrets.AWS_S3_FILES_BUCKET }}
-        AWS_S3_IAM_ACCESS_KEY: ${{ secrets.AWS_S3_IAM_ACCESS_KEY }}
-        AWS_S3_IAM_SECRET_KEY: ${{ secrets.AWS_S3_IAM_SECRET_KEY }}
-        AWS_S3_REGION: ${{ secrets.AWS_S3_REGION }}
-        LOB_PROD_KEY: ${{ secrets.LOB_PROD_KEY }}
-        LOB_TEST_KEY: ${{ secrets.LOB_TEST_KEY }}
-        LOB_WEBHOOK_SECRET: ${{ secrets.LOB_WEBHOOK_SECRET }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        PAYMENTS_LARGE_BATCH_PLAN_ID: ${{ secrets.PAYMENTS_LARGE_BATCH_PLAN_ID }}
-        PAYMENTS_MEDIUM_BATCH_PLAN_ID: ${{ secrets.PAYMENTS_MEDIUM_BATCH_PLAN_ID }}
-        PAYMENTS_SMALL_BATCH_PLAN_ID: ${{ secrets.PAYMENTS_SMALL_BATCH_PLAN_ID }}
-        SENDGRID_FROM_EMAIL: ${{ secrets.SENDGRID_FROM_EMAIL }}
-        SENDGRID_FROM_NAME: ${{ secrets.SENDGRID_FROM_NAME }}
-        STRIPE_CUSTOMER_PORTAL_URL: ${{ secrets.STRIPE_CUSTOMER_PORTAL_URL }}
-        STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-        STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-        STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
-        GOOGLE_ANALYTICS_CLIENT_EMAIL: ${{ secrets.GOOGLE_ANALYTICS_CLIENT_EMAIL }}
-        GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
-        GOOGLE_ANALYTICS_PRIVATE_KEY: ${{ secrets.GOOGLE_ANALYTICS_PRIVATE_KEY }}
-        GOOGLE_ANALYTICS_PROPERTY_ID: ${{ secrets.GOOGLE_ANALYTICS_PROPERTY_ID }}
+        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-    - name: Deploy client to Fly.io
+    - name: 🚀 Deploy with Wasp
       run: |
-        echo "Deploying client app: ${{ secrets.FLY_CLIENT_APP_NAME }}"
-        flyctl deploy --app ${{ secrets.FLY_CLIENT_APP_NAME }} --verbose
+        echo "🚀 Starting Wasp deployment..."
+        echo "📦 Wasp will build and deploy both server and client automatically"
+        echo "📍 Server app: postmarkr-server-server"
+        echo "📍 Client app: postmarkr-server-client"
+        wasp deploy fly deploy
       env:
-        REACT_APP_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-        REACT_APP_GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
+        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-    - name: Verify deployments
-      run: |
-        echo "Verifying server deployment..."
-        flyctl status --app ${{ secrets.FLY_SERVER_APP_NAME }}
-        echo "Verifying client deployment..."
-        flyctl status --app ${{ secrets.FLY_CLIENT_APP_NAME }}
+    - name: ⏳ Wait for deployment to stabilize
+      run: sleep 30
 
-    - name: Run health checks
+    - name: 🏥 Health checks
       run: |
-        echo "Running health checks..."
-        SERVER_URL="https://${{ secrets.FLY_SERVER_APP_NAME }}.fly.dev"
-        CLIENT_URL="https://${{ secrets.FLY_CLIENT_APP_NAME }}.fly.dev"
+        echo "🔍 Checking deployment health..."
         
-        echo "Checking server health at: $SERVER_URL/health"
-        curl -f "$SERVER_URL/health" || echo "Server health check failed"
+        SERVER_URL="https://postmarkr-server-server.fly.dev"
+        CLIENT_URL="https://postmarkr-server-client.fly.dev"
         
-        echo "Checking client availability at: $CLIENT_URL"
-        curl -f "$CLIENT_URL" || echo "Client health check failed"
-
-    - name: Notify deployment success
-      if: success()
-      run: |
-        echo "✅ Deployment successful!"
-        echo "Server: https://${{ secrets.FLY_SERVER_APP_NAME }}.fly.dev"
-        echo "Client: https://${{ secrets.FLY_CLIENT_APP_NAME }}.fly.dev"
-        echo "Environment: ${{ needs.pre-deploy-checks.outputs.environment }}"
-        echo "Commit: ${{ github.sha }}"
-
-    - name: Notify deployment failure
-      if: failure()
-      run: |
-        echo "❌ Deployment failed!"
-        echo "Environment: ${{ needs.pre-deploy-checks.outputs.environment }}"
-        echo "Commit: ${{ github.sha }}"
-        echo "Check the logs above for details."
-
-  # Post-deployment smoke tests
-  smoke-tests:
-    runs-on: ubuntu-latest
-    needs: [pre-deploy-checks, deploy]
-    if: |
-      needs.pre-deploy-checks.outputs.should-deploy == 'true' && 
-      needs.deploy.result == 'success'
-    
-    env:
-      FLY_SERVER_APP: ${{ secrets.FLY_SERVER_APP_NAME }}
-      FLY_CLIENT_APP: ${{ secrets.FLY_CLIENT_APP_NAME }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-
-    - name: Install Playwright
-      run: |
-        npm install -g @playwright/test
-        npx playwright install --with-deps
-
-    - name: Run smoke tests
-      run: |
-        echo "Running smoke tests against deployed application..."
-        SERVER_URL="https://${FLY_SERVER_APP:-postmarkr-server}.fly.dev"
-        CLIENT_URL="https://${FLY_CLIENT_APP:-postmarkr-client}.fly.dev"
+        echo "Checking server health..."
+        if curl -sf "$SERVER_URL/health/simple" > /dev/null; then
+          echo "✅ Server is healthy"
+        else
+          echo "⚠️ Server health check failed"
+          flyctl logs -a postmarkr-server-server --limit 50
+          exit 1
+        fi
         
-        # Test server health endpoint
-        curl -f "$SERVER_URL/health" && echo "✅ Server health check passed"
-        
-        # Test client homepage loads
-        curl -f "$CLIENT_URL" && echo "✅ Client homepage check passed"
-        
-        # Test API endpoints are accessible
-        curl -f "$SERVER_URL/api/validate-address" -X POST -H "Content-Type: application/json" -d '{}' && echo "✅ API endpoint check passed"
+        echo "Checking client..."
+        if curl -sf "$CLIENT_URL" > /dev/null; then
+          echo "✅ Client is accessible"
+        else
+          echo "⚠️ Client check failed"
+          flyctl logs -a postmarkr-server-client --limit 50
+          exit 1
+        fi
 
-    - name: Generate deployment summary
+    - name: 📊 Show deployment status
       if: always()
       run: |
-        echo "# Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "📊 Checking Fly.io app status..."
+        flyctl status -a postmarkr-server-server || echo "Server status unavailable"
+        flyctl status -a postmarkr-server-client || echo "Client status unavailable"
+
+    - name: 📝 Generate deployment summary
+      if: always()
+      run: |
+        echo "# 🚀 Wasp Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## Environment: ${{ needs.pre-deploy-checks.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
-        echo "## Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "## Server: https://${FLY_SERVER_APP:-postmarkr-server}.fly.dev" >> $GITHUB_STEP_SUMMARY
-        echo "## Client: https://${FLY_CLIENT_APP:-postmarkr-client}.fly.dev" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployment Time:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Deployment Status: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "### Smoke Tests: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+        echo "## 🌐 Deployed Applications" >> $GITHUB_STEP_SUMMARY
+        echo "- 🖥️ **Server:** https://postmarkr-server-server.fly.dev" >> $GITHUB_STEP_SUMMARY
+        echo "- 🌍 **Client:** https://postmarkr-server-client.fly.dev" >> $GITHUB_STEP_SUMMARY
+        echo "- ❤️ **Health Check:** https://postmarkr-server-server.fly.dev/health" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## 📝 Quick Commands" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "# View server logs" >> $GITHUB_STEP_SUMMARY
+        echo "flyctl logs -a postmarkr-server-server" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# View client logs" >> $GITHUB_STEP_SUMMARY
+        echo "flyctl logs -a postmarkr-server-client" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Check server status" >> $GITHUB_STEP_SUMMARY
+        echo "flyctl status -a postmarkr-server-server" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "# Check client status" >> $GITHUB_STEP_SUMMARY
+        echo "flyctl status -a postmarkr-server-client" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+    - name: ❌ Show logs on failure
+      if: failure()
+      run: |
+        echo "❌ Deployment failed! Showing recent logs..."
+        echo "=== SERVER LOGS ==="
+        flyctl logs -a postmarkr-server-server --limit 100 || echo "Could not fetch server logs"
+        echo ""
+        echo "=== CLIENT LOGS ==="
+        flyctl logs -a postmarkr-server-client --limit 100 || echo "Could not fetch client logs"
