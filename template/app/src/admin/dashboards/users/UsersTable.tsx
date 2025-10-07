@@ -82,7 +82,7 @@ const UsersTable = () => {
 
   return (
     <div className='flex flex-col gap-4'>
-      <div className='rounded-sm border border-border bg-card shadow'>
+      <div className='rounded-sm border border-border bg-card shadow overflow-x-auto'>
         <div className='flex-col flex items-start justify-between p-6 gap-3 w-full bg-muted/40'>
           <span className='text-sm font-medium'>Filters:</span>
           <div className='flex items-center justify-between gap-3 w-full px-2'>
@@ -231,7 +231,7 @@ const UsersTable = () => {
           )}
         </div>
 
-        <div className='grid grid-cols-9 border-t-4 border-border py-4.5 px-4 md:px-6 '>
+        <div className='grid grid-cols-9 border-t-4 border-border py-4.5 px-4 md:px-6 min-w-[800px]'>
           <div className='col-span-3 flex items-center'>
             <p className='font-medium'>Email / Username</p>
           </div>
@@ -252,7 +252,7 @@ const UsersTable = () => {
         {!!data?.users &&
           data?.users?.length > 0 &&
           data.users.map((user) => (
-            <div key={user.id} className='grid grid-cols-9 gap-4 py-4.5 px-4 md:px-6 '>
+            <div key={user.id} className='grid grid-cols-9 gap-4 py-4.5 px-4 md:px-6 min-w-[800px]'>
               <div className='col-span-3 flex items-center'>
                 <div className='flex flex-col gap-1 '>
                   <p className='text-sm text-foreground'>{user.email}</p>

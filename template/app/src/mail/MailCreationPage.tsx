@@ -37,15 +37,15 @@ export default function MailCreationPage() {
 
   if (createdMailPieceId) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-card shadow rounded-lg p-6">
             <div className="text-center py-12">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              <CheckCircle className="h-16 w-16 text-success mx-auto mb-4" />
+              <h1 className="text-2xl font-bold text-card-foreground mb-4">
                 Mail Piece Created Successfully!
               </h1>
-              <p className="text-gray-600 mb-8">
+              <p className="text-muted-foreground mb-8">
                 Your mail piece has been created and is ready for processing.
               </p>
               

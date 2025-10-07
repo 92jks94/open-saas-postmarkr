@@ -172,10 +172,11 @@ function maskSensitiveValue(varName: string, value: string): string {
 
 /**
  * Simple health check for basic monitoring
+ * Optimized for deployment - minimal checks to prevent timeouts
  */
 export function simpleHealthCheck(): { status: 'ok' | 'error'; timestamp: string } {
   try {
-    // Basic checks
+    // Only check essential environment variables, no external calls
     const hasDatabase = !!process.env.DATABASE_URL;
     const hasJwtSecret = !!process.env.JWT_SECRET;
     

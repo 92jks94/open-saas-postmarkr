@@ -37,6 +37,10 @@ export default defineConfig({
       changefreq: 'weekly',
       priority: 0.7,
       lastmod: new Date(),
+      filter: (page) => {
+        // Exclude admin pages and other non-content pages
+        return !page.includes('/admin') && !page.includes('/api');
+      },
     }),
     starlight({
       title: 'Postmarkr Blog',

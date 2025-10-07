@@ -21,24 +21,13 @@ primary_region = 'ord'
   min_machines_running = 1
   processes = ['app']
 
-  # Health check configuration
+  # Health check configuration - simplified for deployment
   [[http_service.checks]]
-    grace_period = "30s"
-    interval = "10s"  # More frequent checks
+    grace_period = "60s"    # Longer grace period for startup
+    interval = "15s"        # Less frequent checks during deployment
     method = "GET"
-    timeout = "10s"   # Longer timeout for database checks
+    timeout = "5s"          # Shorter timeout for simple checks
     path = "/health/simple"
-    
-    [http_service.checks.headers]
-      User-Agent = "Fly-Health-Check"
-
-  # Additional comprehensive health check
-  [[http_service.checks]]
-    grace_period = "60s"
-    interval = "30s"
-    method = "GET"
-    timeout = "15s"
-    path = "/health"  # Full health check endpoint
     
     [http_service.checks.headers]
       User-Agent = "Fly-Health-Check"

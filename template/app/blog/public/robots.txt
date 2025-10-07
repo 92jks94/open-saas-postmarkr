@@ -1,17 +1,12 @@
-# Postmarkr Blog - Robots.txt
-# Allow all search engines to crawl the blog
-
 User-agent: *
 Allow: /
 
 # Sitemap location
 Sitemap: https://blog.postmarkr.com/sitemap-index.xml
-Sitemap: https://blog.postmarkr.com/sitemap-0.xml
 
-# Block admin areas and search query parameters
-Disallow: /*?*search*
-Disallow: /_astro/
+# Allow all blog content
+Allow: /blog/
+Allow: /guides/
 
-# Crawl delay to be respectful of server resources
+# Crawl delay for better server performance
 Crawl-delay: 1
-

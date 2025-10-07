@@ -213,6 +213,6 @@ const NavLogo = ({ isScrolled }: { isScrolled: boolean }) => (
       'size-7': isScrolled,
     })}
     src={logo}
-    alt='Your SaaS App'
+    alt='Postmarkr Logo'
   />
 );

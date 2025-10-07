@@ -6,6 +6,13 @@ import cors from 'cors';
 // Initialize Sentry on server startup
 initSentry();
 
+// Fix any failed migrations on startup
+// Note: Dynamic import removed to fix Rollup build issue
+// Migration fixes should be handled via database migrations instead
+// import('./migration-fix.js').then(({ fixFailedMigration }) => {
+//   fixFailedMigration().catch(console.error);
+// });
+
 // Validate CORS environment variables
 function validateCorsEnvironment(): void {
   const clientUrl = process.env.WASP_WEB_CLIENT_URL;

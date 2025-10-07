@@ -81,7 +81,7 @@ export default function App() {
             <Outlet />
           ) : (
             <>
-              <div className='mx-auto max-w-screen-2xl flex-1'>
+              <div className='mx-auto max-w-screen-2xl xl:max-w-none xl:px-8 2xl:px-12 flex-1'>
                 <Outlet />
               </div>
               <Footer footerNavigation={footerNavigation} />
