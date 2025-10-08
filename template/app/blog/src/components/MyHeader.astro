@@ -1,8 +1,6 @@
 ---
 import { logos } from 'virtual:starlight/user-images';
 import config from 'virtual:starlight/user-config';
-import blogConfig from 'virtual:starlight-blog-config'
-import type { Props } from '@astrojs/starlight/props';
 
 const appUrl = 'https://postmarkr.com';
 const { siteTitle } = Astro.props;
@@ -614,23 +612,26 @@ const { siteTitle } = Astro.props;
   // Search functionality
   function initSearch() {
     const searchInput = document.querySelector('.search-input');
-    const searchShortcut = document.querySelector('.search-shortcut');
     
     // Focus search on Ctrl+K
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        searchInput?.focus();
+        (searchInput as HTMLInputElement)?.focus();
       }
     });
 
     // Handle search input
-    searchInput?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        const query = e.target.value.trim();
-        if (query) {
-          // Simple search - redirect to search results or implement search logic
-          window.location.href = `/search?q=${encodeURIComponent(query)}`;
+    searchInput?.addEventListener('keydown', (e: Event) => {
+      const keyboardEvent = e as KeyboardEvent;
+      if (keyboardEvent.key === 'Enter') {
+        const target = keyboardEvent.target as HTMLInputElement;
+        if (target) {
+          const query = target.value.trim();
+          if (query) {
+            // Simple search - redirect to search results or implement search logic
+            window.location.href = `/search?q=${encodeURIComponent(query)}`;
+          }
         }
       }
     });
