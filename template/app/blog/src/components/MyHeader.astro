@@ -7,7 +7,9 @@ import type { Props } from '@astrojs/starlight/props';
 const appUrl = 'https://postmarkr.com';
 const { siteTitle } = Astro.props;
 ---
-<div class="unified-header-container">
+<header class="sticky-header">
+  <div class="header-container">
+    <div class="unified-header-container">
   <a href={appUrl} class="site-title sl-flex">
     {
       config.logo && logos.dark && (
@@ -37,15 +39,71 @@ const { siteTitle } = Astro.props;
     </span>
   </a>
   
-  <nav class="blog-nav">
-    <a href={`${appUrl}/#features`} class="nav-link">Features</a>
-    <a href={`${appUrl}/pricing`} class="nav-link">Pricing</a>
-    <a href="/blog/" class="nav-link active">Blog</a>
+  <nav class="blog-nav desktop-nav">
+    <a href={appUrl} class="nav-link">Home</a>
     <a href={`${appUrl}/login`} class="nav-link cta-link">Sign In</a>
+    <a href="/blog/" class="nav-link active">Postmarkr Blog</a>
   </nav>
-</div>
+
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-button" id="mobile-menu-button" aria-label="Open menu">
+    <svg class="hamburger-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </button>
+
+  <!-- Mobile Menu Overlay -->
+  <div class="mobile-menu-overlay" id="mobile-menu-overlay">
+    <div class="mobile-menu-content">
+      <div class="mobile-menu-header">
+        <span class="mobile-menu-title">Menu</span>
+        <button class="mobile-menu-close" id="mobile-menu-close" aria-label="Close menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <nav class="mobile-nav">
+        <a href={appUrl} class="mobile-nav-link">Home</a>
+        <a href={`${appUrl}/login`} class="mobile-nav-link cta-link">Sign In</a>
+        <a href="/blog/" class="mobile-nav-link active">Postmarkr Blog</a>
+      </nav>
+    </div>
+  </div>
+    </div>
+  </div>
+</header>
 
 <style>
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: all 0.3s ease;
+  }
+
+  .sticky-header.scrolled {
+    top: 1rem;
+  }
+
+  .header-container {
+    transition: all 0.3s ease;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .header-container.scrolled {
+    margin: 0 1rem 0 1rem;
+    border-radius: 9999px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
   .unified-header-container {
     display: flex;
     align-items: center;
@@ -53,6 +111,12 @@ const { siteTitle } = Astro.props;
     width: 100%;
     gap: 2rem;
     font-family: 'Satoshi', system-ui, sans-serif;
+    padding: 1.5rem 2rem;
+    transition: all 0.3s ease;
+  }
+
+  .header-container.scrolled .unified-header-container {
+    padding: 0.75rem 1.5rem;
   }
 
 	.site-title {
@@ -95,6 +159,153 @@ const { siteTitle } = Astro.props;
     display: flex;
     gap: 2rem;
     align-items: center;
+  }
+
+  .desktop-nav {
+    display: flex;
+  }
+
+  .mobile-menu-button {
+    display: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: hsl(var(--foreground));
+    transition: color 0.2s ease;
+  }
+
+  .mobile-menu-button:hover {
+    color: hsl(var(--primary));
+  }
+
+  .hamburger-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobile-menu-overlay.open {
+    display: flex;
+    opacity: 1;
+  }
+
+  .mobile-menu-content {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 16rem;
+    height: 100%;
+    background: hsl(var(--background));
+    border-left: 1px solid hsl(var(--border));
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-menu-overlay.open .mobile-menu-content {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  .mobile-menu-title {
+    font-weight: 600;
+    font-size: 1.125rem;
+    color: hsl(var(--foreground));
+  }
+
+  .mobile-menu-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: hsl(var(--foreground));
+    transition: color 0.2s ease;
+  }
+
+  .mobile-menu-close:hover {
+    color: hsl(var(--primary));
+  }
+
+  .mobile-menu-close svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .mobile-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0;
+  }
+
+  .mobile-nav-link {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    color: hsl(var(--foreground));
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+  }
+
+  .mobile-nav-link:hover,
+  .mobile-nav-link.active {
+    color: hsl(var(--primary));
+    background: hsl(var(--accent));
+    border-left-color: hsl(var(--primary));
+  }
+
+  .mobile-nav-link.cta-link {
+    margin: 0.5rem 1.5rem;
+    padding: 0.75rem 1.25rem;
+    border: 1.5px solid hsl(var(--primary));
+    border-radius: calc(var(--radius) - 2px);
+    text-align: center;
+    background: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mobile-nav-link.cta-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: -1;
+  }
+
+  .mobile-nav-link.cta-link:hover {
+    color: hsl(var(--primary-foreground));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px hsla(239 84% 67% / 0.25);
+  }
+
+  .mobile-nav-link.cta-link:hover::before {
+    opacity: 1;
   }
 
   .nav-link {
@@ -164,20 +375,109 @@ const { siteTitle } = Astro.props;
   }
 
   @media (max-width: 50rem) {
+    .desktop-nav {
+      display: none;
+    }
+
+    .mobile-menu-button {
+      display: block;
+    }
+
     .unified-header-container {
-      flex-direction: column;
-      gap: 1.25rem;
-      padding: 0.75rem 0;
+      padding: 1rem 1.5rem;
     }
 
-    .blog-nav {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 1.25rem;
+    .header-container.scrolled .unified-header-container {
+      padding: 0.5rem 1rem;
+    }
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .header-container {
+      background: rgba(0, 0, 0, 0.9);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .nav-link {
-      font-size: 0.875rem;
+    .header-container.scrolled {
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
   }
 </style>
+
+<script>
+  // Add scroll effect to header
+  function handleScroll() {
+    const header = document.querySelector('.sticky-header');
+    const headerContainer = document.querySelector('.header-container');
+    const scrolled = window.scrollY > 0;
+    
+    if (scrolled) {
+      header?.classList.add('scrolled');
+      headerContainer?.classList.add('scrolled');
+    } else {
+      header?.classList.remove('scrolled');
+      headerContainer?.classList.remove('scrolled');
+    }
+  }
+
+  // Throttle scroll events for better performance
+  let ticking = false;
+  function throttledScroll() {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        handleScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }
+
+  // Mobile menu functionality
+  function initMobileMenu() {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+    const mobileMenuClose = document.getElementById('mobile-menu-close');
+    const mobileMenuLinks = document.querySelectorAll('.mobile-nav-link');
+
+    function openMobileMenu() {
+      mobileMenuOverlay?.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileMenu() {
+      mobileMenuOverlay?.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // Event listeners
+    mobileMenuButton?.addEventListener('click', openMobileMenu);
+    mobileMenuClose?.addEventListener('click', closeMobileMenu);
+    mobileMenuOverlay?.addEventListener('click', (e) => {
+      if (e.target === mobileMenuOverlay) {
+        closeMobileMenu();
+      }
+    });
+
+    // Close menu when clicking on links
+    mobileMenuLinks.forEach(link => {
+      link.addEventListener('click', closeMobileMenu);
+    });
+
+    // Close menu on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && mobileMenuOverlay?.classList.contains('open')) {
+        closeMobileMenu();
+      }
+    });
+  }
+
+  // Add event listener when component mounts
+  document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('scroll', throttledScroll);
+    // Initial check
+    handleScroll();
+    // Initialize mobile menu
+    initMobileMenu();
+  });
+</script>
