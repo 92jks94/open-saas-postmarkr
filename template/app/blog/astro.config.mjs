@@ -78,7 +78,6 @@ export default defineConfig({
       components: {
         Head: './src/components/HeadWithOGImage.astro',
         PageTitle: './src/components/TitleWithBannerImage.astro',
-        ThemeSelect: () => null,
       },
       social: [],
       sidebar: [
