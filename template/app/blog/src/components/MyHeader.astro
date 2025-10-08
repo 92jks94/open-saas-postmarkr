@@ -57,7 +57,6 @@ const { siteTitle } = Astro.props;
         <path d="M4 4.84A9 9 0 0 1 19.16 20M4 4.84A9 9 0 0 0 19.16 20M4 4.84A5 5 0 0 1 19.16 16"></path>
       </svg>
     </a>
-    <span class="blog-title">Postmarkr Blog</span>
   </div>
 
   <!-- Mobile Menu Button -->
@@ -84,7 +83,6 @@ const { siteTitle } = Astro.props;
       <nav class="mobile-nav">
         <a href={appUrl} class="mobile-nav-link">Home</a>
         <a href="/rss.xml" class="mobile-nav-link">RSS Feed</a>
-        <a href="/blog/" class="mobile-nav-link active">Postmarkr Blog</a>
       </nav>
     </div>
   </div>
@@ -113,10 +111,23 @@ const { siteTitle } = Astro.props;
   }
 
   .header-container.scrolled {
-    margin: 0 1rem 0 1rem;
+    margin: 0 0.5rem 0 0.5rem;
     border-radius: 9999px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  /* Responsive margins to match main site */
+  @media (min-width: 48rem) {
+    .header-container.scrolled {
+      margin: 0 1rem 0 1rem;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .header-container.scrolled {
+      margin: 0 5rem 0 5rem;
+    }
   }
 
   .unified-header-container {
@@ -158,7 +169,7 @@ const { siteTitle } = Astro.props;
   }
 
 	img {
-		height: 1.75rem;
+		height: 2rem;
 		width: auto;
 		max-width: 100%;
 		object-fit: contain;
@@ -168,6 +179,16 @@ const { siteTitle } = Astro.props;
 
   .site-title:hover img {
     transform: scale(1.05);
+  }
+
+  /* Responsive logo scaling to match main site */
+  .site-title img {
+    height: 2rem;
+    transition: height 0.3s ease;
+  }
+
+  .header-container.scrolled .site-title img {
+    height: 1.75rem;
   }
 
   /* Search Bar Styles */
@@ -459,11 +480,11 @@ const { siteTitle } = Astro.props;
     opacity: 1;
   }
 
-  @media (max-width: 50rem) {
+  @media (max-width: 64rem) {
     .unified-header-container {
       display: flex;
       justify-content: space-between;
-      padding: 1rem 1.5rem;
+      padding: 0.75rem 1.5rem;
     }
 
     .search-container {
@@ -583,8 +604,8 @@ const { siteTitle } = Astro.props;
         if (target) {
           const query = target.value.trim();
           if (query) {
-            // Simple search - redirect to search results or implement search logic
-            window.location.href = `/search?q=${encodeURIComponent(query)}`;
+            // Redirect to main site search
+            window.location.href = `https://postmarkr.com/search?q=${encodeURIComponent(query)}`;
           }
         }
       }
