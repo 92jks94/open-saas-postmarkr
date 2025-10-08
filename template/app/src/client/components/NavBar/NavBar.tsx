@@ -37,10 +37,10 @@ export default function NavBar({ navigationItems }: { navigationItems: Navigatio
   return (
     <>
       {isLandingPage && <Announcement />}
-      <header className={cn('sticky top-0 z-50 transition-all duration-300', isScrolled && 'top-4')}>
+      <header className={cn('sticky top-0 z-50 transition-all duration-300', isScrolled && 'md:top-4')}>
         <div
           className={cn('transition-all duration-300', {
-            'mx-4 md:mx-20 pr-2 lg:pr-0 rounded-full shadow-glass bg-background/90 backdrop-blur-lg border border-border':
+            'mx-2 md:mx-4 lg:mx-20 pr-2 lg:pr-0 rounded-full shadow-glass bg-background/90 backdrop-blur-lg border border-border':
               isScrolled,
             'mx-0 bg-background/80 backdrop-blur-lg border-b border-border': !isScrolled,
           })}
@@ -131,14 +131,14 @@ function NavBarMobileMenu({
           <button
             type='button'
             className={cn(
-              'inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-muted hover:bg-accent transition-colors'
+              'inline-flex items-center justify-center rounded-md text-muted-foreground hover:text-muted hover:bg-accent transition-colors min-h-11 min-w-11 p-2'
             )}
           >
             <span className='sr-only'>Open main menu</span>
             <Menu
               className={cn('transition-all duration-300', {
-                'size-8 p-1': !isScrolled,
-                'size-6 p-0.5': isScrolled,
+                'size-6': !isScrolled,
+                'size-5': isScrolled,
               })}
               aria-hidden='true'
             />

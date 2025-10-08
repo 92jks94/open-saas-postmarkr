@@ -75,7 +75,7 @@ export default function Pricing() {
             <Card
               key={plan.name}
               className={`relative p-8 bg-card/70 backdrop-blur transition-all duration-300 hover:shadow-glass hover:-translate-y-2 animate-fade-in-up ${
-                plan.popular ? 'border-primary shadow-glow scale-105 md:scale-110' : 'border-border'
+                plan.popular ? 'border-primary shadow-glow md:scale-105 lg:scale-110' : 'border-border'
               }`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
