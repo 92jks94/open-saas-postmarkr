@@ -78,6 +78,7 @@ export default defineConfig({
       components: {
         Head: './src/components/HeadWithOGImage.astro',
         PageTitle: './src/components/TitleWithBannerImage.astro',
+        Header: './src/components/MyHeader.astro',
       },
       social: [],
       sidebar: [
