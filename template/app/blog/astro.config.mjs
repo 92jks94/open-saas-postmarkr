@@ -76,17 +76,11 @@ export default defineConfig({
         baseUrl: 'https://github.com/wasp-lang/open-saas-postmarkr/tree/main/template/app/blog',
       },
       components: {
-        SiteTitle: './src/components/MyHeader.astro',
         Head: './src/components/HeadWithOGImage.astro',
         PageTitle: './src/components/TitleWithBannerImage.astro',
+        ThemeSelect: () => null,
       },
-      social: [
-        {
-          icon: 'twitter',
-          label: 'Twitter',
-          href: 'https://twitter.com/postmarkr',
-        },
-      ],
+      social: [],
       sidebar: [
         {
           label: 'Start Here',
