@@ -58,7 +58,7 @@ export default defineConfig({
         {
           tag: 'script',
           attrs: {
-            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.PUBLIC_GA_ID || 'G-XXXXXXXXXX'}`,
+            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXXX'}`,
           },
         },
         {
@@ -68,7 +68,7 @@ export default defineConfig({
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
         
-          gtag('config', '${process.env.PUBLIC_GA_ID || 'G-XXXXXXXXXX'}');
+          gtag('config', '${process.env.GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXXX'}');
           `,
         },
       ],
