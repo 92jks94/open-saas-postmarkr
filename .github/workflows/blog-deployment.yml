@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'opensaas-sh/blog/**'
+      - 'blog/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'opensaas-sh/blog/**'
+      - 'blog/**'
 
 jobs:
   build:
@@ -26,15 +26,11 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install dependencies
-        working-directory: ./opensaas-sh/blog
+        working-directory: ./blog
         run: npm install
 
-      - name: Generate LLM files
-        working-directory: ./opensaas-sh/blog
-        run: npm run generate-llm-files
-
       - name: Build site
-        working-directory: ./opensaas-sh/blog
+        working-directory: ./blog
         run: npm run build
 
   deploy:
@@ -50,21 +46,17 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install dependencies
-        working-directory: ./opensaas-sh/blog
+        working-directory: ./blog
         run: npm install
 
-      - name: Generate LLM files
-        working-directory: ./opensaas-sh/blog
-        run: npm run generate-llm-files
-
       - name: Build site
-        working-directory: ./opensaas-sh/blog
+        working-directory: ./blog
         run: npm run build
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2
         with:
-          publish-dir: './opensaas-sh/blog/dist'
+          publish-dir: './blog/dist'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: 'Deploy from GitHub Actions'
