@@ -6,11 +6,13 @@ on:
       - main
     paths:
       - 'template/app/blog/**'
+      - '.github/workflows/blog-deployment.yml'
   pull_request:
     branches:
       - main
     paths:
       - 'template/app/blog/**'
+      - '.github/workflows/blog-deployment.yml'
 
 jobs:
   build:
