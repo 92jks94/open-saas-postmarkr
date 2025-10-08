@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - 'blog/**'
+      - 'template/app/blog/**'
   pull_request:
     branches:
       - main
     paths:
-      - 'blog/**'
+      - 'template/app/blog/**'
 
 jobs:
   build:
@@ -26,11 +26,11 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install dependencies
-        working-directory: ./blog
+        working-directory: ./template/app/blog
         run: npm install
 
       - name: Build site
-        working-directory: ./blog
+        working-directory: ./template/app/blog
         run: npm run build
 
   deploy:
@@ -46,17 +46,17 @@ jobs:
           node-version: 'lts/*'
 
       - name: Install dependencies
-        working-directory: ./blog
+        working-directory: ./template/app/blog
         run: npm install
 
       - name: Build site
-        working-directory: ./blog
+        working-directory: ./template/app/blog
         run: npm run build
 
       - name: Deploy to Netlify
         uses: nwtgck/actions-netlify@v2
         with:
-          publish-dir: './blog/dist'
+          publish-dir: './template/app/blog/dist'
           production-branch: main
           github-token: ${{ secrets.GITHUB_TOKEN }}
           deploy-message: 'Deploy from GitHub Actions'
