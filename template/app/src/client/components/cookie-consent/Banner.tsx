@@ -30,6 +30,9 @@ const initializeGoogleAnalyticsFallback = () => {
             (window.dataLayer as Array<any>).push(args);
           }
           
+          // Make gtag available globally
+          (window as any).gtag = gtag;
+          
           // Initialize gtag
           gtag('js', new Date());
           gtag('config', GA_ANALYTICS_ID);
