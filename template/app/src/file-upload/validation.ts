@@ -5,6 +5,17 @@ export const ALLOWED_FILE_TYPES = [
   'application/pdf',
 ] as const;
 
+/**
+ * Format file size in human-readable format
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
 // Mail-specific validation constants
 export const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB for mail
 export const MAIL_ALLOWED_FILE_TYPES = ['application/pdf'] as const;

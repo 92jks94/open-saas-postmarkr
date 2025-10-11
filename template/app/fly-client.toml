@@ -12,7 +12,7 @@ primary_region = 'ord'
   PORT = "8043"
   NODE_ENV = "production"
   VITE_SENTRY_DSN = "https://ea1a698c4ecd0ccd0859b624c70f55550@o4510025126051840.ingest.us.sentry.io/4510077051535360"
-  VITE_GOOGLE_ANALYTICS_ID = "G-6H2SB3GJDW"
+  VITE_GOOGLE_ANALYTICS_ID = "G-6H2SB3GJDW"  
 
 [http_service]
   internal_port = 8043

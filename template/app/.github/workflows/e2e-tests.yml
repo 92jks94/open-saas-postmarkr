@@ -114,7 +114,7 @@ jobs:
           PAYMENTS_CREDITS_10_PLAN_ID: ${{ secrets.STRIPE_CREDITS_PRICE_ID }}
           SKIP_EMAIL_VERIFICATION_IN_DEV: true
           # Client-side env vars
-          REACT_APP_GOOGLE_ANALYTICS_ID: G-H3LSJCK95H
+          VITE_GOOGLE_ANALYTICS_ID: G-H3LSJCK95H
         working-directory: ./template
         run: |
           cd e2e-tests

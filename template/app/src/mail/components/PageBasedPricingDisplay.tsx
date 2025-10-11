@@ -18,7 +18,7 @@ export function PageBasedPricingDisplay({ pageCount, addressPlacement, onPricing
     // Add extra page for insert_blank_page option
     const effectivePages = addressPlacement === 'insert_blank_page' ? pages + 1 : pages;
     
-    if (effectivePages > 60) return null;
+    if (effectivePages > 50) return null;
     
     if (effectivePages <= 5) {
       return {
@@ -39,7 +39,7 @@ export function PageBasedPricingDisplay({ pageCount, addressPlacement, onPricing
         tier: 'tier_3',
         price: 15.00,
         envelopeType: 'flat_9x12_single_window',
-        description: '21-60 pages - 9x12" flat single-window envelope'
+        description: '21-50 pages - 9x12" flat single-window envelope'
       };
     }
   };
@@ -60,7 +60,7 @@ export function PageBasedPricingDisplay({ pageCount, addressPlacement, onPricing
     );
   }
 
-  if (pageCount > 60) {
+  if (pageCount > 50) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <div className="flex items-center">
@@ -74,7 +74,7 @@ export function PageBasedPricingDisplay({ pageCount, addressPlacement, onPricing
               Document too large
             </h3>
             <div className="mt-2 text-sm text-red-700">
-              <p>Documents with more than 60 pages are not supported. Please split your document into smaller parts.</p>
+              <p>Documents with more than 50 pages are not supported. Please split your document into smaller parts.</p>
             </div>
           </div>
         </div>

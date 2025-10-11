@@ -250,6 +250,11 @@ query getDownloadFileSignedURL {
   entities: [User, File]
 }
 
+query getThumbnailURL {
+  fn: import { getThumbnailURL } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
 action deleteFile {
   fn: import { deleteFile } from "@src/file-upload/operations",
   entities: [User, File]
@@ -258,6 +263,12 @@ action deleteFile {
 action triggerPDFProcessing {
   fn: import { triggerPDFProcessing } from "@src/file-upload/operations",
   entities: [User, File]
+}
+
+// Phase 3: Extract specific pages from PDF
+action extractPDFPages {
+  fn: import { extractPDFPages } from "@src/file-upload/operations",
+  entities: [File]
 }
 
 job processPDFMetadata {
@@ -276,6 +287,18 @@ job cleanupOrphanedS3Files {
   entities: [File],
   schedule: {
     cron: "0 2 * * *" // Run daily at 2 AM to clean up orphaned S3 files
+  }
+}
+
+// Phase 3: Clean up old extracted PDF files to prevent storage bloat
+job cleanupExtractedFiles {
+  executor: PgBoss,
+  perform: {
+    fn: import { cleanupOldExtractedFiles } from "@src/file-upload/cleanup"
+  },
+  entities: [File, MailPiece],
+  schedule: {
+    cron: "0 2 * * *" // Run daily at 2 AM
   }
 }
 

@@ -37,6 +37,31 @@ export default defineConfig({
       changefreq: 'weekly',
       priority: 0.7,
       lastmod: new Date(),
+      // Customize sitemap generation
+      filter: (page) => {
+        // Include all pages by default
+        return true;
+      },
+      // Set different priorities based on page type
+      customPages: [],
+      serialize: (item) => {
+        // Boost priority for blog posts
+        if (item.url.includes('/blog/2')) {
+          item.priority = 0.9;
+          item.changefreq = 'monthly';
+        }
+        // Lower priority for tag and author pages (but still include them)
+        else if (item.url.includes('/blog/tags/') || item.url.includes('/blog/authors/')) {
+          item.priority = 0.5;
+          item.changefreq = 'monthly';
+        }
+        // Main pages and guides
+        else if (item.url.includes('/guides/')) {
+          item.priority = 0.8;
+          item.changefreq = 'monthly';
+        }
+        return item;
+      },
     }),
     starlight({
       title: 'Postmarkr Blog',

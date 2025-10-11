@@ -14,45 +14,56 @@ const initializeGoogleAnalyticsFallback = () => {
       .split(';')
       .find(c => c.trim().startsWith('cc_cookie='));
     
-    if (ccCookie) {
-      const cookieData = JSON.parse(decodeURIComponent(ccCookie.split('=')[1]));
-      const analyticsAccepted = cookieData.categories?.includes('analytics') || 
-                               cookieData.services?.analytics?.includes('ga');
-      
-      if (analyticsAccepted) {
-        // Initialize Google Analytics directly
-        const GA_ANALYTICS_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID || 'G-6H2SB3GJDW';
-        if (GA_ANALYTICS_ID) {
-          console.log('Fallback: Initializing Google Analytics with ID:', GA_ANALYTICS_ID);
-          
-          window.dataLayer = window.dataLayer || [];
-          function gtag(...args: unknown[]) {
-            (window.dataLayer as Array<any>).push(args);
-          }
-          
-          // Make gtag available globally
-          (window as any).gtag = gtag;
-          
-          // Initialize gtag
-          gtag('js', new Date());
-          gtag('config', GA_ANALYTICS_ID);
-
-          // Adding the script tag dynamically to the DOM.
-          const script = document.createElement('script');
-          script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
-          script.async = true;
-          
-          script.onload = () => {
-            console.log('Fallback: Google Analytics script loaded successfully');
-          };
-          
-          script.onerror = (error) => {
-            console.error('Fallback: Failed to load Google Analytics script:', error);
-          };
-          
-          document.body.appendChild(script);
+    // If no cookie consent library loaded, assume consent is given (fallback mode)
+    const analyticsAccepted = ccCookie ? 
+      (() => {
+        try {
+          const cookieData = JSON.parse(decodeURIComponent(ccCookie.split('=')[1]));
+          return cookieData.categories?.includes('analytics') || 
+                 cookieData.services?.analytics?.includes('ga');
+        } catch {
+          return false;
         }
-      }
+      })() : true; // No cookie = fallback mode = assume consent
+    
+    if (analyticsAccepted) {
+        // Initialize Google Analytics directly
+        const GA_ANALYTICS_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID;
+        
+        // Exit if no GA ID is configured
+        if (!GA_ANALYTICS_ID || !GA_ANALYTICS_ID.length) {
+          console.warn('Fallback: Google Analytics ID not provided, skipping initialization');
+          return;
+        }
+        
+        console.log('Fallback: Initializing Google Analytics with ID:', GA_ANALYTICS_ID);
+        
+        window.dataLayer = window.dataLayer || [];
+        function gtag(...args: unknown[]) {
+          (window.dataLayer as Array<any>).push(args);
+        }
+        
+        // Make gtag available globally
+        (window as any).gtag = gtag;
+        
+        // Initialize gtag
+        gtag('js', new Date());
+        gtag('config', GA_ANALYTICS_ID);
+
+        // Adding the script tag dynamically to the DOM.
+        const script = document.createElement('script');
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
+        script.async = true;
+        
+        script.onload = () => {
+          console.log('Fallback: Google Analytics script loaded successfully');
+        };
+        
+        script.onerror = (error) => {
+          console.error('Fallback: Failed to load Google Analytics script:', error);
+        };
+        
+        document.body.appendChild(script);
     }
   } catch (error) {
     console.error('Fallback GA initialization failed:', error);
@@ -69,21 +80,15 @@ const CookieConsentBanner = () => {
     // Try to run the cookie consent library
     try {
       CookieConsent.run(getConfig());
+      console.log('Cookie consent library initialized successfully');
     } catch (error) {
       console.error('Cookie consent library failed to load:', error);
       // Fallback: initialize Google Analytics if consent was previously given
       initializeGoogleAnalyticsFallback();
     }
     
-    // Additional fallback: check after a delay if library didn't load
-    const timeoutId = setTimeout(() => {
-      if (typeof window.CookieConsent === 'undefined') {
-        console.log('Cookie consent library not loaded, running fallback');
-        initializeGoogleAnalyticsFallback();
-      }
-    }, 1000);
-
-    return () => clearTimeout(timeoutId);
+    // Note: vanilla-cookieconsent v3 doesn't expose window.CookieConsent
+    // The library is loaded as an ES module, so the above try/catch is sufficient
   }, []);
 
   return <div id='cookieconsent'></div>;

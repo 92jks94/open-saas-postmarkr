@@ -69,7 +69,7 @@ const PaymentForm: React.FC<{
             estimatedCost = 250; // $2.50
           } else if (effectivePageCount <= 20) {
             estimatedCost = 750; // $7.50
-          } else if (effectivePageCount <= 60) {
+          } else if (effectivePageCount <= 50) {
             estimatedCost = 1500; // $15.00
           } else {
             throw new Error('Document too large for processing');

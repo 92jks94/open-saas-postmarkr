@@ -158,7 +158,7 @@ export default function MailCheckoutResultPage() {
                     {/* Show mail preview if available */}
                     <div className="mb-8">
                       <MailPreview 
-                        thumbnails={mailPiece.lobThumbnails}
+                        thumbnails={mailPiece.lobThumbnails as any}
                         lobPreviewUrl={mailPiece.lobPreviewUrl}
                         mailType={mailPiece.mailType}
                         lobId={mailPiece.lobId}

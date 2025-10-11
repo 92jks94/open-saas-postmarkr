@@ -2,14 +2,7 @@ import React from 'react';
 import { ExternalLink, FileText, Package } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-
-interface MailPreviewProps {
-  thumbnails?: any; // Can be Json type from Prisma (array or null)
-  lobPreviewUrl?: string | null;
-  mailType?: string;
-  lobId?: string | null;
-  className?: string;
-}
+import { parseLobThumbnails, type MailPreviewProps } from '../types';
 
 /**
  * Component to display mail piece previews from Lob
@@ -26,29 +19,9 @@ export function MailPreview({
   lobId,
   className = '' 
 }: MailPreviewProps) {
-  // Parse thumbnails if it's a JSON string or already an array
+  // Parse thumbnails using the utility function
   const thumbnailArray: string[] = React.useMemo(() => {
-    if (!thumbnails) return [];
-    
-    // If it's already an array
-    if (Array.isArray(thumbnails)) {
-      return thumbnails.filter(url => typeof url === 'string');
-    }
-    
-    // If it's a JSON object with thumbnail data
-    if (typeof thumbnails === 'object') {
-      // Lob returns thumbnails as an array, sometimes nested in objects
-      if (thumbnails.thumbnails && Array.isArray(thumbnails.thumbnails)) {
-        return thumbnails.thumbnails;
-      }
-      // Handle different possible structures
-      const values = Object.values(thumbnails);
-      if (values.length > 0 && typeof values[0] === 'string') {
-        return values as string[];
-      }
-    }
-    
-    return [];
+    return parseLobThumbnails(thumbnails);
   }, [thumbnails]);
 
   // Show loading state if mail is submitted but no previews yet

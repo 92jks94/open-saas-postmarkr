@@ -104,6 +104,12 @@ export const createFile = (userId: string, overrides: Partial<File> = {}): File 
     modificationDate: faker.date.recent().toISOString(),
   },
   lastProcessedAt: faker.date.recent(),
+  // Phase 1: Client-side preview fields
+  thumbnailKey: null,
+  thumbnailGeneratedAt: null,
+  // Phase 3: Page selection fields
+  selectedPages: null,
+  extractedFileKey: null,
   ...overrides,
 });
 

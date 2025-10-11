@@ -1113,7 +1113,7 @@ Once you've created a new Property, some Installation Instructions will pop up. 
 and copy and paste the Google Analytics ID into your `.env.client` file to get it working with the [Cookie Consent Modal](/guides/cookie-consent/) provided with this template:
 
 ```sh title=".env.client"
-REACT_APP_GOOGLE_ANALYTICS_ID=<your-google-analytics-id> # e.g. G-1234567890
+VITE_GOOGLE_ANALYTICS_ID=<your-google-analytics-id> # e.g. G-1234567890
 ```
 
 :::tip[noscript]
@@ -1384,7 +1384,7 @@ Below, we will guide you through the necessary steps to get the cookie consent m
 What's impotant to note for this template is that we are simply using the `onAccept` callbacks to dynamically add or remove our [Google Analytics](/guides/analytics/#google-analytics) cookies from the page. In order for it to work correctly with your app, you need to add your [Google Analytics ID](/guides/analytics/#google-analytics) to your `.env.client` file.
 
 ```sh title=".env.client"
- REACT_APP_GOOGLE_ANALYTICS_ID=G-1234567890
+ VITE_GOOGLE_ANALYTICS_ID=G-1234567890
 ```
 
 And that's it! The cookie consent modal will now dynamically add or remove the Google Analytics cookies based on the user's choice.
@@ -1571,7 +1571,7 @@ Here are a list of all of them (some of which you may not be using, e.g. Analyti
 - [ ] `PLAUSIBLE_API_KEY`
 - [ ] `PLAUSIBLE_SITE_ID`
 - [ ] `PLAUSIBLE_BASE_URL`
-- [ ] `REACT_APP_GOOGLE_ANALYTICS_ID` (for client-side)
+- [ ] `VITE_GOOGLE_ANALYTICS_ID` (for client-side)
 - [ ] `GOOGLE_ANALYTICS_CLIENT_EMAIL`
 - [ ] `GOOGLE_ANALYTICS_PROPERTY_ID` 
 - [ ] `GOOGLE_ANALYTICS_PRIVATE_KEY`

@@ -2,7 +2,7 @@
  * Page-based pricing system for MVP
  * - 1-5 pages: $2.50 (Standard #10 double-window envelope)
  * - 6-20 pages: $7.50 (9x12" flat single-window envelope)
- * - 21-60 pages: $15.00 (9x12" flat single-window envelope)
+ * - 21-50 pages: $15.00 (9x12" flat single-window envelope)
  */
 
 export interface PageBasedPricingConfig {
@@ -34,10 +34,10 @@ export const PAGE_BASED_PRICING: PageBasedPricingConfig[] = [
   {
     tier: 'tier_3',
     minPages: 21,
-    maxPages: 60,
+    maxPages: 50,
     price: 1500, // $15.00
     envelopeType: 'flat_9x12_single_window',
-    description: '21-60 pages - 9x12" flat single-window envelope'
+    description: '21-50 pages - 9x12" flat single-window envelope'
   }
 ];
 
@@ -59,8 +59,8 @@ export function calculatePricingTier(pageCount: number, addressPlacement?: 'top_
   // Add extra page for insert_blank_page option
   const effectivePageCount = addressPlacement === 'insert_blank_page' ? pageCount + 1 : pageCount;
 
-  if (effectivePageCount > 60) {
-    throw new Error('Documents with more than 60 pages are not supported');
+  if (effectivePageCount > 50) {
+    throw new Error('Documents with more than 50 pages are not supported');
   }
 
   // Find the appropriate pricing tier based on effective page count
@@ -131,7 +131,7 @@ export function getAllPricingTiers(): PageBasedPricingConfig[] {
  * Check if page count is valid for processing
  */
 export function isPageCountValid(pageCount: number): boolean {
-  return pageCount > 0 && pageCount <= 60;
+  return pageCount > 0 && pageCount <= 50;
 }
 
 /**
@@ -141,8 +141,8 @@ export function getPageCountErrorMessage(pageCount: number): string {
   if (pageCount <= 0) {
     return 'Document must have at least 1 page';
   }
-  if (pageCount > 60) {
-    return 'Documents with more than 60 pages are not supported. Please split your document into smaller parts.';
+  if (pageCount > 50) {
+    return 'Documents with more than 50 pages are not supported. Please split your document into smaller parts.';
   }
   return '';
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useQuery, getAllFilesByUser } from 'wasp/client/operations';
+import { useQuery, getAllFilesByUser, getThumbnailURL, getDownloadFileSignedURL } from 'wasp/client/operations';
 import type { File } from 'wasp/entities';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -39,7 +39,7 @@ interface FileValidationResult {
 const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 const MAIL_TYPE_REQUIREMENTS = {
-  'letter': { maxPages: 60, minPages: 1 },
+  'letter': { maxPages: 50, minPages: 1 },
   // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
   // 'postcard': { maxPages: 1, minPages: 1 },
   // 'check': { maxPages: 1, minPages: 1 },
@@ -47,6 +47,102 @@ const MAIL_TYPE_REQUIREMENTS = {
   // 'catalog': { maxPages: 50, minPages: 2 },
   // 'booklet': { maxPages: 20, minPages: 2 }
 } as const;
+
+/**
+ * Component to display file thumbnail with loading/error states
+ */
+const FileThumbnail: React.FC<{ file: File }> = ({ file }) => {
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  const [isPreviewing, setIsPreviewing] = useState(false);
+  const isPDF = file.type === 'application/pdf';
+  
+  // Fetch thumbnail for PDFs only
+  const { data: thumbnailUrl, isLoading } = useQuery(
+    getThumbnailURL,
+    { fileId: file.id },
+    { 
+      enabled: isPDF && !!file.thumbnailKey,
+      refetchInterval: false
+    }
+  );
+
+  // Handle PDF preview
+  const handlePreviewPDF = async () => {
+    if (!isPDF) return;
+    setIsPreviewing(true);
+    try {
+      const url = await getDownloadFileSignedURL({ key: file.key });
+      if (url) {
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to preview PDF:', error);
+    } finally {
+      setIsPreviewing(false);
+    }
+  };
+
+  if (!isPDF || !file.thumbnailKey) {
+    // Fallback icon for non-PDFs or missing thumbnails - still clickable for preview
+    return (
+      <div 
+        onClick={handlePreviewPDF}
+        className="w-16 h-16 bg-red-50 rounded border border-red-200 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-red-100 transition-colors hover:scale-105 transition-transform"
+        title="Click to preview PDF"
+      >
+        <FileText className="h-8 w-8 text-red-600" />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-16 h-16 bg-gray-100 rounded border border-gray-200 flex items-center justify-center flex-shrink-0">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600"></div>
+      </div>
+    );
+  }
+
+  if (thumbnailUrl && typeof thumbnailUrl === 'string' && !thumbnailFailed) {
+    return (
+      <div 
+        onClick={handlePreviewPDF}
+        className="w-16 h-16 rounded border border-gray-200 overflow-hidden flex-shrink-0 cursor-pointer hover:scale-105 transition-transform relative group"
+        title="Click to preview PDF"
+      >
+        <img
+          src={thumbnailUrl}
+          alt={`${file.name} thumbnail`}
+          className="w-full h-full object-cover"
+          onError={() => setThumbnailFailed(true)}
+        />
+        {/* Preview overlay */}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            {isPreviewing ? (
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            ) : (
+              <div className="bg-white bg-opacity-90 rounded-full p-1">
+                <FileText className="h-4 w-4 text-gray-700" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback icon - still clickable for preview
+  return (
+    <div 
+      onClick={handlePreviewPDF}
+      className="w-16 h-16 bg-red-50 rounded border border-red-200 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-red-100 transition-colors hover:scale-105 transition-transform"
+      title="Click to preview PDF"
+    >
+      <FileText className="h-8 w-8 text-red-600" />
+    </div>
+  );
+};
 
 /**
  * Validate a file for mail processing requirements
@@ -245,16 +341,19 @@ const FileSelector: React.FC<FileSelectorProps> = ({
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          {getValidationIcon(file.id)}
-                          <div>
-                            <p className="font-medium text-sm">{file.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {file.pageCount ? `${file.pageCount} pages` : 'Unknown pages'} • 
-                              {file.size ? formatFileSize(file.size) : 'Unknown size'}
-                            </p>
+                          <FileThumbnail file={file} />
+                          <div className="flex items-start gap-2">
+                            {getValidationIcon(file.id)}
+                            <div>
+                              <p className="font-medium text-sm">{file.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {file.pageCount ? `${file.pageCount} pages` : 'Unknown pages'} • 
+                                {file.size ? formatFileSize(file.size) : 'Unknown size'}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
                           {getValidationBadge(file.id)}
                           {isSelected && (
                             <Badge variant="default" className="bg-blue-100 text-blue-800">
@@ -290,13 +389,16 @@ const FileSelector: React.FC<FileSelectorProps> = ({
                   return (
                     <div key={file.id} className="border border-red-200 rounded-lg p-3 bg-red-50">
                       <div className="flex items-center gap-3">
-                        {getValidationIcon(file.id)}
-                        <div>
-                          <p className="font-medium text-sm">{file.name}</p>
-                          <div className="text-xs text-red-600">
-                            {validation?.errors.map((error, index) => (
-                              <p key={index}>• {error}</p>
-                            ))}
+                        <FileThumbnail file={file} />
+                        <div className="flex items-start gap-2 flex-1">
+                          {getValidationIcon(file.id)}
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{file.name}</p>
+                            <div className="text-xs text-red-600 mt-1">
+                              {validation?.errors.map((error, index) => (
+                                <p key={index}>• {error}</p>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>

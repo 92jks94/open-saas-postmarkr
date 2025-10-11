@@ -241,7 +241,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
       
       // Validate page count for pricing
       if (pageCount) {
-        const pricingValidation = validateAndCalculatePricing(pageCount, validatedInput.addressPlacement === AddressPlacement.TOP_FIRST_PAGE ? 'top_first_page' : 'insert_blank_page');
+        const pricingValidation = validateAndCalculatePricing(pageCount, validatedInput.addressPlacement);
         if (!pricingValidation.isValid) {
           throw new HttpError(400, pricingValidation.error || 'Invalid page count');
         }
@@ -254,7 +254,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
     let customerPrice: number | undefined;
     
     if (pageCount) {
-      const pricing = calculatePricingTier(pageCount, validatedInput.addressPlacement === AddressPlacement.TOP_FIRST_PAGE ? 'top_first_page' : 'insert_blank_page');
+      const pricing = calculatePricingTier(pageCount, validatedInput.addressPlacement);
       pricingTier = pricing.tier;
       envelopeType = pricing.envelopeType;
       customerPrice = pricing.price / 100; // Convert cents to dollars
@@ -280,7 +280,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
         // Set printing preferences with MVP defaults
         colorPrinting: false, // Default to black & white for MVP
         doubleSided: true,    // Default to double-sided for MVP
-        addressPlacement: validatedInput.addressPlacement || AddressPlacement.INSERT_BLANK_PAGE, // Default to insert_blank_page
+        addressPlacement: validatedInput.addressPlacement === 'top_first_page' ? AddressPlacement.TOP_FIRST_PAGE : AddressPlacement.INSERT_BLANK_PAGE, // Convert frontend format to enum
       },
     });
 

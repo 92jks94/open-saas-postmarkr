@@ -14,7 +14,7 @@ const faqs = [
   {
     question: 'What file formats do you accept?',
     answer:
-      'We currently accept PDF files up to 60 pages. Your documents should be formatted for standard 8.5" x 11" paper. We automatically optimize your files for professional printing while maintaining quality.',
+      'We currently accept PDF files up to 50 pages. Your documents should be formatted for standard 8.5" x 11" paper. We automatically optimize your files for professional printing while maintaining quality.',
   },
   {
     question: 'Is my document secure?',

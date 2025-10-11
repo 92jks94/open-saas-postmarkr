@@ -54,9 +54,9 @@ export const paymentPlans: Record<PaymentPlanId, PaymentPlan> = {
     effect: { 
       kind: 'pages', 
       minPages: 21,
-      maxPages: 60,
+      maxPages: 50,
       totalPrice: 15.00,
-      pricePerPage: 0.25 // $15.00 / 60 pages = $0.25 per page
+      pricePerPage: 0.30 // $15.00 / 50 pages = $0.30 per page
     },
   },
 };
@@ -65,7 +65,7 @@ export function prettyPaymentPlanName(planId: PaymentPlanId): string {
   const planToName: Record<PaymentPlanId, string> = {
     [PaymentPlanId.SmallBatch]: 'Small Batch (1-5 pages)',
     [PaymentPlanId.MediumBatch]: 'Medium Batch (6-20 pages)',
-    [PaymentPlanId.LargeBatch]: 'Large Batch (21-60 pages)',
+    [PaymentPlanId.LargeBatch]: 'Large Batch (21-50 pages)',
   };
   return planToName[planId];
 }

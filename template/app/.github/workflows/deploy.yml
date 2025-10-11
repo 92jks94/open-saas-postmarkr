@@ -212,7 +212,7 @@ jobs:
         flyctl deploy --app ${{ secrets.FLY_CLIENT_APP_NAME }} --verbose
       env:
         REACT_APP_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
-        REACT_APP_GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
+        VITE_GOOGLE_ANALYTICS_ID: ${{ secrets.GOOGLE_ANALYTICS_ID }}
 
     - name: Verify deployments
       run: |

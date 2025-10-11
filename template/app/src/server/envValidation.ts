@@ -73,7 +73,7 @@ const awsEnvSchema = z.object({
 });
 
 // Monitoring & Analytics environment variables
-const monitoringEnvSchema = z.object({
+const sentryEnvSchema = z.object({
   SENTRY_DSN: z.string().url('SENTRY_DSN must be a valid URL'),
   SENTRY_RELEASE: z.string().min(1, 'SENTRY_RELEASE is required'),
   SENTRY_SERVER_NAME: z.string().min(1, 'SENTRY_SERVER_NAME is required'),
@@ -93,6 +93,23 @@ const analyticsEnvSchema = z.object({
   GOOGLE_ANALYTICS_CLIENT_EMAIL: z.string().email('GOOGLE_ANALYTICS_CLIENT_EMAIL must be a valid email').optional(),
   GOOGLE_ANALYTICS_PRIVATE_KEY: z.string().min(1, 'GOOGLE_ANALYTICS_PRIVATE_KEY is required for Google Analytics').optional(),
   GOOGLE_ANALYTICS_PROPERTY_ID: z.string().min(1, 'GOOGLE_ANALYTICS_PROPERTY_ID is required for Google Analytics').optional(),
+});
+
+// Server configuration environment variables
+const serverConfigEnvSchema = z.object({
+  SERVER_HOST: z.string().optional(),
+});
+
+// Monitoring and alerting environment variables
+const monitoringEnvSchema = z.object({
+  MONITORING_WEBHOOK_URL: z.string().url('MONITORING_WEBHOOK_URL must be a valid URL').optional(),
+  MONITORING_EMAIL: z.string().email('MONITORING_EMAIL must be a valid email').optional(),
+  MONITORING_SLACK_WEBHOOK: z.string().url('MONITORING_SLACK_WEBHOOK must be a valid URL').optional(),
+});
+
+// Blog-specific environment variables
+const blogEnvSchema = z.object({
+  PUBLIC_GA_ID: z.string().optional(),
 });
 
 
@@ -116,9 +133,12 @@ const envSchema = z.object({
   ...pricingPlansEnvSchema.shape,
   ...lobEnvSchema.shape,
   ...awsEnvSchema.shape,
+  ...sentryEnvSchema.shape,
   ...monitoringEnvSchema.shape,
   ...aiEnvSchema.shape,
   ...analyticsEnvSchema.shape,
+  ...serverConfigEnvSchema.shape,
+  ...blogEnvSchema.shape,
   ...optionalEnvSchema.shape,
 });
 
@@ -163,9 +183,12 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       ...pricingPlansEnvSchema.shape,
       ...lobEnvSchema.shape,
       ...awsEnvSchema.shape,
+      ...sentryEnvSchema.shape,
       ...monitoringEnvSchema.shape,
       ...aiEnvSchema.shape,
       ...analyticsEnvSchema.shape,
+      ...serverConfigEnvSchema.shape,
+      ...blogEnvSchema.shape,
       ...optionalEnvSchema.shape,
     }).partial({
       // Make these optional in development
@@ -193,6 +216,11 @@ export function validateEnvironmentVariablesFor(environment: 'development' | 'pr
       GOOGLE_ANALYTICS_CLIENT_EMAIL: true,
       GOOGLE_ANALYTICS_PRIVATE_KEY: true,
       GOOGLE_ANALYTICS_PROPERTY_ID: true,
+      SERVER_HOST: true,
+      MONITORING_WEBHOOK_URL: true,
+      MONITORING_EMAIL: true,
+      MONITORING_SLACK_WEBHOOK: true,
+      PUBLIC_GA_ID: true,
     });
     
     try {
@@ -321,5 +349,10 @@ export function getOptionalEnvironmentVariables(): string[] {
     'GOOGLE_ANALYTICS_CLIENT_EMAIL',
     'GOOGLE_ANALYTICS_PRIVATE_KEY',
     'GOOGLE_ANALYTICS_PROPERTY_ID',
+    'SERVER_HOST',
+    'MONITORING_WEBHOOK_URL',
+    'MONITORING_EMAIL',
+    'MONITORING_SLACK_WEBHOOK',
+    'PUBLIC_GA_ID',
   ];
 }

@@ -145,6 +145,9 @@ check_env_var "SENTRY_SERVER_NAME" true true
 check_env_var "OPENAI_API_KEY" false
 check_env_var "GOOGLE_ANALYTICS_ID" false
 check_env_var "MONITORING_SLACK_WEBHOOK" false
+check_env_var "MONITORING_WEBHOOK_URL" false
+check_env_var "MONITORING_EMAIL" false
+check_env_var "SERVER_HOST" false
 
 # Validate API key formats
 echo -e "\n${BLUE}Validating API Key Formats...${NC}"

@@ -383,7 +383,7 @@ export default function MailDetailsPage() {
 
             {/* Mail Preview */}
             <MailPreview 
-              thumbnails={mailPiece.lobThumbnails}
+              thumbnails={mailPiece.lobThumbnails as any}
               lobPreviewUrl={mailPiece.lobPreviewUrl}
               mailType={mailPiece.mailType}
               lobId={mailPiece.lobId}

@@ -58,18 +58,26 @@ const getConfig = () => {
             label: 'Google Analytics',
             onAccept: () => {
               try {
-                // Check for Google Analytics ID in multiple possible locations
-                const GA_ANALYTICS_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID || 
-                                       import.meta.env.REACT_APP_GOOGLE_ANALYTICS_ID ||
-                                       import.meta.env.GOOGLE_ANALYTICS_ID;
+                // Debug: Log all available env vars
+                console.log('🔍 DEBUG: All import.meta.env:', import.meta.env);
+                
+                // Check for Google Analytics ID using standardized naming
+                const GA_ANALYTICS_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID;
+                console.log('🔍 DEBUG: GA_ANALYTICS_ID value:', GA_ANALYTICS_ID);
+                
                 if (!GA_ANALYTICS_ID || !GA_ANALYTICS_ID.length) {
                   console.log('Google Analytics ID not provided, skipping initialization');
                   return;
                 }
+                
+                console.log('Initializing Google Analytics with ID:', GA_ANALYTICS_ID);
+                
                 window.dataLayer = window.dataLayer || [];
-                function gtag(..._args: unknown[]) {
-                  (window.dataLayer as Array<any>).push(arguments);
+                function gtag(...args: unknown[]) {
+                  (window.dataLayer as Array<any>).push(args);
                 }
+                
+                // Initialize gtag
                 gtag('js', new Date());
                 gtag('config', GA_ANALYTICS_ID);
 
@@ -77,9 +85,18 @@ const getConfig = () => {
                 const script = document.createElement('script');
                 script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
                 script.async = true;
+                
+                script.onload = () => {
+                  console.log('Google Analytics script loaded successfully');
+                };
+                
+                script.onerror = (error) => {
+                  console.error('Failed to load Google Analytics script:', error);
+                };
+                
                 document.body.appendChild(script);
               } catch (error) {
-                console.error(error);
+                console.error('Google Analytics initialization error:', error);
               }
             },
             onReject: () => {},

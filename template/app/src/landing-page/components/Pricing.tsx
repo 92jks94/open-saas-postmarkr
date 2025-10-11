@@ -36,7 +36,7 @@ const plans = [
   {
     name: 'Premium',
     price: '$15.00',
-    pages: '21-60 pages',
+    pages: '21-50 pages',
     description: 'For comprehensive documents',
     features: [
       'Express Mail delivery',

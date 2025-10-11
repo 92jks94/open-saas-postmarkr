@@ -1,4 +1,4 @@
-import { Sentry } from './sentry';
+import * as Sentry from '@sentry/node';
 
 /**
  * Utility functions for Sentry error tracking and performance monitoring

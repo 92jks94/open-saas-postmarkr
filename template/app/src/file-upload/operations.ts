@@ -7,7 +7,9 @@ import type {
   DeleteFile,
   GetAllFilesByUser,
   GetDownloadFileSignedURL,
+  GetThumbnailURL,
   TriggerPDFProcessing,
+  ExtractPDFPages,
 } from 'wasp/server/operations';
 import type { File } from 'wasp/entities';
 import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
@@ -16,6 +18,7 @@ import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
 // LOCAL SERVICE/UTILITY IMPORTS
 // ============================================================================
 import { getUploadFileSignedURLFromS3, getDownloadFileSignedURLFromS3, deleteFileFromS3 } from './s3Utils';
+import { uploadBase64ThumbnailToS3, getThumbnailSignedUrl } from './s3ThumbnailUtils';
 import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
 import { extractPDFMetadataFromBuffer, isPDFBuffer, type PDFMetadata } from './pdfMetadata';
@@ -25,11 +28,19 @@ import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLi
 // EXTERNAL LIBRARY IMPORTS
 // ============================================================================
 import * as z from 'zod';
-import { S3Client, GetObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
+import { randomUUID } from 'crypto';
 
 const createFileInputSchema = z.object({
   fileType: z.enum(ALLOWED_FILE_TYPES),
   fileName: z.string().nonempty(),
+  // Phase 1: Optional thumbnail data from client
+  clientThumbnail: z.string().optional(),
+  previewPageCount: z.number().optional(),
+  previewDimensions: z.object({
+    width: z.number(),
+    height: z.number()
+  }).optional(),
 });
 
 type CreateFileInput = z.infer<typeof createFileInputSchema>;
@@ -49,7 +60,8 @@ export const createFile: CreateFile<
   // Rate limiting: 10 file uploads per hour
   checkOperationRateLimit('createFile', 'fileUpload', context.user.id);
 
-  const { fileType, fileName } = ensureArgsSchemaOrThrowHttpError(createFileInputSchema, rawArgs);
+  const validatedInput = ensureArgsSchemaOrThrowHttpError(createFileInputSchema, rawArgs);
+  const { fileType, fileName } = validatedInput;
 
   const { s3UploadUrl, s3UploadFields, key } = await getUploadFileSignedURLFromS3({
     fileType,
@@ -57,6 +69,7 @@ export const createFile: CreateFile<
     userId: context.user.id,
   });
 
+  // Create file record first to get the fileId
   const file = await context.entities.File.create({
     data: {
       name: fileName,
@@ -64,8 +77,35 @@ export const createFile: CreateFile<
       uploadUrl: s3UploadUrl,
       type: fileType,
       user: { connect: { id: context.user.id } },
+      // Pre-populate page count if available (will be verified by background job)
+      pageCount: validatedInput.previewPageCount,
     },
   });
+
+  // Upload thumbnail to S3 if provided (client-side generated)
+  let thumbnailKey: string | undefined;
+  if (validatedInput.clientThumbnail) {
+    try {
+      thumbnailKey = await uploadBase64ThumbnailToS3({
+        base64Data: validatedInput.clientThumbnail,
+        userId: context.user.id,
+        fileId: file.id, // Use the actual database file ID
+      });
+      
+      // Update file record with thumbnail key
+      await context.entities.File.update({
+        where: { id: file.id },
+        data: {
+          thumbnailKey: thumbnailKey,
+          thumbnailGeneratedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to upload thumbnail to S3:', error);
+      // Don't fail file creation if thumbnail upload fails
+      thumbnailKey = undefined;
+    }
+  }
 
   // Note: PDF metadata processing will be triggered by client after S3 upload completes
 
@@ -102,6 +142,46 @@ export const getDownloadFileSignedURL: GetDownloadFileSignedURL<
 > = async (rawArgs, _context) => {
   const { key } = ensureArgsSchemaOrThrowHttpError(getDownloadFileSignedURLInputSchema, rawArgs);
   return await getDownloadFileSignedURLFromS3({ key });
+};
+
+const getThumbnailURLInputSchema = z.object({ 
+  fileId: z.string().nonempty() 
+});
+
+type GetThumbnailURLInput = z.infer<typeof getThumbnailURLInputSchema>;
+
+/**
+ * Get signed URL for file thumbnail
+ * Returns null if thumbnail doesn't exist
+ */
+export const getThumbnailURL: GetThumbnailURL<
+  GetThumbnailURLInput,
+  string | null
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { fileId } = ensureArgsSchemaOrThrowHttpError(getThumbnailURLInputSchema, rawArgs);
+  
+  // Get file and verify ownership
+  const file = await context.entities.File.findFirst({
+    where: {
+      id: fileId,
+      userId: context.user.id,
+    },
+  });
+
+  if (!file) {
+    throw new HttpError(404, 'File not found');
+  }
+
+  if (!file.thumbnailKey) {
+    return null; // No thumbnail available
+  }
+
+  // Return signed URL for thumbnail
+  return await getThumbnailSignedUrl(file.thumbnailKey);
 };
 
 const deleteFileInputSchema = z.object({
@@ -262,6 +342,11 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
       console.error(`Error processing PDF metadata for file ${fileId}:`, error);
     }
     
+    // Get file for userId in error case
+    const file = await context.entities.File.findFirst({
+      where: { id: fileId }
+    });
+    
     // Update file with error status
     await context.entities.File.update({
       where: { id: fileId },
@@ -355,4 +440,132 @@ export const cleanupOrphanedS3Files = async (args: any, context: any) => {
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
+};
+
+// Phase 3: Extract specific pages from PDF
+const extractPDFPagesInputSchema = z.object({
+  fileId: z.string(),
+  startPage: z.number().min(1),
+  endPage: z.number().min(1),
+});
+
+type ExtractPDFPagesInput = z.infer<typeof extractPDFPagesInputSchema>;
+
+export const extractPDFPages: ExtractPDFPages<
+  ExtractPDFPagesInput,
+  { extractedFileId: string; pageCount: number }
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+  
+  const { fileId, startPage, endPage } = ensureArgsSchemaOrThrowHttpError(
+    extractPDFPagesInputSchema,
+    rawArgs
+  );
+  
+  // Validate page range
+  if (startPage > endPage) {
+    throw new HttpError(400, 'Start page must be less than or equal to end page');
+  }
+  
+  // Get original file
+  const originalFile = await context.entities.File.findFirst({
+    where: { id: fileId, userId: context.user.id }
+  });
+  
+  if (!originalFile) {
+    throw new HttpError(404, 'File not found');
+  }
+  
+  if (!originalFile.pageCount) {
+    throw new HttpError(400, 'File has not been processed yet');
+  }
+  
+  if (endPage > originalFile.pageCount) {
+    throw new HttpError(400, `End page ${endPage} exceeds total pages ${originalFile.pageCount}`);
+  }
+  
+  const extractedPageCount = endPage - startPage + 1;
+  
+  // Validate extracted page count against mail limits
+  if (extractedPageCount > 50) {
+    throw new HttpError(400, 'Extracted pages cannot exceed 50 pages');
+  }
+  
+  // Download original PDF from S3
+  const s3Client = new S3Client({
+    region: process.env.AWS_S3_REGION || 'us-east-2',
+    credentials: {
+      accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
+      secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
+    },
+  });
+  
+  const getObjectCommand = new GetObjectCommand({
+    Bucket: process.env.AWS_S3_FILES_BUCKET!,
+    Key: originalFile.key,
+  });
+  
+  const response = await s3Client.send(getObjectCommand);
+  const originalPdfBuffer = Buffer.from(await response.Body!.transformToByteArray());
+  
+  // Extract pages using pdf-lib (already installed from Phase 1)
+  const { PDFDocument } = await import('pdf-lib');
+  const sourcePDF = await PDFDocument.load(originalPdfBuffer);
+  const newPDF = await PDFDocument.create();
+  
+  // Copy selected pages (pdf-lib uses 0-based indexing)
+  const pageIndicesToCopy = Array.from(
+    { length: extractedPageCount },
+    (_, i) => startPage - 1 + i
+  );
+  
+  const copiedPages = await newPDF.copyPages(sourcePDF, pageIndicesToCopy);
+  copiedPages.forEach(page => newPDF.addPage(page));
+  
+  // Save extracted PDF
+  const extractedPdfBytes = await newPDF.save();
+  const extractedPdfBuffer = Buffer.from(extractedPdfBytes);
+  
+  // Upload extracted PDF to S3
+  const extractedKey = `${context.user.id}/${randomUUID()}_pages_${startPage}-${endPage}.pdf`;
+  
+  const putCommand = new PutObjectCommand({
+    Bucket: process.env.AWS_S3_FILES_BUCKET!,
+    Key: extractedKey,
+    Body: extractedPdfBuffer,
+    ContentType: 'application/pdf',
+  });
+  
+  await s3Client.send(putCommand);
+  
+  // Create new file record for extracted PDF
+  const extractedFile = await context.entities.File.create({
+    data: {
+      name: `${originalFile.name.replace('.pdf', '')}_pages_${startPage}-${endPage}.pdf`,
+      key: extractedKey,
+      uploadUrl: '', // Not needed for extracted files
+      type: 'application/pdf',
+      userId: context.user.id,
+      pageCount: extractedPageCount,
+      validationStatus: 'valid',
+      selectedPages: {
+        start: startPage,
+        end: endPage,
+        total: originalFile.pageCount,
+        originalFileId: fileId
+      },
+      extractedFileKey: extractedKey,
+      isMailFile: true, // Mark as ready for mail
+    },
+  });
+  
+  // Trigger metadata extraction for extracted file
+  await processPDFMetadataJob.submit({ fileId: extractedFile.id });
+  
+  return {
+    extractedFileId: extractedFile.id,
+    pageCount: extractedPageCount
+  };
 };

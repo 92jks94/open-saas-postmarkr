@@ -1,4 +1,7 @@
-import { initSentry } from './sentry';
+// IMPORTANT: Make sure to import `instrument.js` at the top of your file.
+// If you're using ECMAScript Modules (ESM) syntax, use `import "./instrument.js";`
+import "../instrument.js";
+
 import { validateServerStartup } from './startupValidation';
 import type { MiddlewareConfigFn } from 'wasp/server';
 import cors from 'cors';
@@ -23,8 +26,7 @@ function validateCorsEnvironment(): void {
 
 // Server setup function called by Wasp on server startup
 export async function setupServer(): Promise<void> {
-  // Initialize Sentry on server startup
-  initSentry();
+  // Sentry is already initialized via instrument.js import at the top of this file
   
   // Validate CORS environment
   validateCorsEnvironment();

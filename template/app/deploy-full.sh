@@ -31,8 +31,24 @@ if [ ! -f "main.wasp" ]; then
     exit 1
 fi
 
-# Step 1: Ensure URLs are set as secrets
-print_status $YELLOW "📋 Step 1: Verifying URL configuration..."
+# Step 1: Database validation
+print_status $YELLOW "📋 Step 1: Validating database configuration..."
+if [ -f "scripts/validate-database.sh" ]; then
+    chmod +x scripts/validate-database.sh
+    if ./scripts/validate-database.sh; then
+        print_status $GREEN "✅ Database validation passed"
+    else
+        print_status $RED "❌ Database validation failed"
+        print_status $YELLOW "   Please fix database issues before deploying"
+        exit 1
+    fi
+else
+    print_status $YELLOW "⚠️  Database validation script not found, skipping..."
+fi
+echo ""
+
+# Step 2: Ensure URLs are set as secrets
+print_status $YELLOW "📋 Step 2: Verifying URL configuration..."
 print_status $BLUE "   Server URL: ${SERVER_URL}"
 print_status $BLUE "   Client URL: ${CLIENT_URL}"
 echo ""
@@ -59,8 +75,8 @@ else
     echo ""
 fi
 
-# Step 2: Build with environment variables
-print_status $YELLOW "📋 Step 2: Building Wasp application..."
+# Step 3: Build with environment variables
+print_status $YELLOW "📋 Step 3: Building Wasp application..."
 print_status $BLUE "   Building with WASP_SERVER_URL=${SERVER_URL}"
 echo ""
 
@@ -73,13 +89,24 @@ wasp build
 
 # Apply server binding patch for Fly.io compatibility (BEFORE cd into build dir)
 print_status $BLUE "🔧 Applying server binding patch..."
-bash scripts/patch-server-binding.sh
+
+# Patch the server to bind to 0.0.0.0 for Fly.io
+SERVER_JS=".wasp/build/server.js"
+if [ -f "$SERVER_JS" ]; then
+    # Replace localhost binding with 0.0.0.0
+    sed -i "s/hostname: 'localhost'/hostname: '0.0.0.0'/g" "$SERVER_JS"
+    sed -i "s/host: 'localhost'/host: '0.0.0.0'/g" "$SERVER_JS"
+    sed -i "s/host: \"localhost\"/host: \"0.0.0.0\"/g" "$SERVER_JS"
+    print_status $GREEN "✅ Server binding patch applied"
+else
+    print_status $YELLOW "⚠️  server.js not found, patch may not be needed"
+fi
 
 # Navigate to build directory
 cd .wasp/build
 
-# Step 3: Deploy Server
-print_status $YELLOW "📋 Step 3: Deploying Server..."
+# Step 4: Deploy Server
+print_status $YELLOW "📋 Step 4: Deploying Server..."
 print_status $BLUE "   Deploying to: ${SERVER_APP}"
 echo ""
 
@@ -96,8 +123,8 @@ echo ""
 print_status $YELLOW "⏳ Waiting 20 seconds for server to initialize..."
 sleep 20
 
-# Step 4: Deploy Client
-print_status $YELLOW "📋 Step 4: Deploying Client..."
+# Step 5: Deploy Client
+print_status $YELLOW "📋 Step 5: Deploying Client..."
 print_status $BLUE "   Deploying to: ${CLIENT_APP}"
 print_status $BLUE "   Client will connect to: ${SERVER_URL}"
 echo ""
@@ -111,8 +138,8 @@ flyctl deploy \
 print_status $GREEN "✅ Client deployment initiated"
 echo ""
 
-# Step 5: Check deployment status
-print_status $YELLOW "📋 Step 5: Checking deployment status..."
+# Step 6: Check deployment status
+print_status $YELLOW "📋 Step 6: Checking deployment status..."
 echo ""
 
 print_status $BLUE "Server status:"
@@ -123,8 +150,8 @@ print_status $BLUE "Client status:"
 flyctl status --app ${CLIENT_APP} 2>/dev/null || print_status $YELLOW "⏳ Client still deploying..."
 echo ""
 
-# Step 6: Health check validation
-print_status $YELLOW "📋 Step 6: Validating deployment health..."
+# Step 7: Health check validation
+print_status $YELLOW "📋 Step 7: Validating deployment health..."
 echo ""
 
 # Wait for services to be ready

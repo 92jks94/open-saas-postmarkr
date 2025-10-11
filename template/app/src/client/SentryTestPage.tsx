@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sentry } from './sentry';
+import { testSentryError, testSentryMessage } from 'wasp/client/operations';
 
 /**
  * Test page for verifying Sentry integration
@@ -29,9 +30,6 @@ export default function SentryTestPage() {
 
   const testServerError = async () => {
     try {
-      // Import the test operation
-      const { testSentryError } = await import('wasp/client/operations');
-      
       // Call the test operation
       const result = await testSentryError({});
       
@@ -44,9 +42,6 @@ export default function SentryTestPage() {
 
   const testServerMessage = async () => {
     try {
-      // Import the test operation
-      const { testSentryMessage } = await import('wasp/client/operations');
-      
       // Call the test operation
       const result = await testSentryMessage({});
       
