@@ -1,0 +1,363 @@
+/**
+ * Mail Notification Service
+ * 
+ * This module handles sending all mail-related email notifications.
+ * It fetches necessary data from the database and sends formatted emails.
+ */
+
+import { emailSender } from 'wasp/server/email';
+import type { MailPiece, MailAddress, User } from 'wasp/entities';
+import {
+  getPaymentConfirmationEmail,
+  getMailSubmittedEmail,
+  getInTransitEmail,
+  getDeliveryConfirmationEmail,
+  getDeliveryFailedEmail,
+  getPaymentFailedEmail,
+  getWelcomeEmail,
+} from './mailTemplates';
+
+interface MailPieceWithRelations extends MailPiece {
+  recipientAddress: MailAddress;
+  senderAddress: MailAddress;
+  user: User & { email?: string };
+}
+
+/**
+ * Get user email from auth identities or user model
+ */
+function getUserEmail(user: any): string | null {
+  // Try to get email from identities (AuthUser structure)
+  if (user.identities?.email?.email) {
+    return user.identities.email.email;
+  }
+  
+  // Try to get email from user model directly
+  if (user.email) {
+    return user.email;
+  }
+  
+  return null;
+}
+
+/**
+ * Get user name from user model or email
+ */
+function getUserName(user: any): string {
+  // Try username first
+  if (user.username) {
+    return user.username;
+  }
+  
+  // Try email identities
+  if (user.identities?.email?.email) {
+    return user.identities.email.email.split('@')[0];
+  }
+  
+  // Try direct email
+  if (user.email) {
+    return user.email.split('@')[0];
+  }
+  
+  return 'Valued Customer';
+}
+
+/**
+ * Generate tracking URL for a mail piece
+ */
+function getTrackingUrl(mailPieceId: string): string {
+  const baseUrl = process.env.WASP_WEB_CLIENT_URL || 'https://postmarkr.com';
+  return `${baseUrl}/mail/${mailPieceId}`;
+}
+
+/**
+ * Generic email sender for mail-related notifications
+ * Handles user email extraction, validation, sending, and error handling
+ * 
+ * @param mailPiece - Mail piece with user and address relations
+ * @param getTemplate - Function that generates email content
+ * @param templateData - Data to pass to the template function
+ * @param emailType - Human-readable email type for logging (e.g., "payment confirmation")
+ */
+async function sendMailEmail<T>(
+  mailPiece: MailPieceWithRelations,
+  getTemplate: (data: T) => { subject: string; text: string; html: string },
+  templateData: T,
+  emailType: string
+): Promise<void> {
+  try {
+    const userEmail = getUserEmail(mailPiece.user);
+    
+    if (!userEmail) {
+      console.error(`Cannot send ${emailType} email: user email not found`, {
+        mailPieceId: mailPiece.id,
+        userId: mailPiece.userId
+      });
+      return;
+    }
+
+    const emailContent = getTemplate(templateData);
+
+    await emailSender.send({
+      to: userEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
+    });
+
+    console.log(`✅ ${emailType} email sent for mail piece ${mailPiece.id} to ${userEmail}`);
+  } catch (error) {
+    console.error(`Failed to send ${emailType} email:`, error);
+    // Don't throw - email failures shouldn't break the user flow
+  }
+}
+
+/**
+ * Send payment confirmation email after successful payment
+ */
+export async function sendPaymentConfirmationEmail(
+  mailPiece: MailPieceWithRelations
+): Promise<void> {
+  const userEmail = getUserEmail(mailPiece.user);
+  if (!userEmail) return;
+
+  return sendMailEmail(
+    mailPiece,
+    getPaymentConfirmationEmail,
+    {
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      senderAddress: mailPiece.senderAddress,
+      userName: getUserName(mailPiece.user),
+      userEmail,
+      trackingUrl: getTrackingUrl(mailPiece.id),
+    },
+    'payment confirmation'
+  );
+}
+
+/**
+ * Send mail submitted confirmation email
+ */
+export async function sendMailSubmittedEmail(
+  mailPiece: MailPieceWithRelations
+): Promise<void> {
+  const userEmail = getUserEmail(mailPiece.user);
+  if (!userEmail) return;
+
+  return sendMailEmail(
+    mailPiece,
+    getMailSubmittedEmail,
+    {
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      userName: getUserName(mailPiece.user),
+      trackingUrl: getTrackingUrl(mailPiece.id),
+    },
+    'mail submitted'
+  );
+}
+
+/**
+ * Send in transit notification email
+ */
+export async function sendInTransitEmail(
+  mailPiece: MailPieceWithRelations
+): Promise<void> {
+  const userEmail = getUserEmail(mailPiece.user);
+  if (!userEmail) return;
+
+  return sendMailEmail(
+    mailPiece,
+    getInTransitEmail,
+    {
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      userName: getUserName(mailPiece.user),
+      trackingUrl: getTrackingUrl(mailPiece.id),
+    },
+    'in transit'
+  );
+}
+
+/**
+ * Send delivery confirmation email
+ */
+export async function sendDeliveryConfirmationEmail(
+  mailPiece: MailPieceWithRelations,
+  deliveryDate?: Date
+): Promise<void> {
+  const userEmail = getUserEmail(mailPiece.user);
+  if (!userEmail) return;
+
+  return sendMailEmail(
+    mailPiece,
+    getDeliveryConfirmationEmail,
+    {
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      userName: getUserName(mailPiece.user),
+      trackingUrl: getTrackingUrl(mailPiece.id),
+      deliveryDate,
+    },
+    'delivery confirmation'
+  );
+}
+
+/**
+ * Send delivery failed alert email
+ */
+export async function sendDeliveryFailedEmail(
+  mailPiece: MailPieceWithRelations,
+  failureReason?: string
+): Promise<void> {
+  const userEmail = getUserEmail(mailPiece.user);
+  if (!userEmail) return;
+
+  return sendMailEmail(
+    mailPiece,
+    getDeliveryFailedEmail,
+    {
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      userName: getUserName(mailPiece.user),
+      userEmail,
+      failureReason,
+    },
+    'delivery failed'
+  );
+}
+
+/**
+ * Send payment failed notification email
+ */
+export async function sendPaymentFailedEmail(
+  userEmail: string,
+  userName: string,
+  mailType: string,
+  amount: number,
+  failureReason?: string
+): Promise<void> {
+  try {
+    const baseUrl = process.env.WASP_WEB_CLIENT_URL || 'https://postmarkr.com';
+    const retryUrl = `${baseUrl}/mail/create`;
+
+    const emailContent = getPaymentFailedEmail({
+      userName,
+      userEmail,
+      mailType,
+      amount,
+      failureReason,
+      retryUrl,
+    });
+
+    await emailSender.send({
+      to: userEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
+    });
+
+    console.log(`✅ Payment failed email sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Failed to send payment failed email:', error);
+  }
+}
+
+/**
+ * Send welcome email to new user
+ */
+export async function sendWelcomeEmail(
+  userEmail: string,
+  userName: string
+): Promise<void> {
+  try {
+    const emailContent = getWelcomeEmail({
+      userName,
+      userEmail,
+    });
+
+    await emailSender.send({
+      to: userEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
+    });
+
+    console.log(`✅ Welcome email sent to ${userEmail}`);
+  } catch (error) {
+    console.error('Failed to send welcome email:', error);
+  }
+}
+
+/**
+ * Fetch mail piece with all required relations for email sending
+ */
+export async function fetchMailPieceForEmail(
+  mailPieceId: string,
+  context: any
+): Promise<MailPieceWithRelations | null> {
+  try {
+    const mailPiece = await context.entities.MailPiece.findUnique({
+      where: { id: mailPieceId },
+      include: {
+        recipientAddress: true,
+        senderAddress: true,
+        user: true,
+      },
+    });
+
+    return mailPiece as MailPieceWithRelations | null;
+  } catch (error) {
+    console.error('Failed to fetch mail piece for email:', error);
+    return null;
+  }
+}
+
+/**
+ * Determine which email to send based on status change
+ */
+export async function handleMailStatusChangeEmail(
+  mailPieceId: string,
+  newStatus: string,
+  previousStatus: string,
+  context: any
+): Promise<void> {
+  const mailPiece = await fetchMailPieceForEmail(mailPieceId, context);
+  
+  if (!mailPiece) {
+    console.error('Cannot send status change email: mail piece not found', { mailPieceId });
+    return;
+  }
+
+  // Determine which email to send based on status transition
+  switch (newStatus) {
+    case 'submitted':
+      // Don't send email here - it's already sent in submitMailPieceToLob operation
+      // to avoid potential duplicate emails (operation sends immediately, webhook may arrive later)
+      console.log(`Mail submitted email already sent in operation for ${mailPieceId}, skipping webhook email`);
+      break;
+      
+    case 'in_transit':
+    case 'in_local_area':
+      await sendInTransitEmail(mailPiece);
+      break;
+      
+    case 'delivered':
+      await sendDeliveryConfirmationEmail(mailPiece);
+      break;
+      
+    case 'failed':
+    case 'returned':
+      const failureReason = mailPiece.metadata && typeof mailPiece.metadata === 'object' 
+        ? (mailPiece.metadata as any).failureReason 
+        : undefined;
+      await sendDeliveryFailedEmail(mailPiece, failureReason);
+      break;
+      
+    default:
+      // No email needed for other status changes
+      break;
+  }
+}
+

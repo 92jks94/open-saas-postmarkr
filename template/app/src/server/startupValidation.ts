@@ -356,22 +356,67 @@ function validateOpenAIConfiguration(): void {
  * Validates Google Analytics configuration
  */
 function validateGoogleAnalyticsConfiguration(): void {
+  console.log('📊 Validating Google Analytics configuration...');
+  
   const clientEmail = process.env.GOOGLE_ANALYTICS_CLIENT_EMAIL;
   const privateKey = process.env.GOOGLE_ANALYTICS_PRIVATE_KEY;
   const propertyId = process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
   
+  console.log('🔍 Environment variables:');
+  console.log('   GOOGLE_ANALYTICS_CLIENT_EMAIL:', clientEmail ? `${clientEmail.substring(0, 20)}...` : 'NOT SET');
+  console.log('   GOOGLE_ANALYTICS_PRIVATE_KEY:', privateKey ? `SET (${privateKey.length} chars)` : 'NOT SET');
+  console.log('   GOOGLE_ANALYTICS_PROPERTY_ID:', propertyId || 'NOT SET');
+  
   if (!clientEmail || !privateKey || !propertyId) {
-    console.warn('⚠️ Google Analytics not fully configured - analytics features will be limited');
+    const missing = [
+      !clientEmail && 'GOOGLE_ANALYTICS_CLIENT_EMAIL',
+      !privateKey && 'GOOGLE_ANALYTICS_PRIVATE_KEY',
+      !propertyId && 'GOOGLE_ANALYTICS_PROPERTY_ID'
+    ].filter(Boolean);
+    console.warn('⚠️  Google Analytics not fully configured - analytics features will be limited');
+    console.warn('   Missing variables:', missing.join(', '));
+    console.warn('💡 To enable Google Analytics API, set these in .env.server');
     return;
   }
   
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(clientEmail)) {
+    console.error('❌ Google Analytics client email format is invalid:', clientEmail);
     throw new Error('Google Analytics client email format is invalid');
   }
+  console.log('   ✓ Email format valid');
   
-  console.log('✅ Google Analytics configuration validated');
+  // Validate private key format (should be base64 encoded)
+  try {
+    const decoded = Buffer.from(privateKey, 'base64').toString('utf-8');
+    console.log('   ✓ Private key is valid base64');
+    console.log('   ✓ Decoded key length:', decoded.length);
+    
+    if (!decoded.includes('BEGIN PRIVATE KEY')) {
+      console.error('❌ Decoded private key missing BEGIN PRIVATE KEY header');
+      throw new Error('Invalid private key format - missing header');
+    }
+    if (!decoded.includes('END PRIVATE KEY')) {
+      console.error('❌ Decoded private key missing END PRIVATE KEY footer');
+      throw new Error('Invalid private key format - missing footer');
+    }
+    console.log('   ✓ Private key format valid (PEM)');
+  } catch (error) {
+    console.error('❌ Failed to validate private key:', error);
+    throw new Error('Google Analytics private key is invalid');
+  }
+  
+  // Validate property ID format (should be numeric)
+  if (!/^\d+$/.test(propertyId)) {
+    console.error('❌ Google Analytics property ID should be numeric:', propertyId);
+    throw new Error('Google Analytics property ID format is invalid');
+  }
+  console.log('   ✓ Property ID format valid (numeric)');
+  
+  console.log('✅ Google Analytics configuration validated successfully');
+  console.log('💡 Note: This validates configuration format only, not API connectivity');
+  console.log('   Check googleAnalyticsUtils.ts module logs for actual API initialization status');
 }
 
 

@@ -10,10 +10,8 @@ export function initSentry() {
     return;
   }
 
-  // Check for Sentry DSN in multiple possible locations
-  const sentryDsn = import.meta.env.VITE_SENTRY_DSN || 
-                   import.meta.env.REACT_APP_SENTRY_DSN ||
-                   import.meta.env.SENTRY_DSN;
+  // Check for Sentry DSN (React App environment variable)
+  const sentryDsn = import.meta.env.REACT_APP_SENTRY_DSN;
 
   // Only initialize if DSN is provided
   if (!sentryDsn) {

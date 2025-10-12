@@ -15,6 +15,9 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+# Wasp-specific environment files
+.env.client
+.env.server
 
 # IDE
 .vscode/
@@ -89,3 +92,20 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+
+# Test results and playwright artifacts
+test-results/
+playwright-report/
+e2e-tests/test-results/
+e2e-tests/playwright-report/
+
+# Build artifacts and generated documentation
+*.md.backup
+*.md.tmp
+
+# OS-specific files
+*.Zone.Identifier
+
+# Local scripts (optional - remove if you want to track these)
+# deploy-local.sh
+# test-local.sh

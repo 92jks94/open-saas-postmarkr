@@ -84,8 +84,14 @@ echo ""
 export WASP_WEB_CLIENT_URL="${CLIENT_URL}"
 export WASP_SERVER_URL="${SERVER_URL}"
 
-# Build the application
-wasp build
+# Client-side environment variables for build
+REACT_APP_GOOGLE_ANALYTICS_ID="G-6H2SB3GJDW"
+REACT_APP_SENTRY_DSN="https://ea1a698c4ecd0ccd0859b624c70f55550@o4510025126051840.ingest.us.sentry.io/4510077051535360"
+
+print_status $BLUE "   Building with REACT_APP_GOOGLE_ANALYTICS_ID=${REACT_APP_GOOGLE_ANALYTICS_ID}"
+
+# Build the application with client env vars inline (as per Wasp docs)
+REACT_APP_GOOGLE_ANALYTICS_ID="${REACT_APP_GOOGLE_ANALYTICS_ID}" REACT_APP_SENTRY_DSN="${REACT_APP_SENTRY_DSN}" wasp build
 
 # Apply server binding patch for Fly.io compatibility (BEFORE cd into build dir)
 print_status $BLUE "🔧 Applying server binding patch..."

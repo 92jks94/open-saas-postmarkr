@@ -60,6 +60,7 @@ import { getDownloadFileSignedURLFromS3 } from '../file-upload/s3Utils';
 import { stripe } from '../payment/stripe/stripeClient';
 import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 import { mapLobStatus } from '../shared/statusMapping';
+import { sendMailSubmittedEmail, fetchMailPieceForEmail } from '../server/email/mailNotifications';
 
 // ============================================================================
 // MAIL PIECE CRUD OPERATIONS
@@ -1109,6 +1110,17 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     });
 
     console.log(`Successfully submitted mail piece ${args.mailPieceId} to Lob with ID: ${lobResponse.id}`);
+
+    // Send mail submitted confirmation email
+    try {
+      const mailPieceForEmail = await fetchMailPieceForEmail(args.mailPieceId, context);
+      if (mailPieceForEmail) {
+        await sendMailSubmittedEmail(mailPieceForEmail);
+      }
+    } catch (emailError) {
+      console.error(`❌ Error sending mail submitted email for ${args.mailPieceId}:`, emailError);
+      // Don't fail the operation - email failure shouldn't break submission
+    }
 
     return { 
       success: true, 

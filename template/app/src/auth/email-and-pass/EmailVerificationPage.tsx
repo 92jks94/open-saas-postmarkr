@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { VerifyEmailForm } from 'wasp/client/auth';
-import { resendVerificationEmail } from 'wasp/client/operations';
+import { resendVerificationEmail, sendWelcomeEmailAction } from 'wasp/client/operations';
 import { useAuth } from 'wasp/client/auth';
 import AuthPageLayout from '../AuthPageLayout';
 import { Button } from '../../components/ui/button';
@@ -17,13 +17,27 @@ export default function EmailVerificationPage() {
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [verificationSuccess, setVerificationSuccess] = useState(false);
   const [countdown, setCountdown] = useState(REDIRECT_DELAY_MS / 1000);
+  const [welcomeEmailSent, setWelcomeEmailSent] = useState(false);
 
   // Check if user just became authenticated (indicating successful verification)
   useEffect(() => {
     if (user && !verificationSuccess) {
       setVerificationSuccess(true);
+      
+      // Send welcome email after successful verification
+      if (!welcomeEmailSent) {
+        sendWelcomeEmailAction()
+          .then(() => {
+            console.log('Welcome email sent successfully');
+            setWelcomeEmailSent(true);
+          })
+          .catch((error) => {
+            console.error('Failed to send welcome email:', error);
+            // Don't block user flow if welcome email fails
+          });
+      }
     }
-  }, [user, verificationSuccess]);
+  }, [user, verificationSuccess, welcomeEmailSent]);
 
   // Handle countdown and redirect after successful verification
   useEffect(() => {

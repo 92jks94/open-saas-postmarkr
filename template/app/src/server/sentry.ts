@@ -10,7 +10,7 @@ export function initServerSentry() {
   }
 
   // Check for Sentry DSN in environment variables
-  const sentryDsn = process.env.SENTRY_DSN || process.env.VITE_SENTRY_DSN;
+  const sentryDsn = process.env.SENTRY_DSN || process.env.REACT_APP_SENTRY_DSN;
 
   // Only initialize if DSN is provided
   if (!sentryDsn) {

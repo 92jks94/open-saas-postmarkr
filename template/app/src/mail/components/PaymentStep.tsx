@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { MailPiece, MailAddress, File } from 'wasp/entities';
 import { AddressPlacement } from '@prisma/client';
+import { PRICING_TIERS, MAX_PAGE_COUNT } from '../../shared/constants/pricing';
 
 // Note: Stripe Elements provider is handled at the app level
 
@@ -63,22 +64,23 @@ const PaymentForm: React.FC<{
           const pageCount = mailPiece.file.pageCount;
           // Add extra page for insert_blank_page option
           const effectivePageCount = mailPiece.addressPlacement === AddressPlacement.INSERT_BLANK_PAGE ? pageCount + 1 : pageCount;
-          let estimatedCost = 250; // Default to tier 1 ($2.50)
           
-          if (effectivePageCount <= 5) {
-            estimatedCost = 250; // $2.50
-          } else if (effectivePageCount <= 20) {
-            estimatedCost = 750; // $7.50
-          } else if (effectivePageCount <= 50) {
-            estimatedCost = 1500; // $15.00
+          // Find matching pricing tier
+          const pricingTier = PRICING_TIERS.find(
+            tier => effectivePageCount >= tier.minPages && effectivePageCount <= tier.maxPages
+          );
+          
+          if (pricingTier) {
+            setCost(pricingTier.priceInCents);
+          } else if (effectivePageCount > MAX_PAGE_COUNT) {
+            throw new Error(`Document too large for processing (max ${MAX_PAGE_COUNT} pages)`);
           } else {
-            throw new Error('Document too large for processing');
+            // Fallback to first tier if somehow no tier matches
+            setCost(PRICING_TIERS[0].priceInCents);
           }
-          
-          setCost(estimatedCost);
         } else {
-          // Fallback if no page count available
-          setCost(250); // $2.50 default
+          // Fallback if no page count available - use first tier
+          setCost(PRICING_TIERS[0].priceInCents);
         }
       } catch (error: any) {
         console.error('Failed to calculate cost:', error);
@@ -89,7 +91,7 @@ const PaymentForm: React.FC<{
     };
 
     calculateCost();
-  }, [mailPiece.id, mailPiece.file?.pageCount]);
+  }, [mailPiece.id, mailPiece.file?.pageCount, mailPiece.addressPlacement]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

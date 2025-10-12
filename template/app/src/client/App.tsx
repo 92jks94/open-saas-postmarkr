@@ -12,7 +12,7 @@ import { routes } from 'wasp/client/router';
 import './Main.css';
 import NavBar from './components/NavBar/NavBar';
 import { demoNavigationitems, marketingNavigationItems, adminNavigationItems } from './components/NavBar/constants';
-import CookieConsentBanner from './components/cookie-consent/Banner';
+// import CookieConsentBanner from './components/cookie-consent/Banner'; // COMMENTED OUT FOR TESTING
 import { initSentry } from './sentry';
 import './chromeExtensionErrorHandler'; // Import error handler
 import Footer from '../landing-page/components/Footer';
@@ -36,6 +36,49 @@ export default function App() {
   // Initialize Sentry on app startup
   useEffect(() => {
     initSentry();
+  }, []);
+
+  // Initialize Google Analytics directly (no cookie consent for testing)
+  useEffect(() => {
+    const GA_ANALYTICS_ID = import.meta.env.REACT_APP_GOOGLE_ANALYTICS_ID;
+    
+    if (!GA_ANALYTICS_ID) {
+      console.warn('⚠️  Google Analytics ID not configured');
+      return;
+    }
+
+    console.log('🚀 Initializing Google Analytics directly (testing mode)');
+    console.log('📊 GA ID:', GA_ANALYTICS_ID);
+
+    // Initialize dataLayer
+    window.dataLayer = window.dataLayer || [];
+    function gtag(...args: unknown[]) {
+      (window.dataLayer as Array<any>).push(args);
+    }
+    
+    // Make gtag available globally
+    (window as any).gtag = gtag;
+    
+    // Initialize gtag
+    gtag('js', new Date());
+    gtag('config', GA_ANALYTICS_ID, {
+      anonymize_ip: true,
+      cookie_flags: 'SameSite=None;Secure',
+    });
+    
+    // Load GA script
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
+    script.onload = () => {
+      console.log('✅ GA script loaded successfully (testing mode)');
+    };
+    script.onerror = () => {
+      console.error('❌ Failed to load GA script');
+    };
+    document.head.appendChild(script);
+    
+    console.log('✅ GA initialization complete');
   }, []);
 
   const location = useLocation();
@@ -89,7 +132,7 @@ export default function App() {
           )}
         </div>
       </div>
-      <CookieConsentBanner />
+      {/* <CookieConsentBanner /> */} {/* COMMENTED OUT FOR TESTING */}
     </>
   );
 }

@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
 import { OpenAI } from 'openai';
 import * as Sentry from '@sentry/node';
+import { SENTRY_FLUSH_TIMEOUT_MS } from './constants/resilience';
 import { lob } from './lob/client';
 
 export interface ApiTestResult {
@@ -360,7 +361,7 @@ export async function testSentryConnectivity(): Promise<ApiTestResult> {
 
     // Test Sentry connectivity by sending a test event
     Sentry.captureMessage('API connectivity test', 'info');
-    await Sentry.flush(2000); // Wait for event to be sent
+    await Sentry.flush(SENTRY_FLUSH_TIMEOUT_MS); // Wait for event to be sent
     
     const responseTime = Date.now() - startTime;
     

@@ -1,4 +1,5 @@
 import { PDFDocument } from 'pdf-lib';
+import { MAX_PDF_DIMENSION_PIXELS } from '../shared/constants/files';
 
 export interface PDFMetadata {
   pageCount: number;
@@ -42,8 +43,8 @@ export const validatePDFMetadata = (metadata: PDFMetadata): PDFValidationResult 
     errors.push('PDF dimensions are too small (minimum 200x200 pixels)');
   }
 
-  if (metadata.dimensions.width > 2000 || metadata.dimensions.height > 2000) {
-    errors.push('PDF dimensions are too large (maximum 2000x2000 pixels)');
+  if (metadata.dimensions.width > MAX_PDF_DIMENSION_PIXELS || metadata.dimensions.height > MAX_PDF_DIMENSION_PIXELS) {
+    errors.push(`PDF dimensions are too large (maximum ${MAX_PDF_DIMENSION_PIXELS}x${MAX_PDF_DIMENSION_PIXELS} pixels)`);
   }
 
   return {

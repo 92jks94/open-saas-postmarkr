@@ -4,6 +4,8 @@
  * Implements exponential backoff and jitter for robust API integration
  */
 
+import { LOB_RETRY_CONFIG } from '../constants/resilience';
+
 interface RetryOptions {
   maxRetries?: number;
   baseDelay?: number;
@@ -13,9 +15,9 @@ interface RetryOptions {
 }
 
 const DEFAULT_OPTIONS: Required<RetryOptions> = {
-  maxRetries: 3,
-  baseDelay: 1000, // 1 second
-  maxDelay: 10000, // 10 seconds
+  maxRetries: LOB_RETRY_CONFIG.MAX_RETRIES,
+  baseDelay: 1000, // 1 second  
+  maxDelay: LOB_RETRY_CONFIG.MAX_DELAY_MS,
   jitter: true,
   retryCondition: (error: any) => {
     // Retry on network errors, rate limits, and temporary server errors

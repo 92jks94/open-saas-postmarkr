@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { CheckCircle, XCircle, FileText, Upload, AlertTriangle } from 'lucide-react';
+import { MAX_FILE_SIZE_BYTES, MAIL_TYPE_PAGE_REQUIREMENTS, BYTES_PER_KB } from '../../shared/constants/files';
 
 /**
  * Props for the FileSelector component
@@ -35,18 +36,7 @@ interface FileValidationResult {
   warnings: string[];
 }
 
-// Constants moved outside component to prevent recreation
-const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-
-const MAIL_TYPE_REQUIREMENTS = {
-  'letter': { maxPages: 50, minPages: 1 },
-  // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
-  // 'postcard': { maxPages: 1, minPages: 1 },
-  // 'check': { maxPages: 1, minPages: 1 },
-  // 'self_mailer': { maxPages: 4, minPages: 1 },
-  // 'catalog': { maxPages: 50, minPages: 2 },
-  // 'booklet': { maxPages: 20, minPages: 2 }
-} as const;
+// Note: Using constants from shared/constants/files.ts
 
 /**
  * Component to display file thumbnail with loading/error states
@@ -156,14 +146,14 @@ const validateFileForMail = (file: File, mailType: string, mailSize: string): Fi
     errors.push('Only PDF files are supported for mail');
   }
 
-  // Check file size (10MB limit for mail)
-  if (file.size && file.size > MAIL_MAX_FILE_SIZE_BYTES) {
-    errors.push('File size must be less than 10MB for mail processing');
+  // Check file size limit for mail
+  if (file.size && file.size > MAX_FILE_SIZE_BYTES) {
+    errors.push(`File size must be less than ${MAX_FILE_SIZE_BYTES / (1024 * 1024)}MB for mail processing`);
   }
 
   // Check page count for mail type
   if (file.pageCount) {
-    const requirements = MAIL_TYPE_REQUIREMENTS[mailType as keyof typeof MAIL_TYPE_REQUIREMENTS];
+    const requirements = MAIL_TYPE_PAGE_REQUIREMENTS[mailType as keyof typeof MAIL_TYPE_PAGE_REQUIREMENTS];
     if (requirements) {
       if (file.pageCount > requirements.maxPages) {
         errors.push(`${mailType} cannot have more than ${requirements.maxPages} pages`);
@@ -253,10 +243,9 @@ const FileSelector: React.FC<FileSelectorProps> = ({
 
   const formatFileSize = useCallback((bytes: number) => {
     if (bytes === 0) return '0 Bytes';
-    const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const i = Math.floor(Math.log(bytes) / Math.log(BYTES_PER_KB));
+    return parseFloat((bytes / Math.pow(BYTES_PER_KB, i)).toFixed(2)) + ' ' + sizes[i];
   }, []);
 
   if (isLoading) {

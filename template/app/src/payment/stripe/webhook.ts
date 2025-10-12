@@ -20,6 +20,7 @@ import {
   type PaymentIntentFailedData,
 } from './webhookPayload';
 import { UnhandledWebhookEventError } from '../errors';
+import { sendPaymentConfirmationEmail, fetchMailPieceForEmail, sendPaymentFailedEmail } from '../../server/email/mailNotifications';
 
 export const stripeWebhook: PaymentsWebhook = async (request, response, context) => {
   try {
@@ -225,6 +226,17 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
     });
 
     console.log(`✅ Mail payment completed successfully for mail piece ${mailPieceId}`);
+
+    // Send payment confirmation email
+    try {
+      const mailPieceForEmail = await fetchMailPieceForEmail(mailPieceId, context);
+      if (mailPieceForEmail) {
+        await sendPaymentConfirmationEmail(mailPieceForEmail);
+      }
+    } catch (emailError) {
+      console.error(`❌ Error sending payment confirmation email for ${mailPieceId}:`, emailError);
+      // Don't fail the webhook - payment is confirmed
+    }
 
     // Schedule background job to submit to Lob after payment confirmation
     try {
@@ -458,6 +470,9 @@ async function handlePaymentIntentFailed(
   if (paymentIntent.metadata?.type === 'mail_payment') {
     const mailPieceId = paymentIntent.metadata.mailPieceId;
     if (mailPieceId) {
+      // Fetch mail piece with user info for email
+      const mailPieceForEmail = await fetchMailPieceForEmail(mailPieceId, context);
+      
       // Update mail piece status to failed
       await context.entities.MailPiece.update({
         where: { paymentIntentId: paymentIntent.id },
@@ -479,6 +494,27 @@ async function handlePaymentIntentFailed(
       });
 
       console.log(`Mail payment failed for payment intent ${paymentIntent.id}`);
+      
+      // Send payment failed email
+      if (mailPieceForEmail) {
+        try {
+          const userEmail = mailPieceForEmail.user.email;
+          const userName = mailPieceForEmail.user.username || userEmail?.split('@')[0] || 'Valued Customer';
+          
+          if (userEmail) {
+            const failureMessage = paymentIntent.last_payment_error?.message || 'Your payment could not be processed';
+            await sendPaymentFailedEmail(
+              userEmail,
+              userName,
+              mailPieceForEmail.mailType,
+              mailPieceForEmail.cost || 0,
+              failureMessage
+            );
+          }
+        } catch (emailError) {
+          console.error(`❌ Error sending payment failed email for ${mailPieceId}:`, emailError);
+        }
+      }
     }
   }
 }

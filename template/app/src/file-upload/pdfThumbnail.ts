@@ -1,14 +1,19 @@
 import * as pdfjsLib from 'pdfjs-dist';
+import { PRICING_TIERS, MAX_PAGE_COUNT } from '../shared/constants/pricing';
 
-// Configure worker - load from node_modules for reliability
-// This prevents failures when CDN is blocked or unavailable
+// Configure worker - load from static assets
+// The worker file is copied to /assets during build via vite-plugin-static-copy
 if (typeof window !== 'undefined') {
-  // Use the worker from the installed package
-  // Vite will handle bundling this properly
-  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-  ).toString();
+  // In development, use the node_modules version
+  // In production, use the copied static asset
+  if (import.meta.env.DEV) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      'pdfjs-dist/build/pdf.worker.min.js',
+      import.meta.url
+    ).toString();
+  } else {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/assets/pdf.worker.min.js';
+  }
 }
 
 export interface PDFPreviewData {
@@ -57,30 +62,25 @@ export function estimateCostFromPages(pageCount: number): {
   envelopeType: string;
   warning?: string;
 } {
-  if (pageCount >= 1 && pageCount <= 5) {
+  // Find matching pricing tier
+  const pricingTier = PRICING_TIERS.find(
+    tier => pageCount >= tier.minPages && pageCount <= tier.maxPages
+  );
+
+  if (pricingTier) {
     return {
-      tier: 'tier_1',
-      price: 250, // $2.50 in cents (matching backend)
-      envelopeType: 'Standard #10 Envelope'
-    };
-  } else if (pageCount >= 6 && pageCount <= 20) {
-    return {
-      tier: 'tier_2',
-      price: 750, // $7.50 in cents
-      envelopeType: 'Flat 9x12 Envelope'
-    };
-  } else if (pageCount >= 21 && pageCount <= 50) {
-    return {
-      tier: 'tier_3',
-      price: 1500, // $15.00 in cents
-      envelopeType: 'Flat 9x12 Envelope'
+      tier: pricingTier.tier,
+      price: pricingTier.priceInCents,
+      envelopeType: pricingTier.envelopeType === 'standard_10_double_window' 
+        ? 'Standard #10 Envelope' 
+        : 'Flat 9x12 Envelope'
     };
   } else {
     return {
       tier: 'unsupported',
       price: 0,
       envelopeType: 'N/A',
-      warning: `${pageCount} pages exceeds maximum of 50 pages`
+      warning: `${pageCount} pages exceeds maximum of ${MAX_PAGE_COUNT} pages`
     };
   }
 }

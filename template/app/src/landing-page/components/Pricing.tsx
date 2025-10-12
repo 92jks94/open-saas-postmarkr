@@ -2,12 +2,14 @@ import { Check } from 'lucide-react';
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
+import { PRICING_TIERS } from '../../shared/constants/pricing';
 
+// Build plans from centralized pricing constants
 const plans = [
   {
     name: 'Basic',
-    price: '$2.50',
-    pages: '1-5 pages',
+    price: `$${PRICING_TIERS[0].priceInDollars.toFixed(2)}`,
+    pages: `${PRICING_TIERS[0].minPages}-${PRICING_TIERS[0].maxPages} pages`,
     description: 'Perfect for simple letters and documents',
     features: [
       'First Class Mail delivery',
@@ -20,8 +22,8 @@ const plans = [
   },
   {
     name: 'Standard',
-    price: '$7.50',
-    pages: '6-20 pages',
+    price: `$${PRICING_TIERS[1].priceInDollars.toFixed(2)}`,
+    pages: `${PRICING_TIERS[1].minPages}-${PRICING_TIERS[1].maxPages} pages`,
     description: 'Ideal for contracts and reports',
     features: [
       'Priority Mail delivery',
@@ -35,8 +37,8 @@ const plans = [
   },
   {
     name: 'Premium',
-    price: '$15.00',
-    pages: '21-50 pages',
+    price: `$${PRICING_TIERS[2].priceInDollars.toFixed(2)}`,
+    pages: `${PRICING_TIERS[2].minPages}-${PRICING_TIERS[2].maxPages} pages`,
     description: 'For comprehensive documents',
     features: [
       'Express Mail delivery',

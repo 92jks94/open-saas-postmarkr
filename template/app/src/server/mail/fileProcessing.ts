@@ -1,5 +1,6 @@
 import { HttpError } from 'wasp/server';
 import type { File } from 'wasp/entities';
+import { MAX_FILE_SIZE_BYTES, MAX_FILE_SIZE_MB, MAIL_TYPE_PAGE_REQUIREMENTS } from '../../shared/constants/files';
 
 export interface FileValidationResult {
   isValid: boolean;
@@ -36,8 +37,8 @@ export function validateFileForMail(
   }
 
   // Check file size (max 10MB for mail)
-  if (file.size && file.size > 10 * 1024 * 1024) {
-    errors.push('File size must be less than 10MB');
+  if (file.size && file.size > MAX_FILE_SIZE_BYTES) {
+    errors.push(`File size must be less than ${MAX_FILE_SIZE_MB}MB`);
   }
 
   // Check if file is validated
@@ -213,6 +214,7 @@ function checkMailSizeCompatibility(
 
 /**
  * Get mail type requirements
+ * Returns the centralized requirements from shared constants
  */
 export function getMailTypeRequirements(mailType: string): {
   maxPages: number;
@@ -220,44 +222,23 @@ export function getMailTypeRequirements(mailType: string): {
   allowedOrientations: string[];
   recommendedSizes: string[];
 } {
-  const requirements: Record<string, any> = {
-    'postcard': {
-      maxPages: 1,
-      minPages: 1,
-      allowedOrientations: ['portrait', 'landscape'],
-      recommendedSizes: ['4x6']
-    },
-    'letter': {
-      maxPages: 6,
-      minPages: 1,
-      allowedOrientations: ['portrait'],
-      recommendedSizes: ['6x9', '6x11']
-    },
-    'check': {
-      maxPages: 1,
-      minPages: 1,
-      allowedOrientations: ['portrait'],
-      recommendedSizes: ['6x9']
-    },
-    'self_mailer': {
-      maxPages: 4,
-      minPages: 1,
-      allowedOrientations: ['portrait', 'landscape'],
-      recommendedSizes: ['6x9', '6x11', '6x18']
-    },
-    'catalog': {
-      maxPages: 50,
-      minPages: 2,
-      allowedOrientations: ['portrait'],
-      recommendedSizes: ['9x12', '12x15', '12x18']
-    },
-    'booklet': {
-      maxPages: 20,
-      minPages: 2,
-      allowedOrientations: ['portrait'],
-      recommendedSizes: ['6x9', '9x12']
-    }
+  const requirement = MAIL_TYPE_PAGE_REQUIREMENTS[mailType as keyof typeof MAIL_TYPE_PAGE_REQUIREMENTS];
+  
+  if (requirement) {
+    return {
+      maxPages: requirement.maxPages,
+      minPages: requirement.minPages,
+      allowedOrientations: [...requirement.allowedOrientations],
+      recommendedSizes: [...requirement.recommendedSizes]
+    };
+  }
+  
+  // Default to 'letter' requirements
+  const letterReqs = MAIL_TYPE_PAGE_REQUIREMENTS['letter'];
+  return {
+    maxPages: letterReqs.maxPages,
+    minPages: letterReqs.minPages,
+    allowedOrientations: [...letterReqs.allowedOrientations],
+    recommendedSizes: [...letterReqs.recommendedSizes]
   };
-
-  return requirements[mailType] || requirements['letter'];
 }

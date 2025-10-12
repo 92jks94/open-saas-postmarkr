@@ -21,7 +21,9 @@ import { ALLOWED_FILE_TYPES, formatFileSize } from './validation';
 import { FilePreviewCard } from './FilePreviewCard';
 import { Upload, FileText, Image as ImageIcon, Clock, Loader2, CheckCircle, XCircle, X } from 'lucide-react';
 import { generatePDFThumbnail, estimateCostFromPages } from './pdfThumbnail';
-import { CostCalculatorWidget } from './CostCalculatorWidget';
+import { DEBOUNCE_DELAY_MS, SECONDS_PER_MINUTE } from '../shared/constants/timing';
+// TODO: Re-enable when ready - see docs/FILE_UPLOAD_TODOS.md
+// import { CostCalculatorWidget } from './CostCalculatorWidget';
 
 // Upload queue item interface
 interface UploadQueueItem {
@@ -38,9 +40,9 @@ interface UploadQueueItem {
 // Helper function to format time
 function formatTime(seconds: number): string {
   if (seconds < 1) return 'Less than 1 second';
-  if (seconds < 60) return `${Math.round(seconds)} seconds`;
-  const minutes = Math.floor(seconds / 60);
-  const secs = Math.round(seconds % 60);
+  if (seconds < SECONDS_PER_MINUTE) return `${Math.round(seconds)} seconds`;
+  const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
+  const secs = Math.round(seconds % SECONDS_PER_MINUTE);
   return `${minutes}m ${secs}s`;
 }
 
@@ -66,6 +68,9 @@ export default function FileUploadPage() {
     estimatedCost: number;
     dimensions: { width: number; height: number };
   } | null>(null);
+  // Auto-upload countdown for preview
+  const [autoUploadCountdown, setAutoUploadCountdown] = useState<number | null>(null);
+  const autoUploadTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const allUserFiles = useQuery(getAllFilesByUser, undefined, {
     refetchInterval: false, // Will be overridden by useEffect
@@ -85,10 +90,10 @@ export default function FileUploadPage() {
       return; // No polling needed - user is just viewing completed files
     }
 
-    // Poll every 2 seconds to check processing status
+    // Poll to check processing status
     const pollInterval = setInterval(() => {
       allUserFiles.refetch();
-    }, 2000);
+    }, DEBOUNCE_DELAY_MS);
 
     return () => clearInterval(pollInterval);
   }, [hasProcessingFiles, allUserFiles.refetch]);
@@ -136,6 +141,87 @@ export default function FileUploadPage() {
     }
   };
 
+  // Clear auto-upload timer
+  const clearAutoUploadTimer = () => {
+    if (autoUploadTimerRef.current) {
+      clearInterval(autoUploadTimerRef.current);
+      autoUploadTimerRef.current = null;
+    }
+    setAutoUploadCountdown(null);
+  };
+
+  // Cancel preview and auto-upload
+  const cancelPreview = () => {
+    clearAutoUploadTimer();
+    setFilePreview(null);
+  };
+
+  // Start auto-upload countdown timer
+  const startAutoUploadCountdown = () => {
+    const COUNTDOWN_SECONDS = 3;
+    setAutoUploadCountdown(COUNTDOWN_SECONDS);
+    
+    let secondsRemaining = COUNTDOWN_SECONDS;
+    
+    autoUploadTimerRef.current = setInterval(() => {
+      secondsRemaining -= 1;
+      setAutoUploadCountdown(secondsRemaining);
+      
+      if (secondsRemaining <= 0) {
+        clearAutoUploadTimer();
+        // Trigger upload with preview data
+        uploadFileFromPreview();
+      }
+    }, 1000);
+  };
+
+  // Upload file from preview (reuses preview data already in state)
+  const uploadFileFromPreview = async () => {
+    if (!filePreview) return;
+    
+    try {
+      setUploadError(null);
+      setUploadProgressPercent(0);
+      
+      const { uploadResponse, createFileResult } = await uploadFileWithProgress({
+        file: filePreview.file as FileWithValidType,
+        setUploadProgressPercent,
+        // Pass thumbnail data from preview state
+        clientThumbnail: filePreview.thumbnailUrl,
+        previewPageCount: filePreview.pageCount,
+        previewDimensions: filePreview.dimensions
+      });
+      
+      // Trigger PDF processing
+      if (filePreview.file.type === 'application/pdf') {
+        try {
+          await triggerPDFProcessing({ fileId: createFileResult.fileId });
+        } catch (processingError) {
+          console.warn('Failed to trigger PDF processing:', processingError);
+        }
+      }
+      
+      // Clear preview and refetch files
+      setFilePreview(null);
+      setUploadProgressPercent(0);
+      allUserFiles.refetch();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadError({
+        message: error instanceof Error ? error.message : 'Failed to upload file.',
+        code: 'UPLOAD_FAILED'
+      });
+      setUploadProgressPercent(0);
+    }
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      clearAutoUploadTimer();
+    };
+  }, []);
+
   // Phase 1: Handle file selection with preview generation (for PDF files only)
   const handleFileSelectWithPreview = async (file: File) => {
     try {
@@ -172,6 +258,9 @@ export default function FileUploadPage() {
             estimatedCost: costEstimate.price / 100,
             dimensions: previewData.firstPageDimensions
           });
+          
+          // Start auto-upload countdown (3 seconds)
+          startAutoUploadCountdown();
         } catch (error) {
           console.error('Failed to generate PDF preview:', error);
           // Show warning but allow upload to continue
@@ -183,7 +272,7 @@ export default function FileUploadPage() {
           setTimeout(() => {
             setUploadError(null);
             handleMultipleFileUpload([file]);
-          }, 2000);
+          }, DEBOUNCE_DELAY_MS);
         }
       } else {
         // Non-PDF files: upload directly without preview
@@ -275,45 +364,6 @@ export default function FileUploadPage() {
     allUserFiles.refetch();
   };
 
-  // Phase 1: Upload file from preview with thumbnail data
-  const uploadFileFromPreview = async () => {
-    if (!filePreview) return;
-    
-    try {
-      setUploadError(null);
-      setUploadProgressPercent(0);
-      
-      const { uploadResponse, createFileResult } = await uploadFileWithProgress({
-        file: filePreview.file as FileWithValidType,
-        setUploadProgressPercent,
-        // Pass thumbnail data
-        clientThumbnail: filePreview.thumbnailUrl,
-        previewPageCount: filePreview.pageCount,
-        previewDimensions: filePreview.dimensions
-      });
-      
-      // Trigger PDF processing
-      if (filePreview.file.type === 'application/pdf') {
-        try {
-          await triggerPDFProcessing({ fileId: createFileResult.fileId });
-        } catch (processingError) {
-          console.warn('Failed to trigger PDF processing:', processingError);
-        }
-      }
-      
-      // Clear preview and refetch files
-      setFilePreview(null);
-      setUploadProgressPercent(0);
-      allUserFiles.refetch();
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setUploadError({
-        message: error instanceof Error ? error.message : 'Failed to upload file.',
-        code: 'UPLOAD_FAILED'
-      });
-      setUploadProgressPercent(0);
-    }
-  };
 
   // Upload single file from queue
   const uploadSingleFileFromQueue = async (item: UploadQueueItem) => {
@@ -322,6 +372,27 @@ export default function FileUploadPage() {
       setUploadQueue(prev =>
         prev.map(q => q.id === item.id ? { ...q, status: 'uploading' as const } : q)
       );
+
+      // Generate thumbnail for PDF files before upload
+      let thumbnailData: {
+        clientThumbnail?: string;
+        previewPageCount?: number;
+        previewDimensions?: { width: number; height: number };
+      } = {};
+
+      if (item.file.type === 'application/pdf') {
+        try {
+          const previewData = await generatePDFThumbnail(item.file);
+          thumbnailData = {
+            clientThumbnail: previewData.thumbnailDataUrl,
+            previewPageCount: previewData.pageCount,
+            previewDimensions: previewData.firstPageDimensions
+          };
+        } catch (error) {
+          console.warn('Failed to generate thumbnail for queued file:', error);
+          // Continue upload without thumbnail
+        }
+      }
 
       const { uploadResponse, createFileResult } = await uploadFileWithProgress({
         file: item.file as FileWithValidType,
@@ -338,7 +409,9 @@ export default function FileUploadPage() {
               timeRemaining: metrics.timeRemaining 
             } : q)
           );
-        }
+        },
+        // Pass thumbnail data if generated
+        ...thumbnailData
       });
 
       // Trigger PDF processing if needed
@@ -367,52 +440,9 @@ export default function FileUploadPage() {
     }
   };
 
-  // Helper function to upload a single file
-  const uploadSingleFile = async (file: File) => {
-    try {
-      setUploadError(null);
-      setRetryAttempt(0);
-
-      const fileValidationError = validateFile(file);
-      if (fileValidationError !== null) {
-        setUploadError(fileValidationError);
-        return;
-      }
-
-      const { uploadResponse, createFileResult } = await uploadFileWithProgress({ 
-        file: file as FileWithValidType, 
-        setUploadProgressPercent,
-        onRetry: (attempt, error) => {
-          setRetryAttempt(attempt);
-          console.log(`Upload attempt ${attempt} failed, retrying...`, error.message);
-        }
-      });
-      
-      // If this is a PDF file, trigger processing now that upload is complete
-      if (file.type === 'application/pdf') {
-        try {
-          await triggerPDFProcessing({ fileId: createFileResult.fileId });
-        } catch (processingError) {
-          console.warn('Failed to trigger PDF processing:', processingError);
-          // Don't fail the upload if processing trigger fails
-        }
-      }
-      
-      // Reset states
-      setRetryAttempt(0);
-      allUserFiles.refetch();
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setUploadError({
-        message:
-          error instanceof Error ? error.message : 'An unexpected error occurred while uploading the file.',
-        code: 'UPLOAD_FAILED',
-      });
-      setRetryAttempt(0);
-    } finally {
-      setUploadProgressPercent(0);
-    }
-  };
+  // Note: uploadSingleFile() was removed as it's now replaced by:
+  // - uploadFileFromPreview() for preview flow (with thumbnail data)
+  // - uploadSingleFileFromQueue() for queue uploads
 
   return (
     <div className='py-10 lg:mt-10'>
@@ -422,9 +452,10 @@ export default function FileUploadPage() {
           description="Upload files to use with your mail pieces. Supports PDF, images, and documents."
         />
         {/* Phase 4: Grid layout with upload area and cost calculator */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 my-8">
-          {/* Main upload area - 2/3 width on large screens */}
-          <div className="lg:col-span-2">
+        {/* TODO: Restore lg:grid-cols-3 and lg:col-span-2 when cost calculator is re-enabled */}
+        <div className="grid grid-cols-1 gap-8 my-8">
+          {/* Main upload area - full width (was 2/3 width on large screens) */}
+          <div className="lg:col-span-1">
             <Card>
               <CardContent className='space-y-10 my-10 py-8 px-4'>
             <div className='flex flex-col gap-4'>
@@ -482,9 +513,9 @@ export default function FileUploadPage() {
                 />
               </div>
 
-              {/* Phase 1: PDF Preview Card */}
+              {/* Phase 1: PDF Preview Card with Auto-Upload */}
               {filePreview && !uploadProgressPercent && (
-                <Card className="border-2 border-primary">
+                <Card className="border-2 border-primary animate-in fade-in duration-300">
                   <CardContent className="pt-6">
                     <div className="flex gap-4">
                       {/* Thumbnail */}
@@ -505,12 +536,28 @@ export default function FileUploadPage() {
                           <p>📧 Envelope: {filePreview.pageCount <= 5 ? 'Standard #10' : 'Flat 9x12'}</p>
                         </div>
                         
+                        {/* Auto-upload countdown */}
+                        {autoUploadCountdown !== null && autoUploadCountdown > 0 && (
+                          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-sm font-medium text-blue-800">
+                              Uploading in {autoUploadCountdown} second{autoUploadCountdown !== 1 ? 's' : ''}...
+                            </span>
+                          </div>
+                        )}
+                        
                         {/* Action buttons */}
                         <div className="flex gap-2">
-                          <Button onClick={uploadFileFromPreview}>
-                            ✓ Upload & Continue
+                          <Button 
+                            onClick={() => {
+                              clearAutoUploadTimer();
+                              uploadFileFromPreview();
+                            }}
+                            disabled={autoUploadCountdown === null || autoUploadCountdown <= 0}
+                          >
+                            ⚡ Upload Now
                           </Button>
-                          <Button variant="outline" onClick={() => setFilePreview(null)}>
+                          <Button variant="outline" onClick={cancelPreview}>
                             ✗ Cancel
                           </Button>
                         </div>
@@ -685,9 +732,10 @@ export default function FileUploadPage() {
       </div>
     
     {/* Phase 4: Cost calculator sidebar - 1/3 width on large screens */}
-    <div className="lg:col-span-1">
+    {/* TODO: Re-enable when ready - see docs/FILE_UPLOAD_TODOS.md */}
+    {/* <div className="lg:col-span-1">
       <CostCalculatorWidget />
-    </div>
+    </div> */}
   </div>
 
   {/* Uploaded Files section - full width below the grid */}

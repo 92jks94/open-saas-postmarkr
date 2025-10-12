@@ -30,8 +30,13 @@ app OpenSaaS {
     "<meta name='twitter:card' content='summary_large_image' />",
     "<meta name='twitter:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",
     "<meta name='twitter:description' content='Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
-    // Analytics scripts can be added here when ready for production
-    // "<script defer data-domain='your-site-id' src='https://plausible.io/js/script.js'></script>",
+    
+    // Google Analytics - Script loads in head for proper detection by Tag Assistant
+    // The script loads but doesn't initialize until cookie consent is given (see cookie-consent/Config.ts)
+    "<script async src='https://www.googletagmanager.com/gtag/js?id=G-6H2SB3GJDW'></script>",
+    
+    // Debug helper - logs when GA script loads for verification
+    "<script>window.addEventListener('load', function() { console.log('🔍 Google Tag loaded:', !!window.gtag); console.log('🔍 DataLayer exists:', !!window.dataLayer); });</script>",
   ],
 
   // 🔐 Auth out of the box! https://wasp.sh/docs/auth/overview
@@ -125,6 +130,11 @@ page EmailVerificationPage {
 
 action resendVerificationEmail {
   fn: import { resendVerificationEmail } from "@src/auth/operations",
+  entities: [User]
+}
+
+action sendWelcomeEmailAction {
+  fn: import { sendWelcomeEmailAction } from "@src/auth/operations",
   entities: [User]
 }
 //#endregion

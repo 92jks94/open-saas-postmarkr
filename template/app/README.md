@@ -1567,7 +1567,7 @@ Here are a list of all of them (some of which you may not be using, e.g. Analyti
 - [ ] `GITHUB_CLIENT_SECRET`
 
 ###### Analytics Vars
-- [ ] `REACT_APP_PLAUSIBLE_ANALYTICS_ID` (for client-side)
+- [ ] `VITE_PLAUSIBLE_ANALYTICS_ID` (for client-side)
 - [ ] `PLAUSIBLE_API_KEY`
 - [ ] `PLAUSIBLE_SITE_ID`
 - [ ] `PLAUSIBLE_BASE_URL`
@@ -1600,7 +1600,7 @@ To learn how, please follow the detailed guide for [deploying to Fly via the Was
 :::caution[Setting Environment Variables]
 Remember, because we've set certain client-side env variables, make sure to pass them to the `wasp deploy` commands so that they can be included in the build: 
 ```sh
-REACT_APP_CLIENT_ENV_VAR_1=<...> REACT_APP_CLIENT_ENV_VAR_2=<...> wasp deploy 
+VITE_CLIENT_ENV_VAR_1=<...> VITE_CLIENT_ENV_VAR_2=<...> wasp deploy 
 ```
 
 The `wasp deploy` command will also take care of setting the following server-side environment variables for you so you don't have to:
@@ -1618,9 +1618,9 @@ For setting the remaining server-side environment variables, please refer to the
 If you prefer to deploy manually, your frontend and backend separately, or just prefer using your favorite provider you can follow [Wasp's Manual Deployment Guide](https://wasp.sh/docs/deployment/deployment-methods/paas).
 
 :::caution[Client-side Environment Variables]
-Remember to always set additional client-side environment variables, such as `REACT_APP_STRIPE_CUSTOMER_PORTAL` by appending them to the build command, e.g. 
+Remember to always set additional client-side environment variables, such as `VITE_STRIPE_CUSTOMER_PORTAL` by appending them to the build command, e.g. 
 ```sh
-REACT_APP_CLIENT_ENV_VAR_1=<...> npm run build
+VITE_CLIENT_ENV_VAR_1=<...> npm run build
 ```
 :::
 

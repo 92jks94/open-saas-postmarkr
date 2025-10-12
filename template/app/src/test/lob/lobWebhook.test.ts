@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import crypto from 'crypto';
+import { WEBHOOK_TIMESTAMP_MAX_AGE_MS, MS_PER_SECOND } from '../../server/constants/resilience';
 
 describe('Lob Webhook Tests', () => {
   
@@ -84,7 +85,7 @@ describe('Lob Webhook Tests', () => {
 
     it('should reject old timestamps (> 5 minutes)', () => {
       const now = Date.now();
-      const oldTimestamp = Math.floor((now - 6 * 60 * 1000) / 1000); // 6 minutes ago
+      const oldTimestamp = Math.floor((now - WEBHOOK_TIMESTAMP_MAX_AGE_MS) / MS_PER_SECOND);
       
       const webhookTime = oldTimestamp * 1000;
       const currentTime = now;

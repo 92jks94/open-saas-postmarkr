@@ -3,6 +3,7 @@ import { Card, CardContent, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { estimateCostFromPages } from './pdfThumbnail';
+import { PRICING_TIERS } from '../shared/constants/pricing';
 
 /**
  * Phase 4: Standalone cost calculator widget for the upload page
@@ -66,21 +67,17 @@ export function CostCalculatorWidget() {
           </div>
         )}
         
-        {/* Pricing tiers reference */}
+        {/* Pricing tiers reference - dynamically generated from constants */}
         <div className="border-t pt-3 text-xs space-y-1">
           <p className="font-semibold mb-2">Pricing Tiers:</p>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">1-5 pages:</span>
-            <span className="font-medium">$2.50 (Standard #10)</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">6-20 pages:</span>
-            <span className="font-medium">$7.50 (Flat 9x12)</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">21-50 pages:</span>
-            <span className="font-medium">$15.00 (Flat 9x12)</span>
-          </div>
+          {PRICING_TIERS.map((tier) => (
+            <div key={tier.tier} className="flex justify-between">
+              <span className="text-muted-foreground">{tier.minPages}-{tier.maxPages} pages:</span>
+              <span className="font-medium">
+                ${tier.priceInDollars.toFixed(2)} ({tier.envelopeType === 'standard_10_double_window' ? 'Standard #10' : 'Flat 9x12'})
+              </span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

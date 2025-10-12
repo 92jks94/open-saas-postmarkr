@@ -70,7 +70,7 @@ export default function SentryTestPage() {
               </p>
               <ul className="list-disc list-inside text-yellow-700 mt-2 space-y-1">
                 <li><code>.env.server</code> - for server-side errors</li>
-                <li>Environment variable <code>VITE_SENTRY_DSN</code> - for client-side errors</li>
+                <li>Environment variable <code>REACT_APP_SENTRY_DSN</code> - for client-side errors</li>
               </ul>
             </div>
 

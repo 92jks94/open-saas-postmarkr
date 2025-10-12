@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { RETRY_CONFIG } from './constants/resilience';
 
 /**
  * Database connection resilience utilities
@@ -14,9 +15,9 @@ interface ConnectionConfig {
 
 const DEFAULT_CONFIG: ConnectionConfig = {
   maxRetries: 5,
-  retryDelay: 2000, // 2 seconds
+  retryDelay: RETRY_CONFIG.BASE_DELAY_MS,
   healthCheckInterval: 30000, // 30 seconds
-  connectionTimeout: 10000, // 10 seconds
+  connectionTimeout: RETRY_CONFIG.CONNECTION_TIMEOUT_MS,
 };
 
 class DatabaseResilience {

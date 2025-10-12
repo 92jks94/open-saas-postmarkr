@@ -7,6 +7,7 @@
 
 import { HttpError } from 'wasp/server';
 import { RATE_LIMITS } from './config';
+import { RATE_LIMIT_CLEANUP_INTERVAL_MS } from '../constants/resilience';
 
 interface RateLimitEntry {
   count: number;
@@ -71,8 +72,8 @@ function cleanupExpiredEntries() {
   }
 }
 
-// Clean up expired entries every 5 minutes
-setInterval(cleanupExpiredEntries, 5 * 60 * 1000);
+// Clean up expired entries periodically
+setInterval(cleanupExpiredEntries, RATE_LIMIT_CLEANUP_INTERVAL_MS);
 
 /**
  * Rate limiting decorator for operations

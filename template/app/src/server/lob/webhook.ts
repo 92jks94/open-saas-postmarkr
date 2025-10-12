@@ -1,6 +1,7 @@
 import { type MiddlewareConfigFn, HttpError } from 'wasp/server';
 import { updateMailPieceStatus } from '../../mail/operations';
 import { emailSender } from 'wasp/server/email';
+import { handleMailStatusChangeEmail } from '../email/mailNotifications';
 import express from 'express';
 import crypto from 'crypto';
 import { requireNodeEnvVar } from '../utils';
@@ -188,13 +189,32 @@ export const lobWebhook = async (request: express.Request, response: express.Res
     // Map Lob status to internal status
     const internalStatus = mapLobStatus(status, 'unknown');
 
+    // Get the current mail piece to know previous status
+    const currentMailPiece = await context.entities.MailPiece.findFirst({
+      where: { lobId }
+    });
+    const previousStatus = currentMailPiece?.status || 'unknown';
+
     // Update mail piece status in database
-    await updateMailPieceStatus({
+    const updatedMailPiece = await updateMailPieceStatus({
       lobId,
       lobStatus: internalStatus,
       lobTrackingNumber: tracking_number,
       lobData: payload,
     }, context);
+
+    // Send status change email if applicable
+    try {
+      await handleMailStatusChangeEmail(
+        updatedMailPiece.id,
+        internalStatus,
+        previousStatus,
+        context
+      );
+    } catch (emailError) {
+      console.error(`Error sending status change email for ${lobId}:`, emailError);
+      // Don't fail the webhook if email fails
+    }
 
     // Update metrics
     const processingTime = Date.now() - startTime;

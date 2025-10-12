@@ -6,6 +6,7 @@
 
 import { runAllConnectivityTests, runCriticalConnectivityTests, ConnectivityTestResults } from './apiConnectivityTests';
 import { getRequiredEnvironmentVariables, getOptionalEnvironmentVariables, isProduction, isDevelopment } from './envValidation';
+import { MONITORING_COOLDOWN_MINUTES } from './constants/resilience';
 
 export interface AlertLevel {
   level: 'critical' | 'warning' | 'info';
@@ -398,7 +399,7 @@ const defaultConfig: AlertConfiguration = {
     warning: 1,
     info: 2
   },
-  cooldownPeriod: 5 // 5 minutes
+  cooldownPeriod: MONITORING_COOLDOWN_MINUTES
 };
 
 // Global alert manager instance

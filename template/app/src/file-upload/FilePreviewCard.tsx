@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { cn } from '../lib/utils';
 import { PageRangeSelector } from './PageRangeSelector';
+import { BYTES_PER_KB } from '../shared/constants/files';
 
 interface FilePreviewCardProps {
   file: FileEntity;
@@ -36,6 +37,9 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
     }
   );
 
+  // Determine actual loading state: only show loading if query is enabled and loading
+  const isActuallyLoadingThumbnail = isPDF && !!file.thumbnailKey && isThumbnailLoading;
+
   // Debug logging for thumbnail issues
   useEffect(() => {
     if (isPDF) {
@@ -45,11 +49,12 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
         thumbnailKey: file.thumbnailKey,
         thumbnailUrl,
         isThumbnailLoading,
+        isActuallyLoadingThumbnail,
         thumbnailError,
         thumbnailFailed
       });
     }
-  }, [isPDF, file.id, file.name, file.thumbnailKey, thumbnailUrl, isThumbnailLoading, thumbnailError, thumbnailFailed]);
+  }, [isPDF, file.id, file.name, file.thumbnailKey, thumbnailUrl, isThumbnailLoading, isActuallyLoadingThumbnail, thumbnailError, thumbnailFailed]);
 
   // Load preview for images (full image, not thumbnail)
   useEffect(() => {
@@ -146,7 +151,7 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
                 className='w-24 h-24 bg-red-50 rounded-lg overflow-hidden flex items-center justify-center border border-red-200 cursor-pointer hover:bg-red-100 transition-colors hover:scale-105 transition-transform'
                 title='Click to preview PDF'
               >
-                {isPreviewing || isThumbnailLoading ? (
+                {isPreviewing || isActuallyLoadingThumbnail ? (
                   <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-red-600'></div>
                 ) : thumbnailUrl && typeof thumbnailUrl === 'string' && !thumbnailFailed ? (
                   // Show S3-hosted thumbnail if available and not failed
@@ -309,9 +314,8 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
 // Helper function to format file size
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  const i = Math.floor(Math.log(bytes) / Math.log(BYTES_PER_KB));
+  return Math.round(bytes / Math.pow(BYTES_PER_KB, i) * 100) / 100 + ' ' + sizes[i];
 }
 

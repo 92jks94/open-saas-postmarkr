@@ -1,76 +1,31 @@
-// Set this to the max file size you want to allow (currently 5MB).
-// Nathan - Updated to 10MB and restricted to pdf only
-export const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-export const ALLOWED_FILE_TYPES = [
-  'application/pdf',
-] as const;
+import { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES } from '../shared/constants/files';
+
+// Re-export for backward compatibility
+export { MAX_FILE_SIZE_BYTES, ALLOWED_FILE_TYPES };
+
+import { BYTES_PER_KB } from '../shared/constants/files';
 
 /**
  * Format file size in human-readable format
  */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
-  const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  const i = Math.floor(Math.log(bytes) / Math.log(BYTES_PER_KB));
+  return Math.round((bytes / Math.pow(BYTES_PER_KB, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
-// Mail-specific validation constants
-export const MAIL_MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB for mail
-export const MAIL_ALLOWED_FILE_TYPES = ['application/pdf'] as const;
+import { 
+  MAIL_TYPE_PAGE_REQUIREMENTS, 
+  MAIL_SIZE_DIMENSIONS,
+  DIMENSION_TOLERANCE 
+} from '../shared/constants/files';
 
-// Mail type requirements - SIMPLIFIED FOR LAUNCH: Only letters
-export const MAIL_TYPE_REQUIREMENTS = {
-  'letter': {
-    maxPages: 6,
-    minPages: 1,
-    allowedOrientations: ['portrait'],
-    recommendedSizes: ['4x6'] // #10 envelope
-  }
-  // COMMENTED OUT FOR LAUNCH - Will be re-enabled in future updates
-  // 'postcard': {
-  //   maxPages: 1,
-  //   minPages: 1,
-  //   allowedOrientations: ['portrait', 'landscape'],
-  //   recommendedSizes: ['4x6']
-  // },
-  // 'check': {
-  //   maxPages: 1,
-  //   minPages: 1,
-  //   allowedOrientations: ['portrait'],
-  //   recommendedSizes: ['6x9']
-  // },
-  // 'self_mailer': {
-  //   maxPages: 4,
-  //   minPages: 1,
-  //   allowedOrientations: ['portrait', 'landscape'],
-  //   recommendedSizes: ['6x9', '6x11', '6x18']
-  // },
-  // 'catalog': {
-  //   maxPages: 50,
-  //   minPages: 2,
-  //   allowedOrientations: ['portrait'],
-  //   recommendedSizes: ['9x12', '12x15', '12x18']
-  // },
-  // 'booklet': {
-  //   maxPages: 20,
-  //   minPages: 2,
-  //   allowedOrientations: ['portrait'],
-  //   recommendedSizes: ['6x9', '9x12']
-  // }
-} as const;
-
-// Mail size dimensions (in inches)
-export const MAIL_SIZE_DIMENSIONS = {
-  '4x6': { width: 4, height: 6 },
-  '6x9': { width: 6, height: 9 },
-  '6x11': { width: 6, height: 11 },
-  '6x18': { width: 6, height: 18 },
-  '9x12': { width: 9, height: 12 },
-  '12x15': { width: 12, height: 15 },
-  '12x18': { width: 12, height: 18 }
-} as const;
+// Mail-specific validation constants (re-export for backward compatibility)
+export const MAIL_MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_BYTES;
+export const MAIL_ALLOWED_FILE_TYPES = ALLOWED_FILE_TYPES;
+export const MAIL_TYPE_REQUIREMENTS = MAIL_TYPE_PAGE_REQUIREMENTS;
+export { MAIL_SIZE_DIMENSIONS };
 
 /**
  * Validate file for mail processing
@@ -117,9 +72,8 @@ export function validateFileForMail(
   // Check mail size compatibility
   const sizeDimensions = MAIL_SIZE_DIMENSIONS[mailSize as keyof typeof MAIL_SIZE_DIMENSIONS];
   if (sizeDimensions && file.pdfMetadata?.width && file.pdfMetadata?.height) {
-    const tolerance = 0.1; // 10% tolerance
-    const widthMatch = Math.abs(file.pdfMetadata.width - sizeDimensions.width) <= (sizeDimensions.width * tolerance);
-    const heightMatch = Math.abs(file.pdfMetadata.height - sizeDimensions.height) <= (sizeDimensions.height * tolerance);
+    const widthMatch = Math.abs(file.pdfMetadata.width - sizeDimensions.width) <= (sizeDimensions.width * DIMENSION_TOLERANCE);
+    const heightMatch = Math.abs(file.pdfMetadata.height - sizeDimensions.height) <= (sizeDimensions.height * DIMENSION_TOLERANCE);
     
     if (!widthMatch || !heightMatch) {
       warnings.push(`File dimensions don't match mail size ${mailSize} - may need resizing`);

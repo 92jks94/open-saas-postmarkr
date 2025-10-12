@@ -1,4 +1,5 @@
 import type { CookieConsentConfig } from 'vanilla-cookieconsent';
+import { COOKIE_CONSENT_EXPIRY_DAYS } from '../../../shared/constants/timing';
 
 declare global {
   interface Window {
@@ -23,7 +24,7 @@ const getConfig = () => {
       domain: location.hostname,
       path: '/',
       sameSite: 'Lax',
-      expiresAfterDays: 365,
+      expiresAfterDays: COOKIE_CONSENT_EXPIRY_DAYS,
     },
 
     guiOptions: {
@@ -58,48 +59,72 @@ const getConfig = () => {
             label: 'Google Analytics',
             onAccept: () => {
               try {
-                // Debug: Log all available env vars
-                console.log('🔍 DEBUG: All import.meta.env:', import.meta.env);
+                console.group('🔵 Google Analytics - Cookie Consent Accepted');
+                console.log('⏱️  Timestamp:', new Date().toISOString());
+                console.log('📍 Location:', window.location.href);
                 
-                // Check for Google Analytics ID using standardized naming
-                const GA_ANALYTICS_ID = import.meta.env.VITE_GOOGLE_ANALYTICS_ID;
-                console.log('🔍 DEBUG: GA_ANALYTICS_ID value:', GA_ANALYTICS_ID);
+                // Get Google Analytics ID from environment variable
+                // This is a public identifier visible in the browser, not sensitive
+                const GA_ANALYTICS_ID = import.meta.env.REACT_APP_GOOGLE_ANALYTICS_ID;
                 
-                if (!GA_ANALYTICS_ID || !GA_ANALYTICS_ID.length) {
-                  console.log('Google Analytics ID not provided, skipping initialization');
+                if (!GA_ANALYTICS_ID) {
+                  console.warn('⚠️  Google Analytics ID not configured');
+                  console.warn('💡 Set REACT_APP_GOOGLE_ANALYTICS_ID in .env.client');
+                  console.groupEnd();
                   return;
                 }
                 
-                console.log('Initializing Google Analytics with ID:', GA_ANALYTICS_ID);
+                console.log('✅ Google Analytics ID:', GA_ANALYTICS_ID);
+                console.log('🚀 Initializing Google Analytics with gtag...');
                 
+                // Initialize dataLayer first
                 window.dataLayer = window.dataLayer || [];
                 function gtag(...args: unknown[]) {
                   (window.dataLayer as Array<any>).push(args);
                 }
                 
-                // Initialize gtag
+                // Make gtag available globally
+                (window as any).gtag = gtag;
+                
+                // Initialize gtag with current timestamp
                 gtag('js', new Date());
-                gtag('config', GA_ANALYTICS_ID);
-
-                // Adding the script tag dynamically to the DOM.
+                
+                // Configure Google Analytics with our measurement ID
+                console.log('📝 Calling gtag(\'config\', \'' + GA_ANALYTICS_ID + '\')...');
+                gtag('config', GA_ANALYTICS_ID, {
+                  anonymize_ip: true, // Privacy: anonymize IP addresses
+                  cookie_flags: 'SameSite=None;Secure', // Cookie security
+                });
+                
+                // Load the Google Analytics script dynamically
+                console.log('📦 Loading Google Analytics script...');
                 const script = document.createElement('script');
-                script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
                 script.async = true;
-                
+                script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
                 script.onload = () => {
-                  console.log('Google Analytics script loaded successfully');
+                  console.log('✅ Google Analytics script loaded successfully');
                 };
-                
-                script.onerror = (error) => {
-                  console.error('Failed to load Google Analytics script:', error);
+                script.onerror = () => {
+                  console.error('❌ Failed to load Google Analytics script');
+                  console.error('   This might be due to ad blockers or CSP policies');
                 };
+                document.head.appendChild(script);
                 
-                document.body.appendChild(script);
+                console.log('✅ Google Analytics initialized successfully');
+                console.log('📊 dataLayer:', window.dataLayer);
+                console.groupEnd();
+                
               } catch (error) {
-                console.error('Google Analytics initialization error:', error);
+                console.error('❌ Google Analytics initialization error');
+                console.error('🔍 Error:', error);
+                console.error('📚 Stack:', error instanceof Error ? error.stack : 'No stack trace');
+                console.groupEnd();
               }
             },
-            onReject: () => {},
+            onReject: () => {
+              console.log('🔴 Google Analytics - Cookie Consent Rejected');
+              console.log('⏱️  Timestamp:', new Date().toISOString());
+            },
           },
         },
       },

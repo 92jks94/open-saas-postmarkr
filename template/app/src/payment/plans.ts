@@ -1,4 +1,5 @@
 import { requireNodeEnvVar } from '../server/utils';
+import { PRICING_TIERS } from '../shared/constants/pricing';
 
 export enum SubscriptionStatus {
   PastDue = 'past_due',
@@ -28,46 +29,50 @@ export type PaymentPlanEffect = {
   pricePerPage: number;
 };
 
+// Build payment plans from centralized pricing constants
+const tier1 = PRICING_TIERS[0];
+const tier2 = PRICING_TIERS[1];
+const tier3 = PRICING_TIERS[2];
+
 export const paymentPlans: Record<PaymentPlanId, PaymentPlan> = {
   [PaymentPlanId.SmallBatch]: {
     getPaymentProcessorPlanId: () => requireNodeEnvVar('PAYMENTS_SMALL_BATCH_PLAN_ID'),
     effect: { 
       kind: 'pages', 
-      minPages: 1,
-      maxPages: 5,
-      totalPrice: 2.50,
-      pricePerPage: 0.50 // $2.50 / 5 pages = $0.50 per page
+      minPages: tier1.minPages,
+      maxPages: tier1.maxPages,
+      totalPrice: tier1.priceInDollars,
+      pricePerPage: tier1.priceInDollars / tier1.maxPages
     },
   },
   [PaymentPlanId.MediumBatch]: {
     getPaymentProcessorPlanId: () => requireNodeEnvVar('PAYMENTS_MEDIUM_BATCH_PLAN_ID'),
     effect: { 
       kind: 'pages', 
-      minPages: 6,
-      maxPages: 20,
-      totalPrice: 7.50,
-      pricePerPage: 0.375 // $7.50 / 20 pages = $0.375 per page
+      minPages: tier2.minPages,
+      maxPages: tier2.maxPages,
+      totalPrice: tier2.priceInDollars,
+      pricePerPage: tier2.priceInDollars / tier2.maxPages
     },
   },
   [PaymentPlanId.LargeBatch]: {
     getPaymentProcessorPlanId: () => requireNodeEnvVar('PAYMENTS_LARGE_BATCH_PLAN_ID'),
     effect: { 
       kind: 'pages', 
-      minPages: 21,
-      maxPages: 50,
-      totalPrice: 15.00,
-      pricePerPage: 0.30 // $15.00 / 50 pages = $0.30 per page
+      minPages: tier3.minPages,
+      maxPages: tier3.maxPages,
+      totalPrice: tier3.priceInDollars,
+      pricePerPage: tier3.priceInDollars / tier3.maxPages
     },
   },
 };
 
 export function prettyPaymentPlanName(planId: PaymentPlanId): string {
-  const planToName: Record<PaymentPlanId, string> = {
-    [PaymentPlanId.SmallBatch]: 'Small Batch (1-5 pages)',
-    [PaymentPlanId.MediumBatch]: 'Medium Batch (6-20 pages)',
-    [PaymentPlanId.LargeBatch]: 'Large Batch (21-50 pages)',
-  };
-  return planToName[planId];
+  const plan = paymentPlans[planId];
+  if (plan.effect.kind === 'pages') {
+    return `${planId.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} (${plan.effect.minPages}-${plan.effect.maxPages} pages)`;
+  }
+  return planId;
 }
 
 export function parsePaymentPlanId(planId: string): PaymentPlanId {
