@@ -102,9 +102,10 @@ export default defineConfig({
         baseUrl: 'https://github.com/wasp-lang/open-saas-postmarkr/tree/main/template/app/blog',
       },
       components: {
+        SiteTitle: './src/components/MyHeader.astro',
+        ThemeSelect: './src/components/MyThemeSelect.astro',
         Head: './src/components/HeadWithOGImage.astro',
         PageTitle: './src/components/TitleWithBannerImage.astro',
-        Header: './src/components/MyHeader.astro',
       },
       social: [],
       sidebar: [
