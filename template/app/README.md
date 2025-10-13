@@ -1535,9 +1535,25 @@ Each of these steps is covered in more detail below.
 
 ### Prerequisites
 #### AWS S3 CORS configuration
-If you're storing files in AWS S3, ensure you've listed your production domain
-in the bucket's CORS configuration under `AllowedOrigins`. Check the [File
-uploading guide](/guides/file-uploading/#change-the-cors-settings) for details.
+If you're storing files in AWS S3, ensure you've listed your production domain in the bucket's CORS configuration under `AllowedOrigins`. 
+
+**⚠️ Critical for PDF Viewing:** Without proper CORS configuration, users will not be able to view PDFs in the browser. The PDF viewer loads files directly from S3, and browsers block these requests without CORS headers.
+
+To configure CORS, add this policy to your S3 bucket via AWS Console → Bucket → Permissions → CORS:
+```json
+[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "HEAD"],
+    "AllowedOrigins": [
+      "https://your-production-domain.com",
+      "http://localhost:3000"
+    ],
+    "ExposeHeaders": ["ETag", "Content-Type", "Content-Length"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
 
 #### Env Vars
 Make sure you've got all your API keys and environment variables set up before you deploy.

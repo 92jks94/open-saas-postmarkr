@@ -13,6 +13,7 @@ on:
     paths:
       - 'template/app/blog/**'
       - '.github/workflows/blog-deployment.yml'
+  workflow_dispatch:
 
 jobs:
   build:

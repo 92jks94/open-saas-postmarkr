@@ -31,12 +31,12 @@ app OpenSaaS {
     "<meta name='twitter:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",
     "<meta name='twitter:description' content='Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
     
-    // Google Analytics - Script loads in head for proper detection by Tag Assistant
-    // The script loads but doesn't initialize until cookie consent is given (see cookie-consent/Config.ts)
+    // Google Analytics - Script loads and initializes in head for proper detection
     "<script async src='https://www.googletagmanager.com/gtag/js?id=G-6H2SB3GJDW'></script>",
+    "<script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-6H2SB3GJDW');</script>",
     
     // Debug helper - logs when GA script loads for verification
-    "<script>window.addEventListener('load', function() { console.log('🔍 Google Tag loaded:', !!window.gtag); console.log('🔍 DataLayer exists:', !!window.dataLayer); });</script>",
+    "<script>window.addEventListener('load', function() { console.log('🔍 Google Tag loaded:', !!window.gtag); console.log('🔍 DataLayer exists:', !!window.dataLayer); console.log('🔍 GA Measurement ID: G-6H2SB3GJDW'); if(window.dataLayer) { console.log('🔍 DataLayer contents:', window.dataLayer); } });</script>",
   ],
 
   // 🔐 Auth out of the box! https://wasp.sh/docs/auth/overview
@@ -262,6 +262,11 @@ query getDownloadFileSignedURL {
 
 query getThumbnailURL {
   fn: import { getThumbnailURL } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
+query verifyFileUpload {
+  fn: import { verifyFileUpload } from "@src/file-upload/operations",
   entities: [User, File]
 }
 

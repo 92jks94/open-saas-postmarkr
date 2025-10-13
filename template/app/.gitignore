@@ -98,6 +98,7 @@ test-results/
 playwright-report/
 e2e-tests/test-results/
 e2e-tests/playwright-report/
+.playwright-mcp/
 
 # Build artifacts and generated documentation
 *.md.backup

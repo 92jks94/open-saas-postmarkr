@@ -67,18 +67,12 @@ export const createMailPieceSchema = z.object({
   mailType: mailTypeSchema,
   mailClass: mailClassSchema,
   mailSize: mailSizeSchema,
-  senderAddressId: z.string().uuid('Invalid sender address ID'),
-  recipientAddressId: z.string().uuid('Invalid recipient address ID'),
-  fileId: z.string().uuid('Invalid file ID').optional(),
+  senderAddressId: z.string().uuid(),
+  recipientAddressId: z.string().uuid(),
+  fileId: z.string().uuid().optional(),
   description: z.string().min(1, 'Description is required').max(500, 'Description too long').optional(),
   addressPlacement: z.enum(['top_first_page', 'insert_blank_page']).optional(),
-}).refine(
-  (data) => data.senderAddressId !== data.recipientAddressId,
-  {
-    message: 'Sender and recipient addresses must be different',
-    path: ['recipientAddressId']
-  }
-);
+});
 
 // Update mail piece input validation
 export const updateMailPieceSchema = z.object({
@@ -86,22 +80,11 @@ export const updateMailPieceSchema = z.object({
   mailType: mailTypeSchema.optional(),
   mailClass: mailClassSchema.optional(),
   mailSize: mailSizeSchema.optional(),
-  senderAddressId: z.string().uuid('Invalid sender address ID').optional(),
-  recipientAddressId: z.string().uuid('Invalid recipient address ID').optional(),
-  fileId: z.string().uuid('Invalid file ID').optional(),
+  senderAddressId: z.string().uuid().optional(),
+  recipientAddressId: z.string().uuid().optional(),
+  fileId: z.string().uuid().optional(),
   description: z.string().min(1, 'Description is required').max(500, 'Description too long').optional(),
-}).refine(
-  (data) => {
-    if (data.senderAddressId && data.recipientAddressId) {
-      return data.senderAddressId !== data.recipientAddressId;
-    }
-    return true;
-  },
-  {
-    message: 'Sender and recipient addresses must be different',
-    path: ['recipientAddressId']
-  }
-);
+});
 
 // Update status input validation
 export const updateMailPieceStatusSchema = z.object({

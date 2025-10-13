@@ -47,3 +47,4 @@ template/app/coverage/
 aux*
 chema.prisma*
 
+-la .toml

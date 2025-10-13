@@ -60,7 +60,7 @@ export async function uploadBase64ThumbnailToS3({
 
 /**
  * Get signed URL for viewing a thumbnail
- * Thumbnails are public-readable but we use signed URLs for consistency
+ * Uses 7-day expiration for Stripe checkout receipts
  */
 export async function getThumbnailSignedUrl(thumbnailKey: string): Promise<string> {
   const command = new GetObjectCommand({
@@ -68,8 +68,8 @@ export async function getThumbnailSignedUrl(thumbnailKey: string): Promise<strin
     Key: thumbnailKey,
   });
   
-  // Thumbnails can have longer expiration since they don't change
-  return getSignedUrl(s3Client, command, { expiresIn: 86400 }); // 24 hours
+  // 7-day expiration for Stripe checkout images
+  return getSignedUrl(s3Client, command, { expiresIn: 604800 }); // 7 days
 }
 
 /**

@@ -45,6 +45,7 @@ import {
   validateFileOwnership,
   validationErrors
 } from './validation';
+import { getThumbnailSignedUrl } from '../file-upload/s3ThumbnailUtils';
 import { 
   createMailPaymentIntent as createMailPaymentIntentService, 
   confirmMailPayment as confirmMailPaymentService, 
@@ -743,6 +744,17 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
  * @throws {HttpError} 400 - If mail piece not in 'draft' status
  * @throws {HttpError} 500 - If Stripe API or cost calculation fails
  */
+// Helper function to display mail class in readable format
+function getMailClassDisplay(mailClass: string): string {
+  const classes: Record<string, string> = {
+    'usps_first_class': 'USPS First Class',
+    'usps_express': 'USPS Express',
+    'usps_priority': 'USPS Priority',
+    'usps_standard': 'USPS Standard',
+  };
+  return classes[mailClass] || mailClass;
+}
+
 type CreateMailCheckoutSessionInput = {
   mailPieceId: string;
 };
@@ -761,6 +773,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       include: {
         senderAddress: true,
         recipientAddress: true,
+        file: true, // Include file for thumbnail
       },
     });
 
@@ -788,8 +801,91 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       pageCount: mailPiece.pageCount,
     });
 
+    // Get thumbnail URL for Stripe product image (if available)
+    let thumbnailUrl: string | undefined;
+    
+    // Enhanced debugging for thumbnail generation
+    console.log('📸 Thumbnail Debug:', {
+      hasFile: !!mailPiece.file,
+      fileId: mailPiece.fileId,
+      fileName: mailPiece.file?.name,
+      hasThumbnailKey: !!mailPiece.file?.thumbnailKey,
+      thumbnailKey: mailPiece.file?.thumbnailKey,
+      thumbnailGeneratedAt: mailPiece.file?.thumbnailGeneratedAt
+    });
+    
+    if (mailPiece.file?.thumbnailKey) {
+      try {
+        thumbnailUrl = await getThumbnailSignedUrl(mailPiece.file.thumbnailKey);
+        console.log('✅ Thumbnail URL generated successfully for Stripe checkout');
+        console.log('📎 Thumbnail URL:', thumbnailUrl);
+      } catch (error) {
+        console.error('❌ Failed to get thumbnail URL for Stripe checkout:', error);
+        // Continue without thumbnail - not critical
+      }
+    } else {
+      console.warn('⚠️ No thumbnail key found for file - Stripe checkout will not show product image');
+      if (mailPiece.file) {
+        console.warn('💡 File exists but thumbnailKey is missing. Client may have failed to generate/upload thumbnail.');
+      }
+    }
+
+    // Build readable descriptions - Stripe doesn't reliably support line breaks
+    // So we'll use clear separators and rely on line items for structure
+    const formatAddress = (addr: typeof mailPiece.senderAddress) => 
+      `${addr.contactName}, ${addr.address_city}, ${addr.address_state}`;
+
     // Create Stripe Checkout Session
     const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+    
+    // Log checkout session details (dev only)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Creating Stripe checkout session:', {
+        mailPieceId: args.mailPieceId,
+        pageCount: mailPiece.pageCount,
+        pricingTier: costData.breakdown.pricingTier,
+        hasThumbnail: !!thumbnailUrl,
+      });
+    }
+
+    // Helper function to truncate strings for Stripe metadata (500 char limit per value)
+    const truncateMetadata = (str: string, maxLength: number = 450): string => {
+      if (str.length <= maxLength) return str;
+      return str.substring(0, maxLength) + '...';
+    };
+    
+    // Helper function to truncate filename for display (100 char limit for readability)
+    const truncateFilename = (name: string, maxLength: number = 100): string => {
+      if (name.length <= maxLength) return name;
+      // Keep file extension visible
+      const ext = name.lastIndexOf('.');
+      if (ext > 0 && ext > maxLength - 10) {
+        const extension = name.substring(ext);
+        return name.substring(0, maxLength - extension.length - 3) + '...' + extension;
+      }
+      return name.substring(0, maxLength - 3) + '...';
+    };
+    
+    // Build dynamic product information for Stripe Checkout
+    const recipientName = truncateMetadata(mailPiece.recipientAddress.contactName, 100);
+    const fileName = mailPiece.file?.name || 'document';
+    const displayFileName = truncateFilename(fileName);
+    
+    // Create customer-friendly product name with recipient
+    const productName = `Physical Mail Delivery to ${recipientName}`;
+    
+    // Build detailed description with all relevant order details
+    const productDescription = `Sending ${mailPiece.pageCount} page${mailPiece.pageCount > 1 ? 's' : ''} ("${displayFileName}") via ${getMailClassDisplay(mailPiece.mailClass)} | ${costData.breakdown.description}`;
+    
+    // Log Stripe checkout session creation details
+    console.log('🛒 Creating Stripe checkout session with:', {
+      productName,
+      productDescription: productDescription.substring(0, 100) + '...',
+      hasThumbnail: !!thumbnailUrl,
+      thumbnailUrlPreview: thumbnailUrl ? thumbnailUrl.substring(0, 100) + '...' : 'none',
+      amount: costData.cost,
+      mailPieceId: args.mailPieceId
+    });
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -798,24 +894,70 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `Mail Piece - ${mailPiece.mailType}`,
-              description: `Send ${mailPiece.mailType} via ${mailPiece.mailClass} mail`,
+              name: productName,
+              description: productDescription,
+              // Add thumbnail image of uploaded file if available
+              ...(thumbnailUrl && { images: [thumbnailUrl] }),
             },
-            unit_amount: costData.cost, // Amount in cents
+            unit_amount: costData.cost,
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: `${DOMAIN}/mail/checkout?status=success&mail_piece_id=${args.mailPieceId}`,
+      // Client reference for easier tracking in Stripe dashboard
+      client_reference_id: args.mailPieceId,
+      // Use custom_text for address details (single line with clear separators)
+      custom_text: {
+        submit: {
+          message: `From: ${formatAddress(mailPiece.senderAddress)} → To: ${formatAddress(mailPiece.recipientAddress)}`,
+        },
+      },
+      success_url: `${DOMAIN}/mail/checkout?status=success&mail_piece_id=${args.mailPieceId}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${DOMAIN}/mail/checkout?status=canceled&mail_piece_id=${args.mailPieceId}`,
       metadata: {
+        // Core identifiers
         mailPieceId: args.mailPieceId,
         userId: context.user.id,
+        type: 'mail_payment',
+        
+        // Mail specifications
         mailType: mailPiece.mailType,
         mailClass: mailPiece.mailClass,
         mailSize: mailPiece.mailSize,
-        type: 'mail_payment',
+        pageCount: mailPiece.pageCount?.toString() || '0',
+        pricingTier: costData.breakdown.pricingTier,
+        envelopeType: costData.breakdown.envelopeType,
+        
+        // File info (truncated to prevent metadata value limits)
+        fileName: truncateMetadata(fileName, 200),
+        fileId: mailPiece.fileId || '',
+        
+        // Addresses (for support/fulfillment) - truncated to stay under 500 char limit
+        senderName: truncateMetadata(mailPiece.senderAddress.contactName, 100),
+        senderCity: truncateMetadata(mailPiece.senderAddress.address_city, 100),
+        senderState: mailPiece.senderAddress.address_state,
+        senderZip: mailPiece.senderAddress.address_zip,
+        senderAddress: truncateMetadata(
+          `${mailPiece.senderAddress.address_line1}, ${mailPiece.senderAddress.address_city}, ${mailPiece.senderAddress.address_state} ${mailPiece.senderAddress.address_zip}`
+        ),
+        
+        recipientName: truncateMetadata(mailPiece.recipientAddress.contactName, 100),
+        recipientCity: truncateMetadata(mailPiece.recipientAddress.address_city, 100),
+        recipientState: mailPiece.recipientAddress.address_state,
+        recipientZip: mailPiece.recipientAddress.address_zip,
+        recipientAddress: truncateMetadata(
+          `${mailPiece.recipientAddress.address_line1}, ${mailPiece.recipientAddress.address_city}, ${mailPiece.recipientAddress.address_state} ${mailPiece.recipientAddress.address_zip}`
+        ),
+        
+        // Printing options
+        colorPrinting: mailPiece.colorPrinting ? 'true' : 'false',
+        doubleSided: mailPiece.doubleSided ? 'true' : 'false',
+        addressPlacement: mailPiece.addressPlacement,
+        
+        // Cost breakdown for reference
+        totalCost: (costData.cost / 100).toFixed(2),
+        pricePerPage: (costData.cost / 100 / mailPiece.pageCount).toFixed(2),
       },
       customer_email: context.user.email ?? undefined,
     });
@@ -1030,9 +1172,11 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     if (mailPiece.file?.key) {
       try {
         fileUrl = await getDownloadFileSignedURLFromS3({ key: mailPiece.file.key });
-        console.log(`📎 Generated download URL for file: ${mailPiece.file.name}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Generated download URL for file');
+        }
       } catch (error) {
-        console.error(`❌ Failed to generate download URL for file ${mailPiece.file.key}:`, error);
+        console.error('Failed to generate download URL for file:', error instanceof Error ? error.message : 'Unknown error');
         throw new HttpError(500, 'Failed to prepare file for mailing. Please try again.');
       }
     }
@@ -1058,10 +1202,12 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     const thumbnails = lobResponse.lobData?.thumbnails || [];
     const previewUrl = lobResponse.lobData?.url || null;
 
-    console.log(`📸 Extracted preview data from Lob:`, {
-      thumbnailCount: Array.isArray(thumbnails) ? thumbnails.length : 0,
-      hasPreviewUrl: !!previewUrl
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Extracted preview data from Lob:', {
+        thumbnailCount: Array.isArray(thumbnails) ? thumbnails.length : 0,
+        hasPreviewUrl: !!previewUrl
+      });
+    }
 
     // Update mail piece with Lob information using conditional update to prevent race conditions
     // This will only update if paymentStatus is 'paid' and lobId is still null
@@ -1109,7 +1255,9 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       },
     });
 
-    console.log(`Successfully submitted mail piece ${args.mailPieceId} to Lob with ID: ${lobResponse.id}`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Successfully submitted mail piece to Lob with ID: ${lobResponse.id}`);
+    }
 
     // Send mail submitted confirmation email
     try {

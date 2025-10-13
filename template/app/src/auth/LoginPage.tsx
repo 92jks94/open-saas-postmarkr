@@ -2,10 +2,10 @@
 // AUTHENTICATION PAGES
 // ============================================================================
 // This file contains the login page component for user authentication.
-// It uses Wasp's built-in auth components and provides navigation to other auth flows.
+// It uses enhanced custom auth components with password visibility toggle and autocomplete.
 
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
-import { LoginForm } from 'wasp/client/auth';
+import { EnhancedLoginForm } from './components/EnhancedLoginForm';
 import AuthPageLayout from './AuthPageLayout';
 
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 export default function Login() {
   return (
     <AuthPageLayout>
-      <LoginForm />
+      <EnhancedLoginForm />
       <div className='space-y-4 mt-6'>
         <p className='text-sm font-medium text-card-foreground'>
           Don't have an account yet?{' '}

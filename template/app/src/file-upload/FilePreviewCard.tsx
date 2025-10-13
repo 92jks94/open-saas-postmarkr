@@ -108,9 +108,9 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
   }
 
   return (
-    <Card className='p-4'>
+    <Card className='p-6'>
       <div
-        className={cn('flex flex-col sm:flex-row items-start sm:items-center gap-4', {
+        className={cn('flex flex-col sm:flex-row items-start sm:items-center gap-6', {
           'opacity-70': isDownloading,
         })}
       >

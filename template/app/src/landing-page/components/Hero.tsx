@@ -44,18 +44,18 @@ export default function Hero() {
               className='text-lg px-8 py-6 shadow-glow hover:shadow-glow hover:scale-105 transition-all bg-gradient-primary border-0'
               asChild
             >
-              <a href='#pricing' className='inline-flex items-center'>
-                View Pricing
+              <WaspRouterLink to={routes.SignupRoute.to} className='inline-flex items-center'>
+                Start Sending Mail
                 <ArrowRight className='ml-2 h-5 w-5' />
-              </a>
+              </WaspRouterLink>
             </Button>
             <Button
               size='lg'
               variant='outline'
-              className='text-lg px-8 py-6 hover:bg-primary/5 hover:scale-105 transition-all'
+              className='text-lg px-8 py-6 hover:bg-primary/5 hover:scale-105 transition-all border-primary/20'
               asChild
             >
-              <WaspRouterLink to={routes.SignupRoute.to}>Start Sending Mail</WaspRouterLink>
+              <a href='#pricing'>View Pricing</a>
             </Button>
           </div>
         </div>

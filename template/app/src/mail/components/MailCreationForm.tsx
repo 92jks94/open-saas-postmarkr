@@ -1,20 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { createMailPiece, getMailPiece } from 'wasp/client/operations';
+import { createMailPiece, getMailPiece, getAllFilesByUser, useQuery } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Textarea } from '../../components/ui/textarea';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { Badge } from '../../components/ui/badge';
-import { Mail, Send, AlertTriangle, CheckCircle, CreditCard, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle, CreditCard } from 'lucide-react';
 import FileSelector from './FileSelector';
 import AddressSelector from './AddressSelector';
 import PaymentStep from './PaymentStep';
+import QuickAddressModal from './QuickAddressModal';
+import PDFViewer from './PDFViewer';
+import BottomActionBar from './BottomActionBar';
+import MailConfigurationSection from './MailConfigurationSection';
 import type { MailPiece, MailAddress, File } from 'wasp/entities';
 import { SimpleAddressValidator } from '../../shared/addressValidationSimple';
-import { getMailTypeOptions, getMailClassOptions, getMailSizeOptions } from '../../config/features';
 
 /**
  * Props for the MailCreationForm component
@@ -82,11 +78,33 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     file?: File | null;
   } | null>(null);
 
-  // Direct action call - no useAction hook needed
+  // Quick add modal state
+  const [showSenderModal, setShowSenderModal] = useState(false);
+  const [showRecipientModal, setShowRecipientModal] = useState(false);
 
-  // Get options from feature flags
-  const mailTypeOptions = getMailTypeOptions();
-  const mailClassOptions = getMailClassOptions();
+  // Fetch user's files to get selected file details
+  const { data: userFiles, isLoading: filesLoading } = useQuery(getAllFilesByUser);
+  
+  // Find selected file for PDF viewer
+  const selectedFile = useMemo(() => {
+    if (!formData.fileId || !userFiles) {
+      return null;
+    }
+    const file = userFiles.find((f: File) => f.id === formData.fileId) || null;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[MailCreationForm] Selected file:', { 
+        fileId: formData.fileId, 
+        found: !!file,
+        hasKey: !!file?.key
+      });
+    }
+    return file;
+  }, [formData.fileId, userFiles]);
+
+  // Determine if we should show the two-column layout
+  const shouldShowTwoColumn = !!(selectedFile && selectedFile.key);
+
+  // Direct action call - no useAction hook needed
 
 
   // Simplified form validation using only Zod validation
@@ -98,7 +116,27 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
       description: formData.description || '',
     };
 
-    return SimpleAddressValidator.validateMailCreation(mailCreationData);
+    const validation = SimpleAddressValidator.validateMailCreation(mailCreationData);
+    
+    // Customize error messages to be more user-friendly
+    const customErrors: Record<string, string> = {};
+    if (validation.errors.senderAddressId) {
+      customErrors.senderAddressId = 'Please select a sender address';
+    }
+    if (validation.errors.recipientAddressId) {
+      customErrors.recipientAddressId = 'Please select a recipient address';
+    }
+    if (validation.errors.fileId) {
+      customErrors.fileId = 'Please select a file to send';
+    }
+    if (validation.errors.description) {
+      customErrors.description = validation.errors.description;
+    }
+    
+    return {
+      isValid: validation.isValid,
+      errors: Object.keys(customErrors).length > 0 ? customErrors : validation.errors
+    };
   }, [formData.senderAddressId, formData.recipientAddressId, formData.fileId, formData.description]);
 
   // Update errors state when validation changes
@@ -111,14 +149,8 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     return formValidation.isValid;
   }, [formValidation.isValid]);
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
+  // Shared submit logic - prevents duplication and race conditions
+  const submitMailPiece = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -149,6 +181,30 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     }
   };
 
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm() || isSubmitting) {
+      return;
+    }
+
+    await submitMailPiece();
+  };
+
+  // Handle submit from bottom action bar (non-form event)
+  const handleBottomBarSubmit = (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    if (!validateForm() || isSubmitting) {
+      return;
+    }
+
+    submitMailPiece();
+  };
+
   // Handle payment success
   const handlePaymentSuccess = (mailPieceId: string) => {
     if (onSuccess) {
@@ -168,17 +224,10 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     setCreatedMailPiece(null);
   };
 
-  // Memoize size options to prevent recreation on every render
-  const sizeOptions = useMemo(() => {
-    return getMailSizeOptions(formData.mailType);
-  }, [formData.mailType]);
-
-  // Reset size when mail type changes
-  useEffect(() => {
-    if (sizeOptions.length > 0 && !sizeOptions.find(option => option.value === formData.mailSize)) {
-      setFormData(prev => ({ ...prev, mailSize: sizeOptions[0].value }));
-    }
-  }, [formData.mailType, sizeOptions, formData.mailSize]);
+  // Memoized form update handler to prevent unnecessary re-renders
+  const handleFormDataChange = useCallback((updates: Partial<FormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  }, []);
 
   // Simplified form validity check using Zod validation
   const isFormValid = useMemo(() => {
@@ -228,209 +277,155 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   return (
     <div className={className}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Mail Configuration */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Mail Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Mail Type */}
-            <div className="space-y-2">
-              <Label htmlFor="mailType">Mail Type</Label>
-              <Select
-                value={formData.mailType}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, mailType: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select mail type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mailTypeOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div>
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">{option.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Mail Class */}
-            <div className="space-y-2">
-              <Label htmlFor="mailClass">Mail Class</Label>
-              <Select
-                value={formData.mailClass}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, mailClass: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select mail class" />
-                </SelectTrigger>
-                <SelectContent>
-                  {mailClassOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div>
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">{option.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Mail Size */}
-            <div className="space-y-2">
-              <Label htmlFor="mailSize">Mail Size</Label>
-              <Select
-                value={formData.mailSize}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, mailSize: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select mail size" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sizeOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div>
-                        <div className="font-medium">{option.label}</div>
-                        <div className="text-xs text-gray-500">{option.description}</div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Address Placement */}
-            <div className="space-y-2">
-              <Label htmlFor="addressPlacement">Address Placement</Label>
-              <Select
-                value={formData.addressPlacement}
-                onValueChange={(value: 'top_first_page' | 'insert_blank_page') => 
-                  setFormData(prev => ({ ...prev, addressPlacement: value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select address placement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="insert_blank_page">
-                    <div>
-                      <div className="font-medium">Insert Blank Page</div>
-                      <div className="text-xs text-gray-500">Adds an extra page for address (recommended)</div>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="top_first_page">
-                    <div>
-                      <div className="font-medium">Top of First Page</div>
-                      <div className="text-xs text-gray-500">Address printed on your first page (cost-effective)</div>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <div className="text-xs text-gray-500">
-                {formData.addressPlacement === 'insert_blank_page' 
-                  ? 'Lob will add a blank page at the beginning for the recipient address. This ensures your content remains unchanged but adds an extra page cost.'
-                  : 'Lob will print the recipient address at the top of your first page. Make sure to leave space at the top of your document for the address block.'
-                }
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Description (Optional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Brief description of this mail piece..."
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                maxLength={500}
-                rows={3}
-              />
-              <div className="text-xs text-gray-500">
-                {formData.description.length}/500 characters
-              </div>
-              {errors.description && (
-                <p className="text-xs text-red-600">{errors.description}</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Address Selection */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AddressSelector
-            selectedAddressId={formData.senderAddressId}
-            onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, senderAddressId: addressId }))}
-            addressType="sender"
-          />
-          
-          <AddressSelector
-            selectedAddressId={formData.recipientAddressId}
-            onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, recipientAddressId: addressId }))}
-            addressType="recipient"
-          />
-        </div>
-
-        {/* File Selection */}
+        {/* File Selection - Always at top */}
         <FileSelector
           selectedFileId={formData.fileId}
           onFileSelect={(fileId) => setFormData(prev => ({ ...prev, fileId }))}
           mailType={formData.mailType}
           mailSize={formData.mailSize}
+          addressPlacement={formData.addressPlacement}
+          showPreview={false}
+          compact={true}
         />
 
+        {/* Two-Column Layout: PDF Viewer + Form Elements */}
+        {shouldShowTwoColumn ? (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] xl:grid-cols-[1fr_500px] gap-6">
+            {/* LEFT COLUMN: PDF Viewer */}
+            <div className="w-full">
+              <PDFViewer 
+                fileKey={selectedFile.key}
+              />
+            </div>
 
-        {/* Error Display */}
-        {Object.keys(errors).length > 0 && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Please fix the following errors:
-              <ul className="mt-2 list-disc list-inside">
-                {Object.entries(errors).map(([field, error]) => (
-                  <li key={field}>{error}</li>
-                ))}
-              </ul>
-            </AlertDescription>
-          </Alert>
-        )}
+            {/* RIGHT COLUMN: Address Selection + Mail Config */}
+            <div className="space-y-6">
+              {/* Address Selection */}
+              <div className="space-y-6">
+                <AddressSelector
+                  selectedAddressId={formData.senderAddressId}
+                  onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, senderAddressId: addressId }))}
+                  addressType="sender"
+                  onQuickAdd={() => setShowSenderModal(true)}
+                />
+                
+                <AddressSelector
+                  selectedAddressId={formData.recipientAddressId}
+                  onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, recipientAddressId: addressId }))}
+                  addressType="recipient"
+                  onQuickAdd={() => setShowRecipientModal(true)}
+                />
+              </div>
 
+              {/* Mail Configuration - Compact mode */}
+              <MailConfigurationSection
+                formData={{
+                  mailType: formData.mailType,
+                  mailClass: formData.mailClass,
+                  mailSize: formData.mailSize,
+                  description: formData.description,
+                  addressPlacement: formData.addressPlacement
+                }}
+                onChange={handleFormDataChange}
+                compact={true}
+                errors={errors}
+              />
+            </div>
+          </div>
 
-        {submitError && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{submitError}</AlertDescription>
-          </Alert>
-        )}
+          {/* Sticky Bottom Action Bar - Shows only in two-column layout */}
+          <BottomActionBar
+            isValid={isFormValid}
+            isSubmitting={isSubmitting}
+            pageCount={selectedFile?.pageCount || 0}
+            mailClass={formData.mailClass}
+            mailType={formData.mailType}
+            addressPlacement={formData.addressPlacement}
+            onSubmit={handleBottomBarSubmit}
+            errors={errors}
+            fileSelected={!!formData.fileId}
+            addressesSelected={!!(formData.senderAddressId && formData.recipientAddressId)}
+          />
+          </>
+        ) : (
+          /* Single Column: No file selected yet - show original layout */
+          <div className="space-y-6">
+            {/* Address Selection */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <AddressSelector
+                selectedAddressId={formData.senderAddressId}
+                onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, senderAddressId: addressId }))}
+                addressType="sender"
+                onQuickAdd={() => setShowSenderModal(true)}
+              />
+              
+              <AddressSelector
+                selectedAddressId={formData.recipientAddressId}
+                onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, recipientAddressId: addressId }))}
+                addressType="recipient"
+                onQuickAdd={() => setShowRecipientModal(true)}
+              />
+            </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            isLoading={isSubmitting}
-            loadingText="Creating..."
-            disabled={!isFormValid}
-            className="min-w-[200px]"
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            Create & Pay
-          </Button>
-        </div>
+            {/* Mail Configuration */}
+            <MailConfigurationSection
+              formData={{
+                mailType: formData.mailType,
+                mailClass: formData.mailClass,
+                mailSize: formData.mailSize,
+                description: formData.description,
+                addressPlacement: formData.addressPlacement
+              }}
+              onChange={handleFormDataChange}
+              errors={errors}
+            />
 
-        {/* Form Status */}
-        {isFormValid && (
-          <div className="flex items-center gap-2 text-green-600 text-sm">
-            <CheckCircle className="h-4 w-4" />
-            <span>Ready to create mail piece and proceed to payment</span>
+            {/* Submit Button */}
+            <div className="flex justify-end">
+              <Button
+                type="submit"
+                isLoading={isSubmitting}
+                loadingText="Creating..."
+                disabled={!isFormValid}
+                className="min-w-[200px]"
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Create & Pay
+              </Button>
+            </div>
+
+            {/* Form Status */}
+            {isFormValid && (
+              <div className="flex items-center gap-2 text-green-600 text-sm">
+                <CheckCircle className="h-4 w-4" />
+                <span>Ready to create mail piece and proceed to payment</span>
+              </div>
+            )}
           </div>
         )}
       </form>
+
+      {/* Quick Add Address Modals */}
+      <QuickAddressModal
+        isOpen={showSenderModal}
+        onClose={() => setShowSenderModal(false)}
+        onSuccess={(address) => {
+          setFormData(prev => ({ ...prev, senderAddressId: address.id }));
+          setShowSenderModal(false);
+        }}
+        addressType="sender"
+      />
+      
+      <QuickAddressModal
+        isOpen={showRecipientModal}
+        onClose={() => setShowRecipientModal(false)}
+        onSuccess={(address) => {
+          setFormData(prev => ({ ...prev, recipientAddressId: address.id }));
+          setShowRecipientModal(false);
+        }}
+        addressType="recipient"
+      />
     </div>
   );
 };

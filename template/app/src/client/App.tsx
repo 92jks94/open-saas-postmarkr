@@ -38,49 +38,6 @@ export default function App() {
     initSentry();
   }, []);
 
-  // Initialize Google Analytics directly (no cookie consent for testing)
-  useEffect(() => {
-    const GA_ANALYTICS_ID = import.meta.env.REACT_APP_GOOGLE_ANALYTICS_ID;
-    
-    if (!GA_ANALYTICS_ID) {
-      console.warn('⚠️  Google Analytics ID not configured');
-      return;
-    }
-
-    console.log('🚀 Initializing Google Analytics directly (testing mode)');
-    console.log('📊 GA ID:', GA_ANALYTICS_ID);
-
-    // Initialize dataLayer
-    window.dataLayer = window.dataLayer || [];
-    function gtag(...args: unknown[]) {
-      (window.dataLayer as Array<any>).push(args);
-    }
-    
-    // Make gtag available globally
-    (window as any).gtag = gtag;
-    
-    // Initialize gtag
-    gtag('js', new Date());
-    gtag('config', GA_ANALYTICS_ID, {
-      anonymize_ip: true,
-      cookie_flags: 'SameSite=None;Secure',
-    });
-    
-    // Load GA script
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ANALYTICS_ID}`;
-    script.onload = () => {
-      console.log('✅ GA script loaded successfully (testing mode)');
-    };
-    script.onerror = () => {
-      console.error('❌ Failed to load GA script');
-    };
-    document.head.appendChild(script);
-    
-    console.log('✅ GA initialization complete');
-  }, []);
-
   const location = useLocation();
   const isMarketingPage = useMemo(() => {
     return location.pathname === '/';

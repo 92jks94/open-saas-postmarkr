@@ -11,6 +11,21 @@
   button, a, [role="button"] {
     touch-action: manipulation;
   }
+
+  /* Enhanced hover states and transitions */
+  button, a {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  button:hover:not(:disabled), 
+  a:hover {
+    transform: translateY(-1px);
+  }
+  
+  button:active:not(:disabled), 
+  a:active {
+    transform: translateY(0);
+  }
 }
 
 @layer utilities {

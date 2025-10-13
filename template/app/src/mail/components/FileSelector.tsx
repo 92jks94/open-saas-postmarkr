@@ -5,12 +5,12 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { CheckCircle, XCircle, FileText, Upload, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Upload, AlertTriangle, DollarSign, Package, FileStack } from 'lucide-react';
 import { MAX_FILE_SIZE_BYTES, MAIL_TYPE_PAGE_REQUIREMENTS, BYTES_PER_KB } from '../../shared/constants/files';
+import { getPricingTierForPageCount } from '../../shared/constants/pricing';
 
 /**
- * Props for the FileSelector component
- */
+ * Props for the FileSelector component */
 interface FileSelectorProps {
   /** Currently selected file ID */
   selectedFileId: string | null;
@@ -20,8 +20,14 @@ interface FileSelectorProps {
   mailType: string;
   /** Size of mail piece (affects file dimensions) */
   mailSize: string;
+  /** Address placement option (affects page count calculation) */
+  addressPlacement?: 'top_first_page' | 'insert_blank_page';
   /** Optional CSS classes for styling */
   className?: string;
+  /** Whether to show the comprehensive file preview card below (defaults to true) */
+  showPreview?: boolean;
+  /** Compact mode: collapses file list when a file is selected (defaults to false) */
+  compact?: boolean;
 }
 
 /**
@@ -39,6 +45,182 @@ interface FileValidationResult {
 // Note: Using constants from shared/constants/files.ts
 
 /**
+ * Component to display comprehensive file preview with thumbnail and cost receipt
+ */
+const ComprehensiveFilePreview: React.FC<{ 
+  file: File; 
+  addressPlacement?: 'top_first_page' | 'insert_blank_page';
+  onClose: () => void;
+}> = ({ file, addressPlacement = 'insert_blank_page', onClose }) => {
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  
+  const isPDF = file.type === 'application/pdf';
+  const pageCount = file.pageCount || 0;
+  
+  // Calculate total pages with address placement
+  const totalPages = addressPlacement === 'insert_blank_page' ? pageCount + 1 : pageCount;
+  
+  // Get pricing information
+  const pricingTier = getPricingTierForPageCount(totalPages);
+  
+  // Fetch thumbnail (first page only - existing infrastructure) - refetch on error
+  const { data: thumbnailUrl, isLoading: thumbnailLoading, refetch } = useQuery(
+    getThumbnailURL,
+    { fileId: file.id },
+    { 
+      enabled: isPDF && !!file.thumbnailKey,
+      refetchInterval: false
+    }
+  );
+  
+  // Handle PDF preview
+  const handlePreviewPDF = async () => {
+    if (!isPDF) return;
+    try {
+      const url = await getDownloadFileSignedURL({ key: file.key });
+      if (url) {
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      console.error('Failed to preview PDF:', error);
+    }
+  };
+  
+  return (
+    <Card className="mt-4 border-2 border-blue-500">
+      <CardHeader className="bg-blue-50">
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileStack className="h-5 w-5" />
+              {file.name}
+            </CardTitle>
+            <p className="text-sm text-gray-600 mt-1">
+              {pageCount} page{pageCount !== 1 ? 's' : ''} • Selected for mailing
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={onClose}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            Change File
+          </Button>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="p-6 space-y-6">
+        {/* First Page Preview */}
+        {isPDF && file.thumbnailKey && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Document Preview
+            </h4>
+            
+            <div className="flex flex-col items-center">
+              {thumbnailLoading ? (
+                <div className="w-48 aspect-[8.5/11] bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+                </div>
+              ) : thumbnailUrl && typeof thumbnailUrl === 'string' && !thumbnailFailed ? (
+                <img
+                  src={thumbnailUrl}
+                  alt="First page preview"
+                  className="w-48 rounded border-2 border-gray-300 shadow-md bg-white"
+                  onError={() => {
+                    // Try to refetch once in case URL expired
+                    if (!thumbnailFailed) {
+                      console.warn('[ComprehensiveFilePreview] Thumbnail failed to load, attempting refresh...');
+                      refetch();
+                      setThumbnailFailed(true);
+                    }
+                  }}
+                />
+              ) : (
+                <div className="w-48 aspect-[8.5/11] bg-gray-50 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
+                  <FileText className="h-12 w-12 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">Preview unavailable</span>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Preview of first page • {pageCount} total page{pageCount !== 1 ? 's' : ''}
+              </p>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handlePreviewPDF}
+                className="mt-3"
+              >
+                View Full PDF
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        {/* Cost Receipt */}
+        {pricingTier && (
+          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Cost Breakdown
+            </h4>
+            
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Document Pages:</span>
+                <span className="font-medium">{pageCount} page{pageCount !== 1 ? 's' : ''}</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-gray-600">Address Placement:</span>
+                <span className="font-medium">
+                  {addressPlacement === 'insert_blank_page' 
+                    ? '+1 page (insert blank)' 
+                    : 'Top of first page'
+                  }
+                </span>
+              </div>
+              
+              <div className="flex justify-between pt-2 border-t border-gray-300">
+                <span className="text-gray-600">Total Pages to Mail:</span>
+                <span className="font-semibold">{totalPages} page{totalPages !== 1 ? 's' : ''}</span>
+              </div>
+              
+              <div className="flex justify-between items-center pt-3 border-t border-gray-300">
+                <div>
+                  <span className="text-gray-600 flex items-center gap-1">
+                    <Package className="h-3.5 w-3.5" />
+                    Envelope Type:
+                  </span>
+                  <span className="text-xs text-gray-500 block mt-0.5">
+                    {pricingTier.description}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400 mt-3">
+                <span className="font-semibold text-gray-900">Total Cost:</span>
+                <span className="text-2xl font-bold text-green-600">
+                  ${pricingTier.priceInDollars.toFixed(2)}
+                </span>
+              </div>
+            </div>
+            
+            <p className="text-xs text-gray-500 mt-3">
+              Price includes printing, envelope, postage, and delivery tracking.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+/**
  * Component to display file thumbnail with loading/error states
  */
 const FileThumbnail: React.FC<{ file: File }> = ({ file }) => {
@@ -46,8 +228,8 @@ const FileThumbnail: React.FC<{ file: File }> = ({ file }) => {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const isPDF = file.type === 'application/pdf';
   
-  // Fetch thumbnail for PDFs only
-  const { data: thumbnailUrl, isLoading } = useQuery(
+  // Fetch thumbnail for PDFs only - refetch on error (handles expired URLs)
+  const { data: thumbnailUrl, isLoading, refetch } = useQuery(
     getThumbnailURL,
     { fileId: file.id },
     { 
@@ -104,7 +286,14 @@ const FileThumbnail: React.FC<{ file: File }> = ({ file }) => {
           src={thumbnailUrl}
           alt={`${file.name} thumbnail`}
           className="w-full h-full object-cover"
-          onError={() => setThumbnailFailed(true)}
+          onError={(e) => {
+            // Try to refetch once in case URL expired
+            if (!thumbnailFailed) {
+              console.warn('[FileThumbnail] Thumbnail failed to load, attempting refresh...');
+              refetch();
+              setThumbnailFailed(true);
+            }
+          }}
         />
         {/* Preview overlay */}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
@@ -185,9 +374,17 @@ const FileSelector: React.FC<FileSelectorProps> = ({
   onFileSelect,
   mailType,
   mailSize,
-  className = ''
+  addressPlacement = 'insert_blank_page',
+  className = '',
+  showPreview = true,
+  compact = false
 }) => {
   const { data: files, isLoading, error } = useQuery(getAllFilesByUser);
+  
+  // Find the selected file
+  const selectedFile = useMemo(() => {
+    return files?.find((f: File) => f.id === selectedFileId) || null;
+  }, [files, selectedFileId]);
 
   // Memoize validation results to prevent re-validation on every render
   const validationResults = useMemo(() => {
@@ -288,31 +485,61 @@ const FileSelector: React.FC<FileSelectorProps> = ({
     );
   }
 
+  // In compact mode, show minimal selected file info
+  const showCompactView = compact && selectedFile;
+
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          Select File
-        </CardTitle>
-        <p className="text-sm text-gray-600">
-          Choose a PDF file to send. Only validated files are shown.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {files?.length === 0 ? (
-          <div className="text-center py-8">
-            <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-500 mb-4">No files uploaded yet</p>
-            <Button variant="outline" onClick={() => window.location.href = '/file-upload'}>
-              Upload Files
-            </Button>
-          </div>
-        ) : (
+    <div className={className}>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Select File
+            {selectedFileId && (
+              <CheckCircle className="h-5 w-5 text-green-500 ml-1" />
+            )}
+          </CardTitle>
+          {!showCompactView && (
+            <p className="text-sm text-gray-600">
+              Choose a PDF file to send. Only validated files are shown.
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Compact View: Show selected file with change button */}
+          {showCompactView ? (
+            <div className="flex items-center justify-between p-3 border border-blue-500 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <FileThumbnail file={selectedFile} />
+                <div>
+                  <p className="font-medium text-sm">{selectedFile.name}</p>
+                  <p className="text-xs text-gray-600">
+                    {selectedFile.pageCount ? `${selectedFile.pageCount} pages` : 'Unknown pages'} • 
+                    {selectedFile.size ? formatFileSize(selectedFile.size) : 'Unknown size'}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onFileSelect(null)}
+              >
+                Change File
+              </Button>
+            </div>
+          ) : files?.length === 0 ? (
+            <div className="text-center py-8">
+              <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500 mb-4">No files uploaded yet</p>
+              <Button variant="outline" onClick={() => window.location.href = '/file-upload'}>
+                Upload Files
+              </Button>
+            </div>
+          ) : (
           <>
             {/* Valid Files */}
             {validFiles.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <h4 className="text-sm font-medium text-gray-700">Available Files</h4>
                 {validFiles.map((file: File) => {
                   const validation = validationResults[file.id];
@@ -370,7 +597,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({
 
             {/* Invalid Files */}
             {invalidFiles.length > 0 && (
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <h4 className="text-sm font-medium text-gray-700">Invalid Files</h4>
                 {invalidFiles.map((file: File) => {
                   const validation = validationResults[file.id];
@@ -408,7 +635,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({
             )}
 
             {/* Upload more files button */}
-            <div className="pt-4 border-t">
+            <div className="pt-6 border-t">
               <Button 
                 variant="outline" 
                 className="w-full"
@@ -420,8 +647,18 @@ const FileSelector: React.FC<FileSelectorProps> = ({
             </div>
           </>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      
+      {/* Comprehensive Preview - Shows when file is selected (can be disabled via showPreview prop) */}
+      {showPreview && selectedFile && (
+        <ComprehensiveFilePreview
+          file={selectedFile}
+          addressPlacement={addressPlacement}
+          onClose={() => onFileSelect(null)}
+        />
+      )}
+    </div>
   );
 };
 

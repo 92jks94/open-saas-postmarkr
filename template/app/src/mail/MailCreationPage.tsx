@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useNavigate } from 'react-router-dom';
-import { Alert, AlertDescription } from '../components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/ui/page-header';
@@ -66,20 +65,12 @@ export default function MailCreationPage() {
 
   return (
     <div className="min-h-screen bg-background py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
         {/* Header */}
         <PageHeader
           title="Create Mail Piece"
           description="Send physical mail with professional tracking and delivery confirmation."
         />
-
-        {/* Simplified Implementation Notice */}
-        <Alert className="mb-6">
-          <CheckCircle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Simplified Mode:</strong> Basic mail creation for testing. Select files and addresses to create mail pieces.
-          </AlertDescription>
-        </Alert>
 
         {/* Mail Creation Form */}
         <MailCreationForm onSuccess={handleSuccess} />

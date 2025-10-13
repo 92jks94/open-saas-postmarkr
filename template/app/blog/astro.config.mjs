@@ -50,10 +50,11 @@ export default defineConfig({
           item.priority = 0.9;
           item.changefreq = 'monthly';
         }
-        // Lower priority for tag and author pages (but still include them)
+        // Increase priority for tag and author pages to encourage indexing
+        // These are valuable for site structure and internal linking
         else if (item.url.includes('/blog/tags/') || item.url.includes('/blog/authors/')) {
-          item.priority = 0.5;
-          item.changefreq = 'monthly';
+          item.priority = 0.7; // Increased from 0.5
+          item.changefreq = 'weekly'; // More frequent than blog posts
         }
         // Main pages and guides
         else if (item.url.includes('/guides/')) {
@@ -83,7 +84,7 @@ export default defineConfig({
         {
           tag: 'script',
           attrs: {
-            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXXX'}`,
+            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS_ID || 'G-6H2SB3GJDW'}`,
           },
         },
         {
@@ -93,7 +94,7 @@ export default defineConfig({
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
         
-          gtag('config', '${process.env.GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXXX'}');
+          gtag('config', '${process.env.GOOGLE_ANALYTICS_ID || 'G-6H2SB3GJDW'}');
           `,
         },
       ],

@@ -10,6 +10,7 @@ import type {
   GetThumbnailURL,
   TriggerPDFProcessing,
   ExtractPDFPages,
+  VerifyFileUpload,
 } from 'wasp/server/operations';
 import type { File } from 'wasp/entities';
 import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
@@ -28,12 +29,13 @@ import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLi
 // EXTERNAL LIBRARY IMPORTS
 // ============================================================================
 import * as z from 'zod';
-import { S3Client, GetObjectCommand, ListObjectsV2Command, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 
 const createFileInputSchema = z.object({
   fileType: z.enum(ALLOWED_FILE_TYPES),
   fileName: z.string().nonempty(),
+  fileSize: z.number().int().positive().optional(), // File size in bytes
   // Phase 1: Optional thumbnail data from client
   clientThumbnail: z.string().optional(),
   previewPageCount: z.number().optional(),
@@ -61,7 +63,7 @@ export const createFile: CreateFile<
   checkOperationRateLimit('createFile', 'fileUpload', context.user.id);
 
   const validatedInput = ensureArgsSchemaOrThrowHttpError(createFileInputSchema, rawArgs);
-  const { fileType, fileName } = validatedInput;
+  const { fileType, fileName, fileSize } = validatedInput;
 
   const { s3UploadUrl, s3UploadFields, key } = await getUploadFileSignedURLFromS3({
     fileType,
@@ -76,6 +78,7 @@ export const createFile: CreateFile<
       key,
       uploadUrl: s3UploadUrl,
       type: fileType,
+      size: fileSize, // Store file size from client
       user: { connect: { id: context.user.id } },
       // Pre-populate page count if available (will be verified by background job)
       pageCount: validatedInput.previewPageCount,
@@ -136,11 +139,35 @@ const getDownloadFileSignedURLInputSchema = z.object({ key: z.string().nonempty(
 
 type GetDownloadFileSignedURLInput = z.infer<typeof getDownloadFileSignedURLInputSchema>;
 
+/**
+ * Get signed URL for file download
+ * Requires authentication and verifies file ownership
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
+ * @throws {HttpError} 403 - If file not found or user doesn't own the file
+ */
 export const getDownloadFileSignedURL: GetDownloadFileSignedURL<
   GetDownloadFileSignedURLInput,
   string
-> = async (rawArgs, _context) => {
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Authentication required');
+  }
+
   const { key } = ensureArgsSchemaOrThrowHttpError(getDownloadFileSignedURLInputSchema, rawArgs);
+  
+  // Verify file ownership - user must own the file to download it
+  const file = await context.entities.File.findFirst({
+    where: {
+      key,
+      userId: context.user.id,
+    },
+  });
+  
+  if (!file) {
+    throw new HttpError(403, 'File not found or access denied');
+  }
+  
   return await getDownloadFileSignedURLFromS3({ key });
 };
 
@@ -224,6 +251,84 @@ export const deleteFile: DeleteFile<
   }
 
   return file;
+};
+
+// Verify file exists in S3
+const verifyFileUploadInputSchema = z.object({
+  fileId: z.string().nonempty(),
+});
+
+type VerifyFileUploadInput = z.infer<typeof verifyFileUploadInputSchema>;
+
+/**
+ * Verify that a file actually exists in S3
+ * This helps catch cases where the upload appeared to succeed but the file isn't actually there
+ */
+export const verifyFileUpload: VerifyFileUpload<
+  VerifyFileUploadInput,
+  { exists: boolean; fileSize?: number }
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { fileId } = ensureArgsSchemaOrThrowHttpError(verifyFileUploadInputSchema, rawArgs);
+
+  // Get the file record
+  const file = await context.entities.File.findFirst({
+    where: {
+      id: fileId,
+      userId: context.user.id,
+    },
+  });
+
+  if (!file) {
+    throw new HttpError(404, 'File not found');
+  }
+
+  try {
+    // Check if file exists in S3 using HeadObject (doesn't download the file)
+    const s3Client = new S3Client({
+      region: process.env.AWS_S3_REGION || 'us-east-2',
+      credentials: {
+        accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
+        secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
+      },
+    });
+
+    const headCommand = new HeadObjectCommand({
+      Bucket: process.env.AWS_S3_FILES_BUCKET!,
+      Key: file.key,
+    });
+
+    const response = await s3Client.send(headCommand);
+
+    // File exists, return success with file size
+    return {
+      exists: true,
+      fileSize: response.ContentLength,
+    };
+  } catch (error: any) {
+    // If we get a 404 or NoSuchKey error, the file doesn't exist
+    if (error.name === 'NotFound' || error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      // Mark the file as invalid in the database
+      await context.entities.File.update({
+        where: { id: fileId },
+        data: {
+          validationStatus: 'invalid',
+          validationError: 'File not found in S3 storage. Upload may have failed.',
+        },
+      });
+
+      return {
+        exists: false,
+      };
+    }
+
+    // Other S3 errors - log and throw
+    console.error('Error verifying file in S3:', error);
+    throw new HttpError(500, 'Failed to verify file in S3');
+  }
 };
 
 // Action to trigger PDF processing after successful upload
@@ -324,12 +429,16 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
     // Extract metadata using existing function
     const metadata = await extractPDFMetadataFromBuffer(pdfBuffer);
 
+    // Capture file size from S3 if not already set
+    const fileSize = file.size || pdfBuffer.length;
+
     // Update file with metadata and processing timestamp
     await context.entities.File.update({
       where: { id: fileId },
       data: {
         pageCount: metadata.pageCount,
         pdfMetadata: metadata,
+        size: fileSize, // Update size if missing
         validationStatus: 'valid',
         lastProcessedAt: new Date()
       }
@@ -547,6 +656,7 @@ export const extractPDFPages: ExtractPDFPages<
       key: extractedKey,
       uploadUrl: '', // Not needed for extracted files
       type: 'application/pdf',
+      size: extractedPdfBuffer.length, // Store extracted file size
       userId: context.user.id,
       pageCount: extractedPageCount,
       validationStatus: 'valid',

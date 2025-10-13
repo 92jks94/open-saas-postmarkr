@@ -25,6 +25,10 @@ export interface PDFPreviewData {
 /**
  * Generate thumbnail and extract metadata from PDF file
  * Runs entirely client-side before upload
+ * 
+ * Thumbnail settings optimized for Stripe checkout display:
+ * - Scale: 1.5x for crisp display on high-DPI screens
+ * - JPEG Quality: 85% for sharp images with reasonable file size
  */
 export async function generatePDFThumbnail(file: File): Promise<PDFPreviewData> {
   const arrayBuffer = await file.arrayBuffer();
@@ -33,7 +37,9 @@ export async function generatePDFThumbnail(file: File): Promise<PDFPreviewData> 
   
   // Get first page
   const page = await pdf.getPage(1);
-  const viewport = page.getViewport({ scale: 0.5 }); // Scale for thumbnail
+  // Use 1.5x scale for high-quality thumbnails that look sharp in Stripe checkout
+  // This produces ~600x900px thumbnails for standard 8.5x11" pages
+  const viewport = page.getViewport({ scale: 1.5 });
   
   // Render to canvas
   const canvas = document.createElement('canvas');
@@ -43,9 +49,11 @@ export async function generatePDFThumbnail(file: File): Promise<PDFPreviewData> 
   
   await page.render({ canvasContext: context, viewport }).promise;
   
+  // Use 85% JPEG quality for sharp, professional-looking thumbnails
+  // Balance between quality (no pixelation) and file size (fast upload)
   return {
     pageCount: pdf.numPages,
-    thumbnailDataUrl: canvas.toDataURL('image/jpeg', 0.7),
+    thumbnailDataUrl: canvas.toDataURL('image/jpeg', 0.85),
     firstPageDimensions: {
       width: viewport.width,
       height: viewport.height

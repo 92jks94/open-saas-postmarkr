@@ -31,25 +31,27 @@ export const sendWelcomeEmailAction = async (args: void, context: any): Promise<
 };
 
 export const resendVerificationEmail: ResendVerificationEmail<void, { success: boolean; message: string }> = async (args, context) => {
-  if (!context.user) {
-    throw new HttpError(401, 'Not authorized');
-  }
-
-  // Check if user already has a verified email
-  const userEmail = context.user.email;
-  const isEmailVerified = !!userEmail;
+  // Note: Since we cannot directly access the user without authentication,
+  // and users needing verification aren't authenticated yet, we provide
+  // helpful guidance instead of actual resending functionality
   
-  if (isEmailVerified) {
-    return { 
-      success: false, 
-      message: 'Your email is already verified. You can proceed to login.' 
-    };
+  // Check if user is authenticated (they shouldn't be if they need verification)
+  if (context.user) {
+    // Check if user's email is already verified via identities
+    const emailIdentity = context.user.identities?.email;
+    const isEmailVerified = emailIdentity?.isEmailVerified ?? false;
+    
+    if (isEmailVerified) {
+      return { 
+        success: false, 
+        message: 'Your email is already verified. You can proceed to login.' 
+      };
+    }
   }
 
-  // Since Wasp handles email verification internally and we don't have direct access
-  // to regenerate verification tokens, we'll provide helpful guidance to users
+  // Provide helpful guidance for users who can't find their verification email
   return {
     success: true,
-    message: 'Please check your spam/junk folder for the original verification email. If you still can\'t find it, try signing up again or contact support at nathan@postmarkr.com for assistance.'
+    message: 'Please check your spam/junk folder for the verification email. If you still can\'t find it within a few minutes, try signing up again with the same email address to receive a new verification link, or contact support at nathan@postmarkr.com for assistance.'
   };
 };

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { getAllFilesByUser, getDownloadFileSignedURL, deleteFile, triggerPDFProcessing, useQuery } from 'wasp/client/operations';
+import { getAllFilesByUser, getDownloadFileSignedURL, deleteFile, triggerPDFProcessing, verifyFileUpload, useQuery } from 'wasp/client/operations';
 import type { File as FileEntity } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
@@ -20,7 +20,7 @@ import {
 import { ALLOWED_FILE_TYPES, formatFileSize } from './validation';
 import { FilePreviewCard } from './FilePreviewCard';
 import { Upload, FileText, Image as ImageIcon, Clock, Loader2, CheckCircle, XCircle, X } from 'lucide-react';
-import { generatePDFThumbnail, estimateCostFromPages } from './pdfThumbnail';
+import { generatePDFThumbnail } from './pdfThumbnail';
 import { DEBOUNCE_DELAY_MS, SECONDS_PER_MINUTE } from '../shared/constants/timing';
 // TODO: Re-enable when ready - see docs/FILE_UPLOAD_TODOS.md
 // import { CostCalculatorWidget } from './CostCalculatorWidget';
@@ -60,17 +60,6 @@ export default function FileUploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
-  // Phase 1: File preview state
-  const [filePreview, setFilePreview] = useState<{
-    file: File;
-    thumbnailUrl: string;
-    pageCount: number;
-    estimatedCost: number;
-    dimensions: { width: number; height: number };
-  } | null>(null);
-  // Auto-upload countdown for preview
-  const [autoUploadCountdown, setAutoUploadCountdown] = useState<number | null>(null);
-  const autoUploadTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const allUserFiles = useQuery(getAllFilesByUser, undefined, {
     refetchInterval: false, // Will be overridden by useEffect
@@ -141,148 +130,33 @@ export default function FileUploadPage() {
     }
   };
 
-  // Clear auto-upload timer
-  const clearAutoUploadTimer = () => {
-    if (autoUploadTimerRef.current) {
-      clearInterval(autoUploadTimerRef.current);
-      autoUploadTimerRef.current = null;
-    }
-    setAutoUploadCountdown(null);
-  };
-
-  // Cancel preview and auto-upload
-  const cancelPreview = () => {
-    clearAutoUploadTimer();
-    setFilePreview(null);
-  };
-
-  // Start auto-upload countdown timer
-  const startAutoUploadCountdown = () => {
-    const COUNTDOWN_SECONDS = 3;
-    setAutoUploadCountdown(COUNTDOWN_SECONDS);
-    
-    let secondsRemaining = COUNTDOWN_SECONDS;
-    
-    autoUploadTimerRef.current = setInterval(() => {
-      secondsRemaining -= 1;
-      setAutoUploadCountdown(secondsRemaining);
-      
-      if (secondsRemaining <= 0) {
-        clearAutoUploadTimer();
-        // Trigger upload with preview data
-        uploadFileFromPreview();
-      }
-    }, 1000);
-  };
-
-  // Upload file from preview (reuses preview data already in state)
-  const uploadFileFromPreview = async () => {
-    if (!filePreview) return;
+  // Simplified file selection handler - validates and uploads directly
+  const handleFileSelect = async (files: File[]) => {
+    if (files.length === 0) return;
     
     try {
       setUploadError(null);
-      setUploadProgressPercent(0);
       
-      const { uploadResponse, createFileResult } = await uploadFileWithProgress({
-        file: filePreview.file as FileWithValidType,
-        setUploadProgressPercent,
-        // Pass thumbnail data from preview state
-        clientThumbnail: filePreview.thumbnailUrl,
-        previewPageCount: filePreview.pageCount,
-        previewDimensions: filePreview.dimensions
-      });
-      
-      // Trigger PDF processing
-      if (filePreview.file.type === 'application/pdf') {
-        try {
-          await triggerPDFProcessing({ fileId: createFileResult.fileId });
-        } catch (processingError) {
-          console.warn('Failed to trigger PDF processing:', processingError);
-        }
-      }
-      
-      // Clear preview and refetch files
-      setFilePreview(null);
-      setUploadProgressPercent(0);
-      allUserFiles.refetch();
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      setUploadError({
-        message: error instanceof Error ? error.message : 'Failed to upload file.',
-        code: 'UPLOAD_FAILED'
-      });
-      setUploadProgressPercent(0);
-    }
-  };
+      // Validate all files first
+      const validatedFiles = files.map(file => ({
+        file,
+        validation: validateFile(file)
+      }));
 
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      clearAutoUploadTimer();
-    };
-  }, []);
-
-  // Phase 1: Handle file selection with preview generation (for PDF files only)
-  const handleFileSelectWithPreview = async (file: File) => {
-    try {
-      setUploadError(null);
-      
-      // Basic validation first
-      const fileValidationError = validateFile(file);
-      if (fileValidationError !== null) {
-        setUploadError(fileValidationError);
+      const invalidFiles = validatedFiles.filter(f => f.validation !== null);
+      if (invalidFiles.length > 0) {
+        const firstError = invalidFiles[0].validation!;
+        setUploadError(firstError);
         return;
       }
-      
-      // Only generate preview for PDF files
-      if (file.type === 'application/pdf') {
-        try {
-          // Generate thumbnail and get page count (client-side, fast)
-          const previewData = await generatePDFThumbnail(file);
-          const costEstimate = estimateCostFromPages(previewData.pageCount);
-          
-          // Check if page count is valid
-          if (costEstimate.warning) {
-            setUploadError({
-              message: costEstimate.warning,
-              code: 'VALIDATION_FAILED'
-            });
-            return;
-          }
-          
-          // Show preview to user
-          setFilePreview({
-            file,
-            thumbnailUrl: previewData.thumbnailDataUrl,
-            pageCount: previewData.pageCount,
-            estimatedCost: costEstimate.price / 100,
-            dimensions: previewData.firstPageDimensions
-          });
-          
-          // Start auto-upload countdown (3 seconds)
-          startAutoUploadCountdown();
-        } catch (error) {
-          console.error('Failed to generate PDF preview:', error);
-          // Show warning but allow upload to continue
-          setUploadError({
-            message: 'Preview generation failed, but you can still upload this file. The thumbnail may not be available immediately.',
-            code: 'PREVIEW_WARNING'
-          });
-          // Proceed with upload after short delay so user can see the warning
-          setTimeout(() => {
-            setUploadError(null);
-            handleMultipleFileUpload([file]);
-          }, DEBOUNCE_DELAY_MS);
-        }
-      } else {
-        // Non-PDF files: upload directly without preview
-        await handleMultipleFileUpload([file]);
-      }
+
+      // Upload directly through queue
+      await handleMultipleFileUpload(files);
       
     } catch (error) {
-      console.error('Error selecting file:', error);
+      console.error('Error selecting files:', error);
       setUploadError({
-        message: error instanceof Error ? error.message : 'Failed to process file.',
+        message: error instanceof Error ? error.message : 'Failed to process files.',
         code: 'VALIDATION_FAILED'
       });
     }
@@ -307,32 +181,11 @@ export default function FileUploadPage() {
     setIsDragOver(false);
 
     const files = Array.from(e.dataTransfer.files);
-    if (files.length === 0) return;
-
-    // Handle multiple files
-    await handleMultipleFileUpload(files);
+    await handleFileSelect(files);
   };
 
-  // Handle multiple file upload
+  // Handle multiple file upload - validation already done by handleFileSelect
   const handleMultipleFileUpload = async (files: File[]) => {
-    // Validate all files first
-    const validatedFiles = files.map(file => ({
-      file,
-      validation: validateFile(file)
-    }));
-
-    const invalidFiles = validatedFiles.filter(f => f.validation !== null);
-    if (invalidFiles.length > 0) {
-      setUploadError({
-        message: `${invalidFiles.length} file(s) failed validation. Please check file size and type.`,
-        code: 'VALIDATION_FAILED'
-      });
-      return;
-    }
-
-    // Clear any previous errors
-    setUploadError(null);
-
     // Add files to queue
     const queueItems: UploadQueueItem[] = files.map(file => ({
       id: `${Date.now()}-${Math.random()}`,
@@ -414,6 +267,17 @@ export default function FileUploadPage() {
         ...thumbnailData
       });
 
+      // Verify the file was actually uploaded to S3
+      try {
+        const verification = await verifyFileUpload({ fileId: createFileResult.fileId });
+        if (!verification.exists) {
+          throw new Error('File not found in storage after upload');
+        }
+      } catch (verificationError) {
+        console.error('File verification failed:', verificationError);
+        throw new Error('Upload verification failed: File may not have been saved correctly');
+      }
+
       // Trigger PDF processing if needed
       if (item.file.type === 'application/pdf') {
         try {
@@ -439,10 +303,6 @@ export default function FileUploadPage() {
       );
     }
   };
-
-  // Note: uploadSingleFile() was removed as it's now replaced by:
-  // - uploadFileFromPreview() for preview flow (with thumbnail data)
-  // - uploadSingleFileFromQueue() for queue uploads
 
   return (
     <div className='py-10 lg:mt-10'>
@@ -500,72 +360,13 @@ export default function FileUploadPage() {
                   onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
                       const files = Array.from(e.target.files);
-                      // Phase 1: Single PDF file gets preview, multiple files upload directly
-                      if (files.length === 1 && files[0].type === 'application/pdf') {
-                        handleFileSelectWithPreview(files[0]);
-                      } else {
-                        handleMultipleFileUpload(files);
-                      }
+                      handleFileSelect(files);
                       e.target.value = ''; // Reset input
                     }
                   }}
                   className='hidden'
                 />
               </div>
-
-              {/* Phase 1: PDF Preview Card with Auto-Upload */}
-              {filePreview && !uploadProgressPercent && (
-                <Card className="border-2 border-primary animate-in fade-in duration-300">
-                  <CardContent className="pt-6">
-                    <div className="flex gap-4">
-                      {/* Thumbnail */}
-                      <div className="flex-shrink-0">
-                        <img 
-                          src={filePreview.thumbnailUrl} 
-                          alt="PDF Preview"
-                          className="w-32 h-40 object-cover rounded border-2"
-                        />
-                      </div>
-                      
-                      {/* Info */}
-                      <div className="flex-1 space-y-3">
-                        <h3 className="font-semibold">{filePreview.file.name}</h3>
-                        <div className="space-y-1 text-sm">
-                          <p>📄 {filePreview.pageCount} pages</p>
-                          <p>💰 Estimated cost: <span className="font-bold text-green-600">${filePreview.estimatedCost.toFixed(2)}</span></p>
-                          <p>📧 Envelope: {filePreview.pageCount <= 5 ? 'Standard #10' : 'Flat 9x12'}</p>
-                        </div>
-                        
-                        {/* Auto-upload countdown */}
-                        {autoUploadCountdown !== null && autoUploadCountdown > 0 && (
-                          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-3 flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                            <span className="text-sm font-medium text-blue-800">
-                              Uploading in {autoUploadCountdown} second{autoUploadCountdown !== 1 ? 's' : ''}...
-                            </span>
-                          </div>
-                        )}
-                        
-                        {/* Action buttons */}
-                        <div className="flex gap-2">
-                          <Button 
-                            onClick={() => {
-                              clearAutoUploadTimer();
-                              uploadFileFromPreview();
-                            }}
-                            disabled={autoUploadCountdown === null || autoUploadCountdown <= 0}
-                          >
-                            ⚡ Upload Now
-                          </Button>
-                          <Button variant="outline" onClick={cancelPreview}>
-                            ✗ Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Progress indicator for single file uploads */}
               {uploadProgressPercent > 0 && uploadQueue.length === 0 && (
@@ -582,7 +383,7 @@ export default function FileUploadPage() {
                 </Alert>
               )}
               {uploadError && (
-                <Alert variant={uploadError.code === 'PREVIEW_WARNING' ? 'default' : 'destructive'} className="space-y-2">
+                <Alert variant='destructive' className="space-y-2">
                   <AlertDescription>
                     <p className="font-medium">{uploadError.message}</p>
                     {uploadError.code === 'FILE_TOO_LARGE' && (
@@ -606,11 +407,6 @@ export default function FileUploadPage() {
                     {uploadError.code === 'INVALID_FILE_NAME' && (
                       <p className="text-sm mt-2">
                         💡 Tip: Try shortening your file name before uploading.
-                      </p>
-                    )}
-                    {uploadError.code === 'PREVIEW_WARNING' && (
-                      <p className="text-sm mt-2">
-                        ⏳ Uploading automatically in 2 seconds...
                       </p>
                     )}
                   </AlertDescription>

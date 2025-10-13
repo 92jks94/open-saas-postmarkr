@@ -87,24 +87,35 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
   return (
     <div className='hidden lg:flex lg:flex-1 gap-3 justify-end items-center'>
       {isUserLoading ? null : !user ? (
-        <WaspRouterLink
-          to={routes.LoginRoute.to}
-          className={cn('font-semibold leading-6 ml-3 transition-all duration-300', {
-            'text-sm': !isScrolled,
-            'text-xs': isScrolled,
-          })}
-        >
-          <div className='flex items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors'>
-            Log in{' '}
-            <LogIn
-              size={isScrolled ? '1rem' : '1.1rem'}
-              className={cn('transition-all duration-300', {
-                'ml-1 mt-[0.1rem]': !isScrolled,
-                'ml-1': isScrolled,
-              })}
-            />
-          </div>
-        </WaspRouterLink>
+        <>
+          <WaspRouterLink
+            to={routes.LoginRoute.to}
+            className={cn('font-semibold leading-6 ml-3 transition-all duration-300 hover:text-primary', {
+              'text-sm': !isScrolled,
+              'text-xs': isScrolled,
+            })}
+          >
+            <div className='flex items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors'>
+              Log in{' '}
+              <LogIn
+                size={isScrolled ? '1rem' : '1.1rem'}
+                className={cn('transition-all duration-300', {
+                  'ml-1 mt-[0.1rem]': !isScrolled,
+                  'ml-1': isScrolled,
+                })}
+              />
+            </div>
+          </WaspRouterLink>
+          <WaspRouterLink
+            to={routes.SignupRoute.to}
+            className={cn('font-semibold leading-6 transition-all duration-300 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm', {
+              'text-sm': !isScrolled,
+              'text-xs px-3 py-1.5': isScrolled,
+            })}
+          >
+            Sign Up
+          </WaspRouterLink>
+        </>
       ) : (
         <div className='ml-3'>
           <UserDropdown user={user} />

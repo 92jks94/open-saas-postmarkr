@@ -36,6 +36,7 @@ export async function uploadFileWithProgress({
   const createFileResult = await createFile({ 
     fileType: file.type, 
     fileName: file.name,
+    fileSize: file.size, // Pass file size to server
     clientThumbnail,
     previewPageCount,
     previewDimensions
@@ -86,6 +87,13 @@ export async function uploadFileWithProgress({
     }
   );
 
+  // Validate S3 upload was successful
+  if (uploadResponse.status !== 204 && uploadResponse.status !== 200) {
+    throw new Error(
+      `S3 upload failed with status ${uploadResponse.status}. The file was not uploaded successfully. Please try again.`
+    );
+  }
+
   // Return both the upload response and file creation result for further processing
   return { uploadResponse, createFileResult };
 }
@@ -101,7 +109,7 @@ function getFileUploadFormData(file: File, s3UploadFields: Record<string, string
 
 export interface FileUploadError {
   message: string;
-  code: 'NO_FILE' | 'INVALID_FILE_TYPE' | 'FILE_TOO_LARGE' | 'UPLOAD_FAILED' | 'INVALID_FILE_NAME' | 'VALIDATION_FAILED' | 'PREVIEW_WARNING';
+  code: 'NO_FILE' | 'INVALID_FILE_TYPE' | 'FILE_TOO_LARGE' | 'UPLOAD_FAILED' | 'INVALID_FILE_NAME' | 'VALIDATION_FAILED';
 }
 
 /**

@@ -1,0 +1,191 @@
+[33mcommit 52e75f0c6f8484075811e41021d9db80366c2b66[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: 92jks94 <nathan.hazard@gmail.com>
+Date:   Wed Oct 8 10:00:00 2025 -0500
+
+    Updates to Blog navigation
+
+[1mdiff --git a/template/app/blog/src/components/MyHeader.astro b/template/app/blog/src/components/MyHeader.astro[m
+[1mindex c28cb3f..68e5911 100644[m
+[1m--- a/template/app/blog/src/components/MyHeader.astro[m
+[1m+++ b/template/app/blog/src/components/MyHeader.astro[m
+[36m@@ -58,17 +58,6 @@[m [mconst { siteTitle } = Astro.props;[m
+       </svg>[m
+     </a>[m
+     <span class="blog-title">Postmarkr Blog</span>[m
+[31m-    <div class="separator"></div>[m
+[31m-    <div class="theme-switcher">[m
+[31m-      <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">[m
+[31m-        <circle cx="12" cy="12" r="5"></circle>[m
+[31m-        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>[m
+[31m-      </svg>[m
+[31m-      <span class="theme-text">Light</span>[m
+[31m-      <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">[m
+[31m-        <polyline points="6,9 12,15 18,9"></polyline>[m
+[31m-      </svg>[m
+[31m-    </div>[m
+   </div>[m
+ [m
+   <!-- Mobile Menu Button -->[m
+[36m@@ -131,9 +120,9 @@[m [mconst { siteTitle } = Astro.props;[m
+   }[m
+ [m
+   .unified-header-container {[m
+[31m-    display: flex;[m
+[32m+[m[32m    display: grid;[m[41m[m
+[32m+[m[32m    grid-template-columns: 1fr 2fr 1fr;[m[41m[m
+     align-items: center;[m
+[31m-    justify-content: space-between;[m
+     width: 100%;[m
+     gap: 2rem;[m
+     font-family: 'Satoshi', system-ui, sans-serif;[m
+[36m@@ -148,9 +137,9 @@[m [mconst { siteTitle } = Astro.props;[m
+ 	.site-title {[m
+ 		display: flex;[m
+ 		align-items: center;[m
+[31m-		gap: 0.75rem;[m
+[32m+[m		[32mgap: 0.5rem;[m[41m[m
+ 		color: hsl(var(--foreground));[m
+[31m-		font-size: 1.25rem;[m
+[32m+[m		[32mfont-size: 1rem;[m[41m[m
+ 		font-weight: 600;[m
+ 		text-decoration: none;[m
+ 		white-space: nowrap;[m
+[36m@@ -169,7 +158,7 @@[m [mconst { siteTitle } = Astro.props;[m
+   }[m
+ [m
+ 	img {[m
+[31m-		height: 2.5rem;[m
+[32m+[m		[32mheight: 1.75rem;[m[41m[m
+ 		width: auto;[m
+ 		max-width: 100%;[m
+ 		object-fit: contain;[m
+[36m@@ -183,9 +172,9 @@[m [mconst { siteTitle } = Astro.props;[m
+ [m
+   /* Search Bar Styles */[m
+   .search-container {[m
+[31m-    flex: 1;[m
+[31m-    max-width: 400px;[m
+[31m-    margin: 0 2rem;[m
+[32m+[m[32m    justify-self: center;[m[41m[m
+[32m+[m[32m    width: 100%;[m[41m[m
+[32m+[m[32m    max-width: 500px;[m[41m[m
+   }[m
+ [m
+   .search-bar {[m
+[36m@@ -237,6 +226,7 @@[m [mconst { siteTitle } = Astro.props;[m
+   .right-nav {[m
+     display: flex;[m
+     align-items: center;[m
+[32m+[m[32m    justify-self: end;[m[41m[m
+     gap: 1rem;[m
+   }[m
+ [m
+[36m@@ -260,44 +250,6 @@[m [mconst { siteTitle } = Astro.props;[m
+     font-size: 0.875rem;[m
+   }[m
+ [m
+[31m-  .separator {[m
+[31m-    width: 1px;[m
+[31m-    height: 1.5rem;[m
+[31m-    background: hsl(var(--border));[m
+[31m-  }[m
+[31m-[m
+[31m-  .theme-switcher {[m
+[31m-    display: flex;[m
+[31m-    align-items: center;[m
+[31m-    gap: 0.5rem;[m
+[31m-    padding: 0.5rem;[m
+[31m-    border-radius: 6px;[m
+[31m-    cursor: pointer;[m
+[31m-    transition: background-color 0.2s ease;[m
+[31m-  }[m
+[31m-[m
+[31m-  .theme-switcher:hover {[m
+[31m-    background: hsl(var(--muted));[m
+[31m-  }[m
+[31m-[m
+[31m-  .theme-icon {[m
+[31m-    width: 1rem;[m
+[31m-    height: 1rem;[m
+[31m-    color: hsl(var(--foreground));[m
+[31m-  }[m
+[31m-[m
+[31m-  .theme-text {[m
+[31m-    color: hsl(var(--foreground));[m
+[31m-    font-size: 0.875rem;[m
+[31m-    font-weight: 500;[m
+[31m-  }[m
+[31m-[m
+[31m-  .dropdown-icon {[m
+[31m-    width: 0.75rem;[m
+[31m-    height: 0.75rem;[m
+[31m-    color: hsl(var(--muted-foreground));[m
+[31m-  }[m
+[31m-[m
+   .mobile-menu-button {[m
+     display: none;[m
+     background: none;[m
+[36m@@ -508,6 +460,12 @@[m [mconst { siteTitle } = Astro.props;[m
+   }[m
+ [m
+   @media (max-width: 50rem) {[m
+[32m+[m[32m    .unified-header-container {[m[41m[m
+[32m+[m[32m      display: flex;[m[41m[m
+[32m+[m[32m      justify-content: space-between;[m[41m[m
+[32m+[m[32m      padding: 1rem 1.5rem;[m[41m[m
+[32m+[m[32m    }[m[41m[m
+[32m+[m[41m[m
+     .search-container {[m
+       display: none;[m
+     }[m
+[36m@@ -520,10 +478,6 @@[m [mconst { siteTitle } = Astro.props;[m
+       display: block;[m
+     }[m
+ [m
+[31m-    .unified-header-container {[m
+[31m-      padding: 1rem 1.5rem;[m
+[31m-    }[m
+[31m-[m
+     .header-container.scrolled .unified-header-container {[m
+       padding: 0.5rem 1rem;[m
+     }[m
+[36m@@ -637,31 +591,6 @@[m [mconst { siteTitle } = Astro.props;[m
+     });[m
+   }[m
+ [m
+[31m-  // Theme switcher functionality[m
+[31m-  function initThemeSwitcher() {[m
+[31m-    const themeSwitcher = document.querySelector('.theme-switcher');[m
+[31m-    [m
+[31m-    themeSwitcher?.addEventListener('click', () => {[m
+[31m-      // Toggle between light and dark themes[m
+[31m-      const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';[m
+[31m-      const newTheme = currentTheme === 'light' ? 'dark' : 'light';[m
+[31m-      [m
+[31m-      if (newTheme === 'dark') {[m
+[31m-        document.documentElement.classList.add('dark');[m
+[31m-        localStorage.setItem('theme', 'dark');[m
+[31m-      } else {[m
+[31m-        document.documentElement.classList.remove('dark');[m
+[31m-        localStorage.setItem('theme', 'light');[m
+[31m-      }[m
+[31m-      [m
+[31m-      // Update theme text[m
+[31m-      const themeText = document.querySelector('.theme-text');[m
+[31m-      if (themeText) {[m
+[31m-        themeText.textContent = newTheme === 'light' ? 'Light' : 'Dark';[m
+[31m-      }[m
+[31m-    });[m
+[31m-  }[m
+[31m-[m
+   // Add event listener when component mounts[m
+   document.addEventListener('DOMContentLoaded', () => {[m
+     window.addEventListener('scroll', throttledScroll);[m
+[36m@@ -671,7 +600,5 @@[m [mconst { siteTitle } = Astro.props;[m
+     initMobileMenu();[m
+     // Initialize search[m
+     initSearch();[m
+[31m-    // Initialize theme switcher[m
+[31m-    initThemeSwitcher();[m
+   });[m
+ </script>[m

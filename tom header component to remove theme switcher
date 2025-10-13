@@ -1,0 +1,28 @@
+[33mcommit df2a8562238e197b52641e01d654e576c32b22e9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: 92jks94 <nathan.hazard@gmail.com>
+Date:   Wed Oct 8 13:24:54 2025 -0500
+
+    Test blog commit
+
+[1mdiff --git a/template/app/blog/astro.config.mjs b/template/app/blog/astro.config.mjs[m
+[1mindex b38200f..730a030 100644[m
+[1m--- a/template/app/blog/astro.config.mjs[m
+[1m+++ b/template/app/blog/astro.config.mjs[m
+[36m@@ -58,7 +58,7 @@[m [mexport default defineConfig({[m
+         {[m
+           tag: 'script',[m
+           attrs: {[m
+[31m-            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.PUBLIC_GA_ID || 'G-XXXXXXXXXX'}`,[m
+[32m+[m[32m            src: `https://www.googletagmanager.com/gtag/js?id=${process.env.GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXXX'}`,[m
+           },[m
+         },[m
+         {[m
+[36m@@ -68,7 +68,7 @@[m [mexport default defineConfig({[m
+           function gtag(){dataLayer.push(arguments);}[m
+           gtag('js', new Date());[m
+         [m
+[31m-          gtag('config', '${process.env.PUBLIC_GA_ID || 'G-XXXXXXXXXX'}');[m
+[32m+[m[32m          gtag('config', '${process.env.GOOGLE_ANALYTICS_ID || 'G-XXXXXXXXXX'}');[m
+           `,[m
+         },[m
+       ],[m
