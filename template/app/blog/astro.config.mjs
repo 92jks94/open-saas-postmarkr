@@ -147,7 +147,6 @@ export default defineConfig({
       plugins: [
         starlightBlog({
           title: 'Postmarkr Blog',
-          customCss: ['./src/styles/tailwind.css'],
           authors: {
             'Postmarkr Team': {
               name: 'Postmarkr Team',
@@ -155,15 +154,6 @@ export default defineConfig({
               picture: '/postmarkr-team.png',
               url: 'https://postmarkr.com',
             },
-          },
-          blogConfig: {
-            blogDir: 'blog',
-            blogTitle: 'Blog Posts',
-            blogDescription: 'Latest insights and guides from Postmarkr',
-            postsPerPage: 10,
-            showReadingTime: true,
-            showDate: true,
-            showAuthor: true,
           },
         }),
       ],
