@@ -38,7 +38,7 @@ export default defineConfig({
       priority: 0.7,
       lastmod: new Date(),
       // Customize sitemap generation
-      filter: (page) => {
+      filter: (_page) => {
         // Include all pages by default
         return true;
       },
@@ -102,9 +102,9 @@ export default defineConfig({
         baseUrl: 'https://github.com/wasp-lang/open-saas-postmarkr/tree/main/template/app/blog',
       },
       components: {
+        SiteTitle: './src/components/MyHeader.astro',
         Head: './src/components/HeadWithOGImage.astro',
         PageTitle: './src/components/TitleWithBannerImage.astro',
-        Header: './src/components/MyHeader.astro',
       },
       social: [],
       sidebar: [
