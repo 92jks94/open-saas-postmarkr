@@ -1,24 +1,5 @@
-# Netlify redirects file for better performance
-# 301 permanent redirects (faster than 302 temporary)
-
-# Blog post redirects (remove .md extension)
-/blog/2025-11-19-secure-mail-without-po-box.md/ /blog/2025-11-19-secure-mail-without-po-box/ 301
-/blog/2025-10-14-digital-mail-vs-virtual-mailbox.md/ /blog/2025-10-14-digital-mail-vs-virtual-mailbox/ 301
-/blog/2025-09-03-digital-mailbox-home-business.md/ /blog/2025-09-03-digital-mailbox-home-business/ 301
-/blog/2025-08-09-digital-mailroom.md/ /blog/2025-08-09-digital-mailroom/ 301
-/blog/2025-07-30-professional-business-address.md/ /blog/2025-07-30-professional-business-address/ 301
-/blog/2025-07-21-bypass-the-post-office.md/ /blog/2025-07-21-bypass-the-post-office/ 301
-/blog/2025-06-12-mail-without-printer.md/ /blog/2025-06-12-mail-without-printer/ 301
-/blog/2025-06-07-certified-mail-made-easy.md/ /blog/2025-06-07-certified-mail-made-easy/ 301
-/blog/2025-05-07-send-mail-without-home-address.md/ /blog/2025-05-07-send-mail-without-home-address/ 301
-/blog/2025-04-18-virtual-mailbox-vs-po-box.md/ /blog/2025-04-18-virtual-mailbox-vs-po-box/ 301
-/blog/2025-03-18-hidden-costs-of-diy-mailing.md/ /blog/2025-03-18-hidden-costs-of-diy-mailing/ 301
-/blog/2025-02-11-forward-business-mail.md/ /blog/2025-02-11-forward-business-mail/ 301
-/blog/2025-01-24-future-of-business-mail.md/ /blog/2025-01-24-future-of-business-mail/ 301
-/blog/2024-02-05-delivery-tracking-guide.md/ /blog/2024-02-05-delivery-tracking-guide/ 301
-/blog/2024-01-29-address-management-best-practices.md/ /blog/2024-01-29-address-management-best-practices/ 301
-/blog/2024-01-22-mail-service-types-guide.md/ /blog/2024-01-22-mail-service-types-guide/ 301
-/blog/2024-01-15-future-of-business-mail.md/ /blog/2024-01-15-future-of-business-mail/ 301
+# Netlify redirects file
+# The Astro middleware (src/middleware.ts) handles .md redirects dynamically
 
 # SPA fallback for client-side routing
 /*    /index.html   200
