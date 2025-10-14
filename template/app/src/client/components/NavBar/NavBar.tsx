@@ -40,7 +40,7 @@ export default function NavBar({ navigationItems }: { navigationItems: Navigatio
       <header className={cn('sticky top-0 z-50 transition-all duration-300', isScrolled && 'md:top-4')}>
         <div
           className={cn('transition-all duration-300', {
-            'mx-2 md:mx-4 lg:mx-20 pr-2 lg:pr-0 rounded-full shadow-glass bg-background/90 backdrop-blur-lg border border-border':
+            'mx-2 md:mx-4 lg:mx-20 pr-2 lg:pr-0 rounded-full shadow-glass bg-background/90 backdrop-blur-lg border border-border shadow-md':
               isScrolled,
             'mx-0 bg-background/80 backdrop-blur-lg border-b border-border': !isScrolled,
           })}

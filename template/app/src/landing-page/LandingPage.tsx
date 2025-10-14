@@ -20,6 +20,7 @@ import HowItWorks from './components/HowItWorks';
 import FeaturesGrid from './components/FeaturesGrid';
 import Pricing from './components/Pricing';
 import Testimonials from './components/Testimonials';
+import FinalCTA from './components/FinalCTA';
 import FAQ from './components/FAQ';
 
 export default function LandingPage() {
@@ -46,6 +47,9 @@ export default function LandingPage() {
         </section>
         <section id='testimonials' aria-labelledby='testimonials-heading'>
           <Testimonials />
+        </section>
+        <section id='final-cta' aria-labelledby='final-cta-heading'>
+          <FinalCTA />
         </section>
         <section id='faq' aria-labelledby='faq-heading'>
           <FAQ />

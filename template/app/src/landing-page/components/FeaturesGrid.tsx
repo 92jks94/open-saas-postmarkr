@@ -51,14 +51,14 @@ const features = [
 
 export default function FeaturesGrid() {
   return (
-    <section className='py-24 relative'>
-      <div className='container mx-auto px-4'>
+    <section className='py-16 md:py-20 relative'>
+      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
         <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='features-heading' className='text-4xl md:text-5xl font-bold mb-4'>
+          <h2 id='features-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
             Everything you need to send{' '}
             <span className='bg-gradient-accent bg-clip-text text-transparent'>professional mail</span>
           </h2>
-          <p className='text-xl text-muted-foreground max-w-3xl mx-auto'>
+          <p className='text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto'>
             Powerful features designed for modern remote professionals
           </p>
         </div>
@@ -72,7 +72,7 @@ export default function FeaturesGrid() {
             return (
               <Card
                 key={feature.title}
-                className={`p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass group animate-fade-in-up ${
+                className={`p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 group animate-fade-in-up ${
                   isLarge ? 'lg:col-span-1 lg:row-span-1' : ''
                 }`}
                 style={{ animationDelay: `${index * 0.05}s` }}
@@ -83,7 +83,7 @@ export default function FeaturesGrid() {
                 </div>
 
                 {/* Content */}
-                <h3 className='text-xl font-semibold mb-3 group-hover:text-primary transition-colors'>{feature.title}</h3>
+                <h3 className='text-lg md:text-xl font-semibold mb-3 group-hover:text-primary transition-colors'>{feature.title}</h3>
                 <p className='text-muted-foreground leading-relaxed'>{feature.description}</p>
               </Card>
             );

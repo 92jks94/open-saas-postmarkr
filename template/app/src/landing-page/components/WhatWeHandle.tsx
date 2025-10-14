@@ -18,22 +18,22 @@ const whatYouDontNeedItems = [
 
 export default function WhatWeHandle() {
   return (
-    <section className='py-24 relative overflow-hidden'>
+    <section className='py-20 md:py-24 relative overflow-hidden'>
       <div className='absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background -z-10' />
 
-      <div className='container mx-auto px-4'>
+      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
         <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='what-we-handle-heading' className='text-4xl md:text-5xl font-bold mb-4'>
+          <h2 id='what-we-handle-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
             What We <span className='bg-gradient-primary bg-clip-text text-transparent'>Handle</span>
           </h2>
-          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
             Your complete mail room solution, accessible from anywhere
           </p>
         </div>
 
         <div className='grid md:grid-cols-2 gap-8 max-w-5xl mx-auto'>
           {/* What We Do */}
-          <Card className='p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass animate-fade-in-up'>
+          <Card className='p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 animate-fade-in-up'>
             <div className='flex items-center gap-3 mb-6'>
               <div className='w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center shadow-glow'>
                 <Check className='w-6 h-6 text-primary-foreground' />
@@ -55,7 +55,7 @@ export default function WhatWeHandle() {
           </Card>
 
           {/* What You Don't Need */}
-          <Card className='p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass animate-fade-in-up' style={{ animationDelay: '0.2s' }}>
+          <Card className='p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 animate-fade-in-up' style={{ animationDelay: '0.2s' }}>
             <div className='flex items-center gap-3 mb-6'>
               <div className='w-12 h-12 rounded-xl bg-gradient-to-br from-muted to-muted-foreground/20 flex items-center justify-center'>
                 <X className='w-6 h-6 text-muted-foreground' />

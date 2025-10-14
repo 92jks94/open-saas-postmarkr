@@ -40,20 +40,20 @@ const faqs = [
 
 export default function FAQ() {
   return (
-    <section className='py-24 relative'>
-      <div className='container mx-auto px-4'>
+    <section className='py-20 md:py-24 pb-32 relative'>
+      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
         <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='faq-heading' className='text-4xl md:text-5xl font-bold mb-4'>
+          <h2 id='faq-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
             Frequently Asked{' '}
             <span className='bg-gradient-primary bg-clip-text text-transparent'>Questions</span>
           </h2>
-          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
             Everything you need to know about using Postmarkr
           </p>
         </div>
 
         <div className='max-w-3xl mx-auto animate-fade-in-up' style={{ animationDelay: '0.1s' }}>
-          <Accordion type='single' collapsible className='space-y-4'>
+          <Accordion type='single' collapsible className='space-y-3'>
             {faqs.map((faq, index) => (
               <AccordionItem
                 key={index}
@@ -69,6 +69,17 @@ export default function FAQ() {
               </AccordionItem>
             ))}
           </Accordion>
+          
+          {/* Still have questions CTA */}
+          <div className='text-center mt-12 animate-fade-in-up' style={{ animationDelay: '0.2s' }}>
+            <p className='text-muted-foreground mb-4'>Still have questions?</p>
+            <a 
+              href='mailto:support@postmarkr.com' 
+              className='text-primary hover:text-primary/80 font-medium transition-colors'
+            >
+              Contact our support team →
+            </a>
+          </div>
         </div>
       </div>
     </section>

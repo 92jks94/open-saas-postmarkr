@@ -4,7 +4,7 @@ import { Button } from '../../components/ui/button';
 
 export default function Hero() {
   return (
-    <section className='relative min-h-screen flex items-center justify-center overflow-hidden'>
+    <section className='relative min-h-[85vh] lg:min-h-[90vh] flex items-center justify-center overflow-hidden'>
       {/* Gradient Background */}
       <div className='absolute inset-0 bg-gradient-subtle -z-10' />
 
@@ -15,16 +15,16 @@ export default function Hero() {
         style={{ animationDelay: '3s' }}
       />
 
-      <div className='container mx-auto px-4 py-20 relative z-10'>
+      <div className='container mx-auto px-4 md:px-6 lg:px-8 py-20 relative z-10'>
         <div className='max-w-5xl mx-auto text-center animate-fade-in-up'>
           {/* Badge */}
-          <div className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8'>
+          <div className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 backdrop-blur-sm border border-primary/20 mb-8'>
             <span className='w-2 h-2 bg-primary rounded-full animate-pulse' />
             <span className='text-sm font-medium text-primary'>Processing 1,000+ pieces of mail daily</span>
           </div>
 
           {/* Main Headline with Gradient */}
-          <h1 id='hero-heading' className='text-5xl md:text-7xl font-bold mb-6 leading-tight'>
+          <h1 id='hero-heading' className='text-4xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight'>
             <span className='bg-gradient-primary bg-clip-text text-transparent'>Leave the Print Shop</span>
             <br />
             & Post Office
@@ -43,10 +43,10 @@ export default function Hero() {
           </p>
 
           {/* CTA Buttons */}
-          <div className='flex flex-col sm:flex-row gap-4 justify-center items-center'>
+          <div className='flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center'>
             <Button
               size='lg'
-              className='text-lg px-8 py-6 shadow-glow hover:shadow-glow hover:scale-105 transition-all bg-gradient-primary border-0'
+              className='text-base md:text-lg px-8 py-6 shadow-glow hover:shadow-glow hover:scale-105 transition-all bg-gradient-primary border-0'
               asChild
             >
               <WaspRouterLink to={routes.SignupRoute.to} className='inline-flex items-center'>
@@ -57,11 +57,33 @@ export default function Hero() {
             <Button
               size='lg'
               variant='outline'
-              className='text-lg px-8 py-6 hover:bg-primary/5 hover:scale-105 transition-all border-primary/20'
+              className='text-base md:text-lg px-8 py-6 hover:bg-primary/5 hover:scale-105 transition-all border-primary/20'
               asChild
             >
               <a href='#pricing'>View Pricing</a>
             </Button>
+          </div>
+          
+          {/* Trust Indicators */}
+          <div className='flex flex-wrap justify-center items-center gap-4 md:gap-8 mt-12 text-sm text-muted-foreground'>
+            <div className='flex items-center gap-2'>
+              <svg className='w-4 h-4 text-success' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+              </svg>
+              <span>No Setup Fees</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <svg className='w-4 h-4 text-success' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M5 13l4 4L19 7' />
+              </svg>
+              <span>Cancel Anytime</span>
+            </div>
+            <div className='flex items-center gap-2'>
+              <svg className='w-4 h-4 text-success' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' />
+              </svg>
+              <span>Bank-Level Security</span>
+            </div>
           </div>
         </div>
       </div>

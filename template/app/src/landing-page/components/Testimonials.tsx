@@ -34,16 +34,16 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className='py-24 relative overflow-hidden'>
+    <section className='py-16 md:py-20 relative overflow-hidden'>
       {/* Background gradient */}
       <div className='absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background -z-10' />
 
-      <div className='container mx-auto px-4'>
+      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
         <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='testimonials-heading' className='text-4xl md:text-5xl font-bold mb-4'>
+          <h2 id='testimonials-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
             Loved by <span className='bg-gradient-accent bg-clip-text text-transparent'>thousands</span> worldwide
           </h2>
-          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
             See what our customers have to say about Postmarkr
           </p>
         </div>
@@ -52,7 +52,7 @@ export default function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <Card
               key={testimonial.author}
-              className='p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass animate-fade-in-up'
+              className='p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 animate-fade-in-up'
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Star Rating */}
@@ -63,7 +63,10 @@ export default function Testimonials() {
               </div>
 
               {/* Quote */}
-              <blockquote className='text-lg mb-6 leading-relaxed'>"{testimonial.quote}"</blockquote>
+              <blockquote className='relative text-lg mb-6 leading-relaxed'>
+                <span className='absolute -top-2 -left-1 text-4xl text-primary/20 font-serif'>"</span>
+                <span className='pl-6'>{testimonial.quote}"</span>
+              </blockquote>
 
               {/* Author */}
               <div className='flex items-center gap-4'>

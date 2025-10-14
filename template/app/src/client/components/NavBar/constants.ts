@@ -9,6 +9,7 @@ const staticNavigationItems: NavigationItem[] = [
 
 export const marketingNavigationItems: NavigationItem[] = [
   { name: 'How It Works', to: '/#how-it-works' },
+  { name: 'Features', to: '/#features' },
   { name: 'Pricing', to: '/#pricing' },
   { name: 'Blog', to: BlogUrl },
 ] as const;
