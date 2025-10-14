@@ -96,7 +96,7 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
             })}
           >
             <div className='flex items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors'>
-              Log in{' '}
+              Sign In{' '}
               <LogIn
                 size={isScrolled ? '1rem' : '1.1rem'}
                 className={cn('transition-all duration-300', {
@@ -113,13 +113,24 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
               'text-xs px-3 py-1.5': isScrolled,
             })}
           >
-            Sign Up
+            Send Mail Now
           </WaspRouterLink>
         </>
       ) : (
-        <div className='ml-3'>
-          <UserDropdown user={user} />
-        </div>
+        <>
+          <WaspRouterLink
+            to={routes.MailCreationRoute.to}
+            className={cn('font-semibold leading-6 transition-all duration-300 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm', {
+              'text-sm': !isScrolled,
+              'text-xs px-3 py-1.5': isScrolled,
+            })}
+          >
+            Send Mail Now
+          </WaspRouterLink>
+          <div className='ml-3'>
+            <UserDropdown user={user} />
+          </div>
+        </>
       )}
     </div>
   );

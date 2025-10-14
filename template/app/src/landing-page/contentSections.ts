@@ -164,6 +164,8 @@ export const footerNavigation = {
   company: [
     { name: 'About Postmarkr', href: '#' },
     { name: 'Blog', href: BlogUrl },
+    { name: 'Testimonials', href: '/#testimonials' },
+    { name: 'FAQ', href: '/#faq' },
     { name: 'Privacy Policy', href: '/privacy' },
     { name: 'Terms of Service', href: '/terms' },
   ],

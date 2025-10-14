@@ -20,21 +20,26 @@ export default function Hero() {
           {/* Badge */}
           <div className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8'>
             <span className='w-2 h-2 bg-primary rounded-full animate-pulse' />
-            <span className='text-sm font-medium text-primary'>Trusted by 10,000+ users worldwide</span>
+            <span className='text-sm font-medium text-primary'>Processing 1,000+ pieces of mail daily</span>
           </div>
 
           {/* Main Headline with Gradient */}
           <h1 id='hero-heading' className='text-5xl md:text-7xl font-bold mb-6 leading-tight'>
-            <span className='bg-gradient-primary bg-clip-text text-transparent'>Send physical mail</span>
+            <span className='bg-gradient-primary bg-clip-text text-transparent'>Leave the Print Shop</span>
             <br />
-            from anywhere without
+            & Post Office
             <br />
-            post office visits
+            to Us
           </h1>
 
           {/* Subheadline */}
-          <p className='text-xl md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto'>
-            Perfect for remote workers, freelancers, and digital nomads who need reliable mail services
+          <p className='text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto'>
+            We print, we stuff, we send, we track—you focus on what matters
+          </p>
+
+          {/* Sub-subheadline */}
+          <p className='text-lg text-muted-foreground/80 mb-12 max-w-2xl mx-auto'>
+            No equipment to buy, no supplies to manage, no trips to the post office. From upload to mailbox in days.
           </p>
 
           {/* CTA Buttons */}

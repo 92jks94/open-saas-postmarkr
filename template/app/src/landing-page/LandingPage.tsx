@@ -14,6 +14,8 @@
 // - FAQ: Common questions and answers
 
 import Hero from './components/Hero';
+import WhatWeHandle from './components/WhatWeHandle';
+import WhoUses from './components/WhoUses';
 import HowItWorks from './components/HowItWorks';
 import FeaturesGrid from './components/FeaturesGrid';
 import Pricing from './components/Pricing';
@@ -26,6 +28,12 @@ export default function LandingPage() {
       <main className='isolate'>
         <section id='hero' aria-labelledby='hero-heading'>
           <Hero />
+        </section>
+        <section id='what-we-handle' aria-labelledby='what-we-handle-heading'>
+          <WhatWeHandle />
+        </section>
+        <section id='who-uses' aria-labelledby='who-uses-heading'>
+          <WhoUses />
         </section>
         <section id='how-it-works' aria-labelledby='workflow-heading'>
           <HowItWorks />
