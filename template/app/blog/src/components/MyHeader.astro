@@ -3,8 +3,9 @@ import { logos } from 'virtual:starlight/user-images';
 import config from 'virtual:starlight/user-config';
 import blogConfig from 'virtual:starlight-blog-config'
 import type { Props } from '@astrojs/starlight/props';
+import { SITE_CONFIG } from '../config';
 
-const appUrl = 'https://postmarkr.com';
+const appUrl = SITE_CONFIG.mainSiteUrl;
 const href = appUrl;
 const { siteTitle } = Astro.props;
 ---

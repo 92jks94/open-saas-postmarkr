@@ -1,13 +1,15 @@
 ---
 // Reusable CTA component for blog posts
+import { SITE_CONFIG } from '../config';
+
 interface Props {
   title?: string;
   description?: string;
 }
 
 const { 
-  title = "Ready to send physical mail from anywhere?",
-  description = "Join thousands of remote workers and businesses using Postmarkr for professional mail services."
+  title = SITE_CONFIG.cta.title,
+  description = SITE_CONFIG.cta.description,
 } = Astro.props;
 ---
 
@@ -16,11 +18,11 @@ const {
     <h3 class="cta-title">{title}</h3>
     <p class="cta-description">{description}</p>
     <div class="cta-buttons">
-      <a href="https://postmarkr.com/signup" class="cta-button-primary">
-        Get Started Now →
+      <a href={SITE_CONFIG.cta.primaryButton.url} class="cta-button-primary">
+        {SITE_CONFIG.cta.primaryButton.text} →
       </a>
-      <a href="https://postmarkr.com/#pricing" class="cta-button-secondary">
-        View Pricing
+      <a href={SITE_CONFIG.cta.secondaryButton.url} class="cta-button-secondary">
+        {SITE_CONFIG.cta.secondaryButton.text}
       </a>
     </div>
   </div>

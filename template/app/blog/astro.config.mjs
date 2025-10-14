@@ -2,68 +2,12 @@ import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightBlog from 'starlight-blog';
 import tailwind from '@astrojs/tailwind';
-import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://blog.postmarkr.com',
   trailingSlash: 'always',
-  // Performance optimizations
-  compress: true,
-  build: {
-    inlineStylesheets: 'auto',
-    assets: '_astro',
-  },
-  image: {
-    service: {
-      entrypoint: 'astro/assets/services/sharp',
-      config: {
-        limitInputPixels: false,
-      },
-    },
-  },
-  vite: {
-    build: {
-      cssCodeSplit: false,
-      rollupOptions: {
-        output: {
-          manualChunks: undefined,
-        },
-      },
-    },
-  },
   integrations: [
-    sitemap({
-      changefreq: 'weekly',
-      priority: 0.7,
-      lastmod: new Date(),
-      // Customize sitemap generation
-      filter: (_page) => {
-        // Include all pages by default
-        return true;
-      },
-      // Set different priorities based on page type
-      customPages: [],
-      serialize: (item) => {
-        // Boost priority for blog posts
-        if (item.url.includes('/blog/2')) {
-          item.priority = 0.9;
-          item.changefreq = 'monthly';
-        }
-        // Increase priority for tag and author pages to encourage indexing
-        // These are valuable for site structure and internal linking
-        else if (item.url.includes('/blog/tags/') || item.url.includes('/blog/authors/')) {
-          item.priority = 0.7; // Increased from 0.5
-          item.changefreq = 'weekly'; // More frequent than blog posts
-        }
-        // Main pages and guides
-        else if (item.url.includes('/guides/')) {
-          item.priority = 0.8;
-          item.changefreq = 'monthly';
-        }
-        return item;
-      },
-    }),
     starlight({
       title: 'Postmarkr Blog',
       customCss: ['./src/styles/tailwind.css'],
@@ -103,10 +47,13 @@ export default defineConfig({
       },
       components: {
         SiteTitle: './src/components/MyHeader.astro',
+        ThemeSelect: './src/components/MyThemeSelect.astro',
         Head: './src/components/HeadWithOGImage.astro',
         PageTitle: './src/components/TitleWithBannerImage.astro',
       },
-      social: [],
+      social: {
+        github: 'https://github.com/wasp-lang/open-saas-postmarkr',
+      },
       sidebar: [
         {
           label: 'Start Here',
