@@ -8,7 +8,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        satoshi: ['Satoshi', 'system-ui', 'sans-serif'],
+        // satoshi: ['Satoshi', 'system-ui', 'sans-serif'], // Removed: font files not available
       },
       screens: {
         '2xsm': '375px',
