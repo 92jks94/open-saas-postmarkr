@@ -1,7 +1,6 @@
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useAuth } from 'wasp/client/auth';
-import { getPaginatedUsers, updateIsUserAdminById, useQuery } from 'wasp/client/operations';
+import { getPaginatedUsers, useQuery } from 'wasp/client/operations';
 import { type User } from 'wasp/entities';
 import useDebounce from '../../../client/hooks/useDebounce';
 import { Button } from '../../../components/ui/button';
@@ -9,32 +8,31 @@ import { Checkbox } from '../../../components/ui/checkbox';
 import { Input } from '../../../components/ui/input';
 import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
-import { Switch } from '../../../components/ui/switch';
 import { SubscriptionStatus } from '../../../payment/plans';
 import LoadingSpinner from '../../layout/LoadingSpinner';
-import DropdownEditDelete from './DropdownEditDelete';
-
-function AdminSwitch({ id, isAdmin }: Pick<User, 'id' | 'isAdmin'>) {
-  const { data: currentUser } = useAuth();
-  const isCurrentUser = currentUser?.id === id;
-
-  const handleAdminToggle = async (value: boolean) => {
-    try {
-      await updateIsUserAdminById({ id, isAdmin: value });
-    } catch (error) {
-      console.error('Failed to update admin status:', error);
-      alert('Failed to update admin status. Please try again.');
-    }
-  };
-
-  return (
-    <Switch
-      checked={isAdmin}
-      onCheckedChange={handleAdminToggle}
-      disabled={isCurrentUser}
-    />
-  );
-}
+import { userColumns } from './columns';
+import {
+  ColumnDef,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { ChevronDown } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "../../../components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table"
 
 const UsersTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +41,7 @@ const UsersTable = () => {
   const [subscriptionStatusFilter, setSubscriptionStatusFilter] = useState<Array<SubscriptionStatus | null>>(
     []
   );
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
 
   const debouncedEmailFilter = useDebounce(emailFilter, 300);
 
@@ -56,6 +55,18 @@ const UsersTable = () => {
       ...(subscriptionStatusFilter.length > 0 && { subscriptionStatusIn: subscriptionStatusFilter }),
     },
   });
+
+  const table = useReactTable({
+    data: data?.users || [],
+    columns: userColumns,
+    getCoreRowModel: getCoreRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    state: {
+      columnVisibility,
+    },
+    // Disable built-in pagination since we use server-side
+    manualPagination: true,
+  })
 
   useEffect(
     function backToPageOne() {
@@ -83,6 +94,7 @@ const UsersTable = () => {
   return (
     <div className='flex flex-col gap-4'>
       <div className='rounded-sm border border-border bg-card shadow'>
+        {/* Filters Section */}
         <div className='flex-col flex items-start justify-between p-6 gap-3 w-full bg-muted/40'>
           <span className='text-sm font-medium'>Filters:</span>
           <div className='flex items-center justify-between gap-3 w-full px-2'>
@@ -231,54 +243,93 @@ const UsersTable = () => {
           )}
         </div>
 
-        <div className='grid grid-cols-9 border-t-4 border-border py-4.5 px-4 md:px-6 '>
-          <div className='col-span-3 flex items-center'>
-            <p className='font-medium'>Email / Username</p>
-          </div>
-          <div className='col-span-2 flex items-center'>
-            <p className='font-medium'>Subscription Status</p>
-          </div>
-          <div className='col-span-2 flex items-center'>
-            <p className='font-medium'>Stripe ID</p>
-          </div>
-          <div className='col-span-1 flex items-center'>
-            <p className='font-medium'>Is Admin</p>
-          </div>
-          <div className='col-span-1 flex items-center'>
-            <p className='font-medium'></p>
-          </div>
+        {/* Column Visibility Toggle */}
+        <div className="flex items-center justify-end p-4 border-t border-border">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Columns <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {isLoading && <LoadingSpinner />}
-        {!!data?.users &&
-          data?.users?.length > 0 &&
-          data.users.map((user) => (
-            <div key={user.id} className='grid grid-cols-9 gap-4 py-4.5 px-4 md:px-6 '>
-              <div className='col-span-3 flex items-center'>
-                <div className='flex flex-col gap-1 '>
-                  <p className='text-sm text-foreground'>{user.email}</p>
-                  <p className='text-sm text-foreground'>{user.username}</p>
-                </div>
-              </div>
-              <div className='col-span-2 flex items-center'>
-                <p className='text-sm text-foreground'>{user.subscriptionStatus}</p>
-              </div>
-              <div className='col-span-2 flex items-center'>
-                <p className='text-sm text-muted-foreground'>{user.paymentProcessorUserId}</p>
-              </div>
-              <div className='col-span-1 flex items-center'>
-                <div className='text-sm text-foreground'>
-                  <AdminSwitch {...user} />
-                </div>
-              </div>
-              <div className='col-span-1 flex items-center'>
-                <DropdownEditDelete 
-                  userId={user.id} 
-                  isAdmin={user.isAdmin} 
-                  userEmail={user.email || 'Unknown User'} 
-                />
-              </div>
-            </div>
-          ))}
+
+        {/* Table */}
+        <div className="rounded-md border-t border-border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    return (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={userColumns.length} className="h-24 text-center">
+                    <LoadingSpinner />
+                  </TableCell>
+                </TableRow>
+              ) : table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={userColumns.length}
+                    className="h-24 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );
