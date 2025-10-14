@@ -1,6 +1,6 @@
 import { LogIn, Menu } from 'lucide-react';
 import { Dispatch, SetStateAction, useEffect, useState } from 'react';
-import { Link as ReactRouterLink } from 'react-router-dom';
+import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 import { useAuth } from 'wasp/client/auth';
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../../../components/ui/sheet';
@@ -203,15 +203,24 @@ function renderNavigationItems(
   navigationItems: NavigationItem[],
   setMobileMenuOpen?: Dispatch<SetStateAction<boolean>>
 ) {
-  const menuStyles = cn({
-    'block rounded-lg px-3 py-3 text-sm font-medium leading-7 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors min-h-[44px] flex items-center':
-      !!setMobileMenuOpen,
-    'text-sm font-normal leading-6 text-foreground duration-300 ease-in-out hover:text-primary transition-colors':
-      !setMobileMenuOpen,
-  });
+  const location = useLocation();
 
   return navigationItems.map((item) => {
     const isExternalLink = item.to.startsWith('http');
+    const isActive = !isExternalLink && location.pathname === item.to;
+    
+    const menuStyles = cn({
+      'block rounded-lg px-3 py-3 text-sm font-medium leading-7 transition-colors min-h-[44px] flex items-center':
+        !!setMobileMenuOpen,
+      'text-sm font-normal leading-6 duration-300 ease-in-out transition-colors':
+        !setMobileMenuOpen,
+      // Active state styles
+      'bg-primary/10 text-primary border-l-2 border-primary': isActive && !!setMobileMenuOpen,
+      'text-primary': isActive && !setMobileMenuOpen,
+      // Inactive state styles
+      'text-foreground hover:bg-accent hover:text-accent-foreground': !isActive && !!setMobileMenuOpen,
+      'text-foreground hover:text-primary': !isActive && !setMobileMenuOpen,
+    });
     
     return (
       <li key={item.name}>
@@ -220,6 +229,7 @@ function renderNavigationItems(
           className={menuStyles}
           onClick={setMobileMenuOpen && (() => setMobileMenuOpen(false))}
           target={isExternalLink ? '_blank' : undefined}
+          rel={isExternalLink ? 'noopener noreferrer' : undefined}
         >
           {item.name}
         </ReactRouterLink>

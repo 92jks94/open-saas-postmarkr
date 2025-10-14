@@ -217,7 +217,10 @@ export const createMailPieceColumns = (
     },
     cell: ({ row }) => {
       const cost = row.getValue("cost") as number | null;
-      return <span className="text-sm font-medium text-foreground">{formatCurrency(cost)}</span>;
+      const customerPrice = row.original.customerPrice;
+      // Show actual cost from Lob if available, otherwise show estimated customer price
+      const displayPrice = cost ?? customerPrice;
+      return <span className="text-sm font-medium text-foreground">{formatCurrency(displayPrice)}</span>;
     },
   },
   {

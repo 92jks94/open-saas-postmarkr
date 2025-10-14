@@ -19,8 +19,10 @@ export function ViewModeToggle({ value, onChange, className }: ViewModeTogglePro
         size="sm"
         onClick={() => onChange('table')}
         className="h-7 px-2"
+        aria-label="Table view"
+        title="Table view"
       >
-        <Table className="h-4 w-4" />
+        <Table className="h-4 w-4" aria-hidden="true" />
         <span className="ml-1 hidden sm:inline">Table</span>
       </Button>
       <Button
@@ -28,8 +30,10 @@ export function ViewModeToggle({ value, onChange, className }: ViewModeTogglePro
         size="sm"
         onClick={() => onChange('cards')}
         className="h-7 px-2"
+        aria-label="Cards view"
+        title="Cards view"
       >
-        <LayoutGrid className="h-4 w-4" />
+        <LayoutGrid className="h-4 w-4" aria-hidden="true" />
         <span className="ml-1 hidden sm:inline">Cards</span>
       </Button>
     </div>

@@ -6,12 +6,14 @@
 
 import { useState } from 'react';
 import { login } from 'wasp/client/auth';
+import { useNavigate } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
 
 export function EnhancedLoginForm() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,9 +27,9 @@ export function EnhancedLoginForm() {
 
     try {
       await login({ email, password });
-      // Wasp handles redirect automatically based on onAuthSucceededRedirectTo
-      // If we reach here, login was successful
-      // Note: The page will redirect, so no need to set loading to false
+      
+      // Redirect to mail creation page after successful login
+      navigate('/mail/create');
     } catch (err: any) {
       console.error('Login error:', err);
       // Better error messages

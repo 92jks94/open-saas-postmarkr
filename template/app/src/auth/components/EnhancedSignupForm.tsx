@@ -6,21 +6,57 @@
 
 import { useState } from 'react';
 import { signup } from 'wasp/client/auth';
+import { useNavigate } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
 
 export function EnhancedSignupForm() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    if (!email) {
+      setEmailError(null);
+      return true; // Don't show error for empty field (let required handle it)
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address');
+      return false;
+    }
+    
+    setEmailError(null);
+    return true;
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setEmail(value);
+    if (value) {
+      validateEmail(value);
+    } else {
+      setEmailError(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate email before submission
+    if (!validateEmail(email)) {
+      return; // Don't submit if email is invalid
+    }
+    
     setIsLoading(true);
 
     try {
@@ -32,8 +68,9 @@ export function EnhancedSignupForm() {
         isAdmin: false, // Will be overridden by userSignupFields
         hasFullAccess: false // Will be overridden by userSignupFields
       });
-      // After successful signup, Wasp will redirect to email verification page
-      // Note: The page will redirect, so no need to set loading to false
+      
+      // Redirect to email verification page after successful signup
+      navigate('/email-verification');
     } catch (err: any) {
       console.error('Signup error:', err);
       // Better error messages
@@ -70,9 +107,13 @@ export function EnhancedSignupForm() {
             autoComplete="email"
             required
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={handleEmailChange}
             placeholder="you@example.com"
+            className={emailError ? 'border-destructive' : ''}
           />
+          {emailError && (
+            <p className="text-xs text-destructive mt-1">{emailError}</p>
+          )}
         </div>
 
         <div className="space-y-2">
@@ -110,7 +151,7 @@ export function EnhancedSignupForm() {
         <Button 
           type="submit" 
           className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
-          disabled={isLoading}
+          disabled={isLoading || !!emailError}
         >
           {isLoading ? 'Creating account...' : 'Sign up'}
         </Button>

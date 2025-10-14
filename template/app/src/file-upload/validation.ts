@@ -8,8 +8,14 @@ import { BYTES_PER_KB } from '../shared/constants/files';
 /**
  * Format file size in human-readable format
  */
-export function formatFileSize(bytes: number): string {
+export function formatFileSize(bytes: number | null | undefined): string {
+  // Handle undefined, null, or invalid values
+  if (bytes == null || isNaN(bytes) || bytes < 0) {
+    return 'Unknown';
+  }
+  
   if (bytes === 0) return '0 Bytes';
+  
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(BYTES_PER_KB));
   return Math.round((bytes / Math.pow(BYTES_PER_KB, i)) * 100) / 100 + ' ' + sizes[i];
