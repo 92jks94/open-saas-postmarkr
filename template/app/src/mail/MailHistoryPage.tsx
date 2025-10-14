@@ -1,122 +1,58 @@
 import React, { useState } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useQuery } from 'wasp/client/operations';
-import { getMailPieces, deleteMailPiece, updateMailPiece } from 'wasp/client/operations';
+import { getMailPieces, deleteMailPiece } from 'wasp/client/operations';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Plus, 
-  Eye, 
-  Trash2, 
-  MoreHorizontal,
-  Calendar,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Package,
-  Mail
-} from 'lucide-react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '../components/ui/dropdown-menu';
 import { Alert, AlertDescription } from '../components/ui/alert';
-import { LoadingSpinner, PageLoadingSpinner } from '../components/ui/loading-spinner';
+import { PageLoadingSpinner } from '../components/ui/loading-spinner';
 import { EmptyMailState } from '../components/ui/empty-state';
 import { PageHeader } from '../components/ui/page-header';
+import { DataTable } from '../components/ui/data-table';
+import { ViewMode } from '../components/ui/view-mode-toggle';
+import { createMailPieceColumns, MailPieceWithRelations } from './columns';
+import { MailPieceCard } from './components/MailPieceCard';
 
 /**
- * Simplified mail history page for testing
+ * Enhanced mail history page using TanStack Table with server-side pagination
  * 
  * Features:
- * - Basic mail piece listing
- * - Simple status display
- * - Navigation to individual mail piece details
+ * - Server-side pagination for optimal performance
+ * - Server-side sorting
+ * - Table and card view modes
+ * - Configurable field/column visibility
+ * - Search and filter capabilities
  */
 export default function MailHistoryPage() {
   const { data: user } = useAuth();
   const navigate = useNavigate();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  
+  // Server-side pagination and sorting state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [serverSort, setServerSort] = useState<{
+    field?: string;
+    direction?: 'asc' | 'desc';
+  }>({ field: 'createdAt', direction: 'desc' }); // Default: newest first
 
-  const { data: mailData, isLoading, error } = useQuery(getMailPieces, {
-    page: 1,
-    limit: 50,
+  const { data: mailData, isLoading, error, refetch } = useQuery(getMailPieces, {
+    page: currentPage,
+    limit: pageSize,
     status: 'all',
     mailType: 'all',
-    search: ''
+    search: searchQuery,
+    sortBy: serverSort.field,
+    sortDirection: serverSort.direction,
   });
 
   const mailPieces = mailData?.mailPieces || [];
 
-  // Simple sorting by creation date (newest first)
-  const sortedMailPieces = [...mailPieces].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'failed':
-      case 'returned':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'in_transit':
-      case 'processing':
-        return <Package className="h-4 w-4 text-blue-500" />;
-      case 'draft':
-      case 'pending_payment':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
-      default:
-        return <Mail className="h-4 w-4 text-gray-500" />;
-    }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'default';
-      case 'failed':
-      case 'returned':
-        return 'destructive';
-      case 'in_transit':
-      case 'processing':
-        return 'secondary';
-      case 'draft':
-      case 'pending_payment':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatCurrency = (amount: number | null | undefined) => {
-    if (!amount) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   const handleDeleteMailPiece = async (mailPieceId: string) => {
-    if (!confirm('Are you sure you want to delete this mail piece? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       setIsDeleting(mailPieceId);
       setDeleteError(null);
@@ -124,7 +60,7 @@ export default function MailHistoryPage() {
       await deleteMailPiece({ id: mailPieceId });
       
       // Refetch the data to update the list
-      window.location.reload(); // Simple refresh for now
+      refetch();
     } catch (error) {
       console.error('Error deleting mail piece:', error);
       setDeleteError(error instanceof Error ? error.message : 'Failed to delete mail piece');
@@ -133,11 +69,16 @@ export default function MailHistoryPage() {
     }
   };
 
-  const handleEditMailPiece = (mailPieceId: string) => {
-    // For now, redirect to mail creation page with the mail piece ID
-    // In a full implementation, this would open an edit modal or redirect to edit page
-    navigate(`/mail/create?edit=${mailPieceId}`);
+  // Server-side sorting handler
+  const handleSort = (field: string) => {
+    setServerSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+    setCurrentPage(1); // Reset to first page when sorting changes
   };
+
+  const columns = createMailPieceColumns(handleSort);
 
   if (isLoading) {
     return (
@@ -186,7 +127,6 @@ export default function MailHistoryPage() {
           }
         />
 
-
         {/* Error Display */}
         {deleteError && (
           <Alert variant="destructive" className="mb-6">
@@ -195,118 +135,58 @@ export default function MailHistoryPage() {
           </Alert>
         )}
 
-        {/* Mail Pieces List */}
-        <div className="space-y-4">
-          {sortedMailPieces.length === 0 ? (
-            <EmptyMailState onCreate={() => navigate('/mail/create')} />
-          ) : (
-            sortedMailPieces.map((mailPiece) => (
-              <Card key={mailPiece.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          {getStatusIcon(mailPiece.status)}
-                          <h3 className="text-lg font-medium text-foreground">
-                            {mailPiece.description || 'Untitled Mail Piece'}
-                          </h3>
-                          <Badge variant={getStatusBadgeVariant(mailPiece.status)}>
-                            {mailPiece.status.replace('_', ' ').toUpperCase()}
-                          </Badge>
-                        </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                        <div>
-                          <span className="font-medium">Type:</span> {mailPiece.mailType}
-                        </div>
-                        <div>
-                          <span className="font-medium">Class:</span> {mailPiece.mailClass}
-                        </div>
-                        <div>
-                          <span className="font-medium">Size:</span> {mailPiece.mailSize}
-                        </div>
-                        <div>
-                          <span className="font-medium">From:</span> {mailPiece.senderAddress?.contactName}
-                        </div>
-                        <div>
-                          <span className="font-medium">To:</span> {mailPiece.recipientAddress?.contactName}
-                        </div>
-                        <div>
-                          <span className="font-medium">Cost:</span> {formatCurrency(mailPiece.cost)}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-4 mt-3 text-xs text-muted-foreground">
-                        <div className="flex items-center">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          Created: {formatDate(mailPiece.createdAt.toISOString())}
-                        </div>
-                        {mailPiece.lobTrackingNumber && (
-                          <div className="flex items-center">
-                            <Package className="h-3 w-3 mr-1" />
-                            Tracking: {mailPiece.lobTrackingNumber}
-                          </div>
-                        )}
-                      </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate(`/mail/${mailPiece.id}`)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Button>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/mail/${mailPiece.id}`)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          {mailPiece.status === 'draft' && (
-                            <DropdownMenuItem onClick={() => handleEditMailPiece(mailPiece.id)}>
-                              <Package className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                          )}
-                          {mailPiece.status === 'draft' && (
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => handleDeleteMailPiece(mailPiece.id)}
-                              disabled={isDeleting === mailPiece.id}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              {isDeleting === mailPiece.id ? 'Deleting...' : 'Delete'}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+        {/* Mail Pieces DataTable with Card/Table Toggle */}
+        {mailPieces.length === 0 && !isLoading ? (
+          <EmptyMailState onCreate={() => navigate('/mail/create')} />
+        ) : (
+          <>
+            <DataTable
+              columns={columns}
+              data={mailPieces as MailPieceWithRelations[]}
+              enableViewToggle={true}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              searchable={false} // We'll handle search separately for server-side
+              cardRenderer={(row) => (
+                <MailPieceCard
+                  row={row}
+                  onDelete={handleDeleteMailPiece}
+                  isDeleting={isDeleting === row.original.id}
+                />
+              )}
+              cardGridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+              onRowClick={(mailPiece) => navigate(`/mail/${mailPiece.id}`)}
+            />
 
-        {/* Results Summary */}
-        {sortedMailPieces.length > 0 && (
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            {sortedMailPieces.length} mail piece{sortedMailPieces.length !== 1 ? 's' : ''}
-          </div>
+            {/* Server-Side Pagination Controls */}
+            {mailData && mailData.totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="text-sm text-muted-foreground">
+                  Page {mailData.page} of {mailData.totalPages} ({mailData.total} total items)
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={!mailData.hasPrev}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    disabled={!mailData.hasNext}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
   );
-};
-
+}

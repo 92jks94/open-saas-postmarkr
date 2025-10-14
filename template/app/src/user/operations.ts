@@ -44,6 +44,10 @@ const getPaginatorArgsSchema = z.object({
     isAdmin: z.boolean().optional(),
     subscriptionStatusIn: z.array(z.nativeEnum(SubscriptionStatus).nullable()).optional(),
   }),
+  sortBy: z.object({
+    field: z.enum(['email', 'username', 'subscriptionStatus']).optional(),
+    direction: z.enum(['asc', 'desc']).optional(),
+  }).optional(),
 });
 
 type GetPaginatedUsersInput = z.infer<typeof getPaginatorArgsSchema>;
@@ -59,6 +63,7 @@ export const getPaginatedUsers: GetPaginatedUsers<GetPaginatedUsersInput, GetPag
   const {
     skipPages,
     filter: { subscriptionStatusIn: subscriptionStatus, emailContains, isAdmin },
+    sortBy,
   } = ensureArgsSchemaOrThrowHttpError(getPaginatorArgsSchema, rawArgs);
 
   const includeUnsubscribedUsers = !!subscriptionStatus?.some((status) => status === null);
@@ -100,9 +105,9 @@ export const getPaginatedUsers: GetPaginatedUsers<GetPaginatedUsersInput, GetPag
       subscriptionStatus: true,
       paymentProcessorUserId: true,
     },
-    orderBy: {
-      username: 'asc',
-    },
+    orderBy: sortBy?.field 
+      ? { [sortBy.field]: sortBy.direction || 'asc' }
+      : { username: 'asc' },
   };
 
   const [pageOfUsers, totalUsers] = await prisma.$transaction([

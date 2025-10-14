@@ -7,7 +7,10 @@ import DropdownEditDelete from './DropdownEditDelete'
 import { useAuth } from 'wasp/client/auth'
 import { updateIsUserAdminById } from 'wasp/client/operations'
 
-function AdminSwitch({ id, isAdmin }: Pick<User, 'id' | 'isAdmin'>) {
+// Type representing the fields returned by getPaginatedUsers
+type PaginatedUser = Pick<User, 'id' | 'email' | 'username' | 'isAdmin' | 'subscriptionStatus' | 'paymentProcessorUserId'>
+
+function AdminSwitch({ id, isAdmin }: Pick<PaginatedUser, 'id' | 'isAdmin'>) {
   const { data: currentUser } = useAuth();
   const isCurrentUser = currentUser?.id === id;
 
@@ -29,14 +32,16 @@ function AdminSwitch({ id, isAdmin }: Pick<User, 'id' | 'isAdmin'>) {
   );
 }
 
-export const userColumns: ColumnDef<User>[] = [
+export const createUserColumns = (
+  onSort: (field: 'email' | 'username' | 'subscriptionStatus', currentDirection?: 'asc' | 'desc') => void
+): ColumnDef<PaginatedUser>[] => [
   {
     accessorKey: "email",
-    header: ({ column }) => {
+    header: () => {
       return (
         <Button
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={() => onSort('email')}
         >
           Email
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -54,11 +59,11 @@ export const userColumns: ColumnDef<User>[] = [
   },
   {
     accessorKey: "username",
-    header: ({ column }) => {
+    header: () => {
       return (
         <Button
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={() => onSort('username')}
         >
           Username
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -107,5 +112,8 @@ export const userColumns: ColumnDef<User>[] = [
       )
     },
   },
-]
+];
+
+// Default export for backwards compatibility (no sorting)
+export const userColumns = createUserColumns(() => {});
 

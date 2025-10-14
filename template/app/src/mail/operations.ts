@@ -90,6 +90,8 @@ type GetMailPiecesInput = {
   status?: string;
   mailType?: string;
   search?: string;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
 };
 
 export const getMailPieces: GetMailPieces<GetMailPiecesInput, { 
@@ -130,6 +132,12 @@ export const getMailPieces: GetMailPieces<GetMailPiecesInput, {
     ];
   }
 
+  // Build orderBy clause for server-side sorting
+  const validSortFields = ['description', 'status', 'mailType', 'cost', 'createdAt'];
+  const orderBy: any = args.sortBy && validSortFields.includes(args.sortBy)
+    ? { [args.sortBy]: args.sortDirection || 'asc' }
+    : { createdAt: 'desc' }; // Default: newest first
+
   // Get total count for pagination
   const total = await context.entities.MailPiece.count({ where });
 
@@ -145,7 +153,7 @@ export const getMailPieces: GetMailPieces<GetMailPiecesInput, {
         take: 5, // Get last 5 status updates
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy,
     skip,
     take: limit,
   });

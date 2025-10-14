@@ -6,6 +6,7 @@ import type {
   CreateMailAddress,
   DeleteMailAddress,
   GetMailAddressesByUser,
+  GetPaginatedMailAddresses,
   UpdateMailAddress,
   ValidateAddress,
 } from 'wasp/server/operations';
@@ -346,4 +347,58 @@ export const validateAddress: ValidateAddress<ValidateAddressInput, { address: M
 
     throw new HttpError(500, 'Failed to validate address');
   }
+};
+
+// ============================================================================
+// PAGINATED ADDRESS QUERY
+// ============================================================================
+
+type GetPaginatedMailAddressesInput = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  addressType?: 'sender' | 'recipient' | 'both';
+};
+
+export const getPaginatedMailAddresses: GetPaginatedMailAddresses<
+  GetPaginatedMailAddressesInput,
+  { addresses: MailAddress[]; total: number; page: number; totalPages: number }
+> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  const page = args?.page || 1;
+  const limit = Math.min(args?.limit || 20, 100);
+  const skip = (page - 1) * limit;
+
+  const where: any = { userId: context.user.id };
+
+  if (args?.addressType && args.addressType !== 'both') {
+    where.addressType = args.addressType;
+  }
+
+  if (args?.search) {
+    where.OR = [
+      { contactName: { contains: args.search, mode: 'insensitive' } },
+      { companyName: { contains: args.search, mode: 'insensitive' } },
+      { address_line1: { contains: args.search, mode: 'insensitive' } },
+      { label: { contains: args.search, mode: 'insensitive' } },
+    ];
+  }
+
+  const total = await context.entities.MailAddress.count({ where });
+  const addresses = await context.entities.MailAddress.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
+  });
+
+  return {
+    addresses,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit),
+  };
 };

@@ -6,6 +6,7 @@ import type {
   CreateFile,
   DeleteFile,
   GetAllFilesByUser,
+  GetPaginatedFilesByUser,
   GetDownloadFileSignedURL,
   GetThumbnailURL,
   TriggerPDFProcessing,
@@ -678,4 +679,48 @@ export const extractPDFPages: ExtractPDFPages<
     extractedFileId: extractedFile.id,
     pageCount: extractedPageCount
   };
+};
+
+// ============================================================================
+// PAGINATED FILE QUERY
+// ============================================================================
+
+type GetPaginatedFilesInput = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  validationStatus?: string;
+};
+
+export const getPaginatedFilesByUser: GetPaginatedFilesByUser<
+  GetPaginatedFilesInput,
+  { files: File[]; total: number; page: number; totalPages: number }
+> = async (args, context) => {
+  if (!context.user) {
+    throw new HttpError(401, 'Not authorized');
+  }
+
+  const page = args?.page || 1;
+  const limit = Math.min(args?.limit || 20, 100);
+  const skip = (page - 1) * limit;
+
+  const where: any = { userId: context.user.id };
+
+  if (args?.validationStatus && args.validationStatus !== 'all') {
+    where.validationStatus = args.validationStatus;
+  }
+
+  if (args?.search) {
+    where.name = { contains: args.search, mode: 'insensitive' };
+  }
+
+  const total = await context.entities.File.count({ where });
+  const files = await context.entities.File.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    skip,
+    take: limit,
+  });
+
+  return { files, total, page, totalPages: Math.ceil(total / limit) };
 };

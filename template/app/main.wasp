@@ -255,6 +255,11 @@ query getAllFilesByUser {
   entities: [User, File]
 }
 
+query getPaginatedFilesByUser {
+  fn: import { getPaginatedFilesByUser } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
 query getDownloadFileSignedURL {
   fn: import { getDownloadFileSignedURL } from "@src/file-upload/operations",
   entities: [User, File]
@@ -362,6 +367,11 @@ action createMailAddress {
 
 query getMailAddressesByUser {
   fn: import { getMailAddressesByUser } from "@src/address-management/operations",
+  entities: [User, MailAddress]
+}
+
+query getPaginatedMailAddresses {
+  fn: import { getPaginatedMailAddresses } from "@src/address-management/operations",
   entities: [User, MailAddress]
 }
 

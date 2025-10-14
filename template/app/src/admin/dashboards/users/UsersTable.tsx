@@ -10,7 +10,7 @@ import { Label } from '../../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../../components/ui/select';
 import { SubscriptionStatus } from '../../../payment/plans';
 import LoadingSpinner from '../../layout/LoadingSpinner';
-import { userColumns } from './columns';
+import { createUserColumns } from './columns';
 import {
   ColumnDef,
   VisibilityState,
@@ -41,7 +41,16 @@ const UsersTable = () => {
   const [subscriptionStatusFilter, setSubscriptionStatusFilter] = useState<Array<SubscriptionStatus | null>>(
     []
   );
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  // Load column visibility from localStorage
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => {
+    const saved = localStorage.getItem('usersTable-columnVisibility');
+    return saved ? JSON.parse(saved) : {};
+  })
+  // Server-side sorting state
+  const [serverSort, setServerSort] = useState<{
+    field?: 'email' | 'username' | 'subscriptionStatus';
+    direction?: 'asc' | 'desc';
+  }>({})
 
   const debouncedEmailFilter = useDebounce(emailFilter, 300);
 
@@ -54,7 +63,18 @@ const UsersTable = () => {
       ...(isAdminFilter !== undefined && { isAdmin: isAdminFilter }),
       ...(subscriptionStatusFilter.length > 0 && { subscriptionStatusIn: subscriptionStatusFilter }),
     },
+    sortBy: serverSort,
   });
+
+  // Handler for server-side sorting
+  const handleSort = (field: 'email' | 'username' | 'subscriptionStatus') => {
+    setServerSort(prev => ({
+      field,
+      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const userColumns = createUserColumns(handleSort);
 
   const table = useReactTable({
     data: data?.users || [],
@@ -64,9 +84,15 @@ const UsersTable = () => {
     state: {
       columnVisibility,
     },
-    // Disable built-in pagination since we use server-side
+    // Server-side pagination and sorting
     manualPagination: true,
+    manualSorting: true,
   })
+
+  // Save column visibility to localStorage
+  useEffect(() => {
+    localStorage.setItem('usersTable-columnVisibility', JSON.stringify(columnVisibility));
+  }, [columnVisibility]);
 
   useEffect(
     function backToPageOne() {

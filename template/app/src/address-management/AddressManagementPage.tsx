@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { getMailAddressesByUser, deleteMailAddress, createMailAddress, updateMailAddress, validateAddress, useQuery } from 'wasp/client/operations';
+import { getPaginatedMailAddresses, deleteMailAddress, createMailAddress, updateMailAddress, validateAddress, useQuery } from 'wasp/client/operations';
 import type { MailAddress } from 'wasp/entities';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardTitle } from '../components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Form, FormControl, FormItem, FormLabel, FormMessage } from '../components/ui/form';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -13,9 +14,13 @@ import { LoadingSpinner } from '../components/ui/loading-spinner';
 import { EmptyAddressesState } from '../components/ui/empty-state';
 import { PageHeader } from '../components/ui/page-header';
 import { FormField, FormSection } from '../components/ui/form-field';
+import { DataTable } from '../components/ui/data-table';
+import { ViewMode } from '../components/ui/view-mode-toggle';
+import { createAddressColumns } from './columns';
 import { cn } from '../lib/utils';
 import { ADDRESS_TYPES, SUPPORTED_COUNTRIES } from './validation';
 import { SimpleAddressValidator } from '../shared/addressValidationSimple';
+import { Plus } from 'lucide-react';
 
 export default function AddressManagementPage() {
   const [addressError, setAddressError] = useState<string | null>(null);
@@ -23,19 +28,28 @@ export default function AddressManagementPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [selectedCountry, setSelectedCountry] = useState<string>('US');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Edit state management
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFormData, setEditFormData] = useState<Record<string, string>>({});
+  
+  // Modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Copy exact useQuery pattern from FileUploadPage
-  const allUserAddresses = useQuery(getMailAddressesByUser, undefined, {
-    enabled: false, // Same pattern as file upload
+  // Use paginated query
+  const { data, isLoading, error, refetch } = useQuery(getPaginatedMailAddresses, {
+    page: currentPage,
+    limit: 20,
+    search: searchQuery,
   });
 
-  useEffect(() => {
-    allUserAddresses.refetch();
-  }, []);
+  const addresses = data?.addresses || [];
 
   // Simple form validation using working validation utility
   const validateForm = (formData: FormData): { isValid: boolean; errors: Record<string, string> } => {
@@ -68,11 +82,10 @@ export default function AddressManagementPage() {
   // Get country-specific validation rules
   const getCountryRules = () => SimpleAddressValidator.getCountryRules(selectedCountry);
 
-  // Copy exact delete pattern from FileUploadPage
   const handleDelete = async (addressId: string) => {
     try {
       await deleteMailAddress({ id: addressId });
-      allUserAddresses.refetch();
+      refetch();
     } catch (error) {
       console.error('Error deleting address:', error);
       setAddressError(
@@ -81,14 +94,13 @@ export default function AddressManagementPage() {
     }
   };
 
-  // Edit handlers
-  const handleEditClick = (address: MailAddress) => {
+  const handleEdit = (address: MailAddress) => {
     setEditingId(address.id);
     setEditFormData({
       contactName: address.contactName,
       companyName: address.companyName || '',
       address_line1: address.address_line1,
-      address_line2: address.address_line2 ?? '',
+      address_line2: address.address_line2 || '',
       address_city: address.address_city,
       address_state: address.address_state,
       address_zip: address.address_zip,
@@ -96,593 +108,399 @@ export default function AddressManagementPage() {
       label: address.label || '',
       addressType: address.addressType,
     });
+    setIsEditModalOpen(true);
   };
 
-  const handleEditSave = async (addressId: string) => {
+  const handleEditSave = async () => {
+    if (!editingId) return;
+
     try {
-      await updateMailAddress({ id: addressId, data: editFormData });
-      setEditingId(null);
-      allUserAddresses.refetch();
-    } catch (error) {
-      console.error('Edit failed:', error);
-      setAddressError(
-        error instanceof Error ? error.message : 'Failed to update address. Please try again.'
-      );
-    }
-  };
-
-  const handleEditCancel = () => {
-    setEditingId(null);
-    setEditFormData({});
-  };
-
-  // Address validation handler
-  const handleValidateAddress = async (addressId: string) => {
-    try {
-      await validateAddress({ addressId });
-      allUserAddresses.refetch(); // Refresh to show updated validation status
-    } catch (error) {
-      console.error('Validation failed:', error);
-      setAddressError('Failed to validate address. Please try again.');
-    }
-  };
-
-  // Address creation handler
-  const handleCreateAddress = async (e: FormEvent<HTMLFormElement>) => {
-    try {
-      e.preventDefault();
       setIsCreating(true);
-      setAddressError(null);
-      setFormErrors({});
-
-      const formElement = e.target;
-      if (!(formElement instanceof HTMLFormElement)) {
-        throw new Error('Event target is not a form element');
-      }
-
-      const formData = new FormData(formElement);
-      
-      // Validate form using enhanced validation
-      const validationResult = validateForm(formData);
-      if (!validationResult.isValid) {
-        setFormErrors(validationResult.errors);
-        setIsCreating(false);
-        return;
-      }
-      
-      const addressTypeValue = formData.get('addressType') as string || 'both';
-      const validAddressTypes = ['sender', 'recipient', 'both'] as const;
-      const addressType = validAddressTypes.includes(addressTypeValue as any) 
-        ? (addressTypeValue as 'sender' | 'recipient' | 'both')
-        : 'both';
-
-      const addressData = {
-        contactName: formData.get('contactName') as string,
-        companyName: formData.get('companyName') as string || undefined,
-        address_line1: formData.get('address_line1') as string,
-        address_line2: formData.get('address_line2') as string ?? undefined,
-        address_city: formData.get('address_city') as string,
-        address_state: formData.get('address_state') as string,
-        address_zip: formData.get('address_zip') as string,
-        address_country: formData.get('address_country') as string,
-        label: formData.get('label') as string || undefined,
-        addressType,
-      };
-
-      await createMailAddress(addressData);
-      formElement.reset();
-      allUserAddresses.refetch();
+      await updateMailAddress({
+        id: editingId,
+        data: editFormData,
+      });
+      setIsEditModalOpen(false);
+      setEditingId(null);
+      setEditFormData({});
+      refetch();
     } catch (error) {
-      console.error('Error creating address:', error);
-      setAddressError(
-        error instanceof Error ? error.message : 'An unexpected error occurred while creating the address.'
-      );
+      console.error('Error updating address:', error);
+      setAddressError(error instanceof Error ? error.message : 'Failed to update address');
     } finally {
       setIsCreating(false);
     }
   };
 
+  const handleCreateAddress = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setFormErrors({});
+    setFieldErrors({});
+    setAddressError(null);
+
+    const formData = new FormData(e.currentTarget);
+    const validation = validateForm(formData);
+
+    if (!validation.isValid) {
+      setFormErrors(validation.errors);
+      return;
+    }
+
+    try {
+      setIsCreating(true);
+      await createMailAddress({
+        contactName: formData.get('contactName') as string,
+        companyName: formData.get('companyName') as string || undefined,
+        address_line1: formData.get('address_line1') as string,
+        address_line2: formData.get('address_line2') as string || undefined,
+        address_city: formData.get('address_city') as string,
+        address_state: formData.get('address_state') as string,
+        address_zip: formData.get('address_zip') as string,
+        address_country: formData.get('address_country') as string,
+        label: formData.get('label') as string || undefined,
+        addressType: formData.get('addressType') as 'sender' | 'recipient' | 'both',
+      });
+      setIsCreateModalOpen(false);
+      refetch();
+      (e.target as HTMLFormElement).reset();
+    } catch (error) {
+      console.error('Error creating address:', error);
+      setAddressError(error instanceof Error ? error.message : 'Failed to create address');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const columns = createAddressColumns(handleEdit, handleDelete);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PageHeader
+            title="Address Management"
+            description="Manage your sender and recipient addresses"
+          />
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className='py-10 lg:mt-10'>
-      <div className='mx-auto max-w-7xl px-6 lg:px-8'>
+    <div className="min-h-screen bg-background py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageHeader
           title="Address Management"
-          description="Manage your saved addresses for quick mail sending and easy access."
+          description="Manage your sender and recipient addresses"
+          actions={
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Address
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Add New Address</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreateAddress} className="space-y-6 py-4">
+                  {addressError && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{addressError}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {/* Contact Information */}
+                  <FormSection title="Contact Information">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField label="Contact Name" required error={formErrors.contactName}>
+                        <Input
+                          name="contactName"
+                          placeholder="John Doe"
+                          required
+                          onChange={() => clearFieldError('contactName')}
+                        />
+                      </FormField>
+                      <FormField label="Company Name" error={fieldErrors.companyName}>
+                        <Input
+                          name="companyName"
+                          placeholder="Acme Corp"
+                          onChange={() => clearFieldError('companyName')}
+                        />
+                      </FormField>
+                    </div>
+                  </FormSection>
+
+                  {/* Address Information */}
+                  <FormSection title="Address Details">
+                    <div className="space-y-4">
+                      <FormField label="Address Line 1" required error={formErrors.address_line1}>
+                        <Input
+                          name="address_line1"
+                          placeholder="123 Main St"
+                          required
+                          onChange={() => clearFieldError('address_line1')}
+                        />
+                      </FormField>
+                      <FormField label="Address Line 2" error={fieldErrors.address_line2}>
+                        <Input
+                          name="address_line2"
+                          placeholder="Suite 100"
+                          onChange={() => clearFieldError('address_line2')}
+                        />
+                      </FormField>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <FormField label="City" required error={formErrors.address_city}>
+                          <Input
+                            name="address_city"
+                            placeholder="New York"
+                            required
+                            onChange={() => clearFieldError('address_city')}
+                          />
+                        </FormField>
+                        <FormField label="State" required error={formErrors.address_state}>
+                          <Input
+                            name="address_state"
+                            placeholder="NY"
+                            required
+                            onChange={() => clearFieldError('address_state')}
+                          />
+                        </FormField>
+                        <FormField label="ZIP Code" required error={formErrors.address_zip}>
+                          <Input
+                            name="address_zip"
+                            placeholder="10001"
+                            required
+                            onChange={() => clearFieldError('address_zip')}
+                          />
+                        </FormField>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField label="Country" required>
+                          <Select name="address_country" defaultValue="US" onValueChange={setSelectedCountry}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select country" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SUPPORTED_COUNTRIES.map((country) => (
+                                <SelectItem key={country} value={country}>
+                                  {country}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormField>
+                        <FormField label="Address Type" required>
+                          <Select name="addressType" defaultValue="both">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ADDRESS_TYPES.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormField>
+                      </div>
+                      <FormField label="Label (Optional)">
+                        <Input
+                          name="label"
+                          placeholder="e.g., Home, Office"
+                        />
+                      </FormField>
+                    </div>
+                  </FormSection>
+
+                  <div className="flex gap-2 justify-end pt-4">
+                    <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isCreating}>
+                      {isCreating ? 'Creating...' : 'Create Address'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          }
         />
 
-        {/* Enhanced Card structure with better layout */}
-        <Card className='my-8'>
-          <CardContent className='space-y-8 my-10 py-8 px-6 mx-auto sm:max-w-2xl'>
-            {/* Address creation form with improved layout */}
-            <div className='space-y-6'>
-              <div className='text-center'>
-                <h3 className='text-xl font-semibold text-foreground mb-2'>Add New Address</h3>
-                <p className='text-sm text-muted-foreground'>Fill in the details below to save a new address</p>
-              </div>
-              
-              <form onSubmit={handleCreateAddress} className='space-y-6'>
-                {/* Contact Information Section */}
-                <FormSection title="Contact Information">
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <FormField
-                      label="Contact Name"
-                      required
-                      error={formErrors.contactName || fieldErrors.contactName}
-                    >
-                      <Input
-                        id='contactName'
-                        name='contactName'
-                        placeholder='John Doe'
-                        required
-                        onChange={() => clearFieldError('contactName')}
-                        className={cn('h-10', (formErrors.contactName || fieldErrors.contactName) && 'border-destructive')}
-                      />
-                    </FormField>
-                    
-                    <FormField
-                      label="Company Name"
-                      error={fieldErrors.companyName}
-                      helpText="Optional company or organization name"
-                    >
-                      <Input
-                        id='companyName'
-                        name='companyName'
-                        placeholder='Acme Corp'
-                        onChange={() => clearFieldError('companyName')}
-                        className={cn('h-10', fieldErrors.companyName && 'border-destructive')}
-                      />
-                    </FormField>
-                  </div>
-                </FormSection>
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>Failed to load addresses. Please try again.</AlertDescription>
+          </Alert>
+        )}
 
-                {/* Address Information Section */}
-                <div className='space-y-4'>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-px bg-border flex-1'></div>
-                    <span className='text-sm font-medium text-muted-foreground px-3'>Address Details</span>
-                    <div className='h-px bg-border flex-1'></div>
-                  </div>
-                  
-                  <div className='space-y-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='address_line1' className='text-sm font-medium'>Address Line 1 *</Label>
-                      <Input
-                        id='address_line1'
-                        name='address_line1'
-                        placeholder='123 Main St'
-                        required
-                        onChange={() => clearFieldError('address_line1')}
-                        className={cn('h-10', (formErrors.address_line1 || fieldErrors.address_line1) && 'border-red-500')}
-                      />
-                      {(formErrors.address_line1 || fieldErrors.address_line1) && (
-                        <p className='text-sm text-red-600'>{formErrors.address_line1 || fieldErrors.address_line1}</p>
-                      )}
-                    </div>
+        {addresses.length === 0 && !isLoading ? (
+          <EmptyAddressesState onAdd={() => setIsCreateModalOpen(true)} />
+        ) : (
+          <>
+            <DataTable
+              columns={columns}
+              data={addresses}
+              enableViewToggle={true}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              searchable={false} // Server-side search handled separately
+            />
 
-                    <div className='space-y-2'>
-                      <Label htmlFor='address_line2' className='text-sm font-medium'>Address Line 2</Label>
-                      <Input
-                        id='address_line2'
-                        name='address_line2'
-                        placeholder='Suite 100, Apartment 2B'
-                        onChange={() => clearFieldError('address_line2')}
-                        className={cn('h-10', fieldErrors.address_line2 && 'border-red-500')}
-                      />
-                      {fieldErrors.address_line2 && (
-                        <p className='text-sm text-red-600'>{fieldErrors.address_line2}</p>
-                      )}
-                    </div>
-
-                    <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                      <div className='space-y-2'>
-                        <Label htmlFor='address_city' className='text-sm font-medium'>City *</Label>
-                        <Input
-                          id='address_city'
-                          name='address_city'
-                          placeholder='New York'
-                          required
-                          onChange={() => clearFieldError('address_city')}
-                          className={cn('h-10', (formErrors.address_city || fieldErrors.address_city) && 'border-red-500')}
-                        />
-                        {(formErrors.address_city || fieldErrors.address_city) && (
-                          <p className='text-sm text-red-600'>{formErrors.address_city || fieldErrors.address_city}</p>
-                        )}
-                      </div>
-                      
-                      <div className='space-y-2'>
-                        <Label htmlFor='address_state' className='text-sm font-medium'>State *</Label>
-                        <Input
-                          id='address_state'
-                          name='address_state'
-                          placeholder={getCountryRules().stateOptions.length > 0 ? 'Select state' : 'State/Province'}
-                          required
-                          onChange={() => clearFieldError('address_state')}
-                          className={cn('h-10', (formErrors.address_state || fieldErrors.address_state) && 'border-red-500')}
-                        />
-                        {(formErrors.address_state || fieldErrors.address_state) && (
-                          <p className='text-sm text-red-600'>{formErrors.address_state || fieldErrors.address_state}</p>
-                        )}
-                      </div>
-                      
-                      <div className='space-y-2'>
-                        <Label htmlFor='address_zip' className='text-sm font-medium'>Postal Code *</Label>
-                        <Input
-                          id='address_zip'
-                          name='address_zip'
-                          placeholder={getCountryRules().postalCodePlaceholder}
-                          required
-                          onChange={() => clearFieldError('address_zip')}
-                          className={cn('h-10', (formErrors.address_zip || fieldErrors.address_zip) && 'border-red-500')}
-                        />
-                        {(formErrors.address_zip || fieldErrors.address_zip) && (
-                          <p className='text-sm text-red-600'>{formErrors.address_zip || fieldErrors.address_zip}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+            {/* Server-Side Pagination Controls */}
+            {data && data.totalPages > 1 && (
+              <div className="flex items-center justify-between px-2 py-4">
+                <div className="text-sm text-muted-foreground">
+                  Page {data.page} of {data.totalPages} ({data.total} total addresses)
                 </div>
-
-                {/* Additional Settings Section */}
-                <div className='space-y-4'>
-                  <div className='flex items-center gap-2'>
-                    <div className='h-px bg-border flex-1'></div>
-                    <span className='text-sm font-medium text-muted-foreground px-3'>Settings</span>
-                    <div className='h-px bg-border flex-1'></div>
-                  </div>
-                  
-                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                    <div className='space-y-2'>
-                      <Label htmlFor='address_country' className='text-sm font-medium'>Country *</Label>
-                      <Select 
-                        name='address_country' 
-                        required
-                        onValueChange={(value) => {
-                          setSelectedCountry(value);
-                          clearFieldError('address_country');
-                        }}
-                      >
-                        <SelectTrigger className={cn('h-10', (formErrors.address_country || fieldErrors.address_country) && 'border-red-500')}>
-                          <SelectValue placeholder='Select country' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SUPPORTED_COUNTRIES.map((country) => (
-                            <SelectItem key={country} value={country}>
-                              {country}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {(formErrors.address_country || fieldErrors.address_country) && (
-                        <p className='text-sm text-red-600'>{formErrors.address_country || fieldErrors.address_country}</p>
-                      )}
-                    </div>
-                    
-                    <div className='space-y-2'>
-                      <Label htmlFor='addressType' className='text-sm font-medium'>Address Type</Label>
-                      <Select name='addressType' defaultValue='both'>
-                        <SelectTrigger className='h-10'>
-                          <SelectValue placeholder='Select type' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ADDRESS_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label htmlFor='label' className='text-sm font-medium'>Label</Label>
-                    <Input
-                      id='label'
-                      name='label'
-                      placeholder='Home, Office, Client ABC'
-                      onChange={() => clearFieldError('label')}
-                      className={cn('h-10', fieldErrors.label && 'border-red-500')}
-                    />
-                    {fieldErrors.label && (
-                      <p className='text-sm text-red-600'>{fieldErrors.label}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Submit Button with better styling */}
-                <div className='pt-4'>
-                  <Button 
-                    type='submit' 
-                    isLoading={isCreating}
-                    loadingText="Creating Address..."
-                    className='w-full h-11 text-base font-medium'
-                    size='lg'
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
                   >
-                    Create Address
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => prev + 1)}
+                    disabled={currentPage >= (data.totalPages || 1)}
+                  >
+                    Next
                   </Button>
                 </div>
+              </div>
+            )}
+          </>
+        )}
 
-                {addressError && (
-                  <Alert variant='destructive' className='mt-4'>
-                    <AlertDescription>{addressError}</AlertDescription>
-                  </Alert>
-                )}
-              </form>
-            </div>
-
-            <Separator className='my-8' />
-            
-            {/* Enhanced address list section */}
-            <div className='space-y-6'>
-              <div className='text-center'>
-                <CardTitle className='text-xl font-bold text-foreground mb-2'>Saved Addresses</CardTitle>
-                <p className='text-sm text-muted-foreground'>Manage your saved addresses for quick access</p>
+        {/* Edit Modal */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Address</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Contact Name *</Label>
+                  <Input
+                    value={editFormData.contactName || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, contactName: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Company Name</Label>
+                  <Input
+                    value={editFormData.companyName || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                  />
+                </div>
               </div>
               
-              {allUserAddresses.isLoading && (
-                <LoadingSpinner text="Loading addresses..." />
-              )}
-              
-              {allUserAddresses.error && (
-                <Alert variant='destructive'>
-                  <AlertDescription>Error: {allUserAddresses.error.message}</AlertDescription>
-                </Alert>
-              )}
-              
-              {!!allUserAddresses.data && allUserAddresses.data.length > 0 && !allUserAddresses.isLoading ? (
-                <div className='grid gap-4'>
-                  {allUserAddresses.data.map((address: MailAddress) => (
-                    <Card key={address.id} className='p-6 hover:shadow-md transition-shadow'>
-                      {editingId === address.id ? (
-                        // Edit mode
-                        <div className='space-y-4'>
-                          <div className='text-center'>
-                            <h3 className='text-lg font-semibold text-foreground mb-2'>Edit Address</h3>
-                          </div>
-                          
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                            <div className='space-y-2'>
-                              <Label htmlFor={`edit-contactName-${address.id}`} className='text-sm font-medium'>Contact Name *</Label>
-                              <Input
-                                id={`edit-contactName-${address.id}`}
-                                value={editFormData.contactName}
-                                onChange={(e) => setEditFormData(prev => ({...prev, contactName: e.target.value}))}
-                                className='h-10'
-                              />
-                            </div>
-                            <div className='space-y-2'>
-                              <Label htmlFor={`edit-companyName-${address.id}`} className='text-sm font-medium'>Company Name</Label>
-                              <Input
-                                id={`edit-companyName-${address.id}`}
-                                value={editFormData.companyName}
-                                onChange={(e) => setEditFormData(prev => ({...prev, companyName: e.target.value}))}
-                                className='h-10'
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className='space-y-2'>
-                            <Label htmlFor={`edit-address_line1-${address.id}`} className='text-sm font-medium'>Address Line 1 *</Label>
-                            <Input
-                              id={`edit-address_line1-${address.id}`}
-                              value={editFormData.address_line1}
-                              onChange={(e) => setEditFormData(prev => ({...prev, address_line1: e.target.value}))}
-                              className='h-10'
-                            />
-                          </div>
-                          
-                          <div className='space-y-2'>
-                            <Label htmlFor={`edit-address_line2-${address.id}`} className='text-sm font-medium'>Address Line 2</Label>
-                            <Input
-                              id={`edit-address_line2-${address.id}`}
-                              value={editFormData.address_line2}
-                              onChange={(e) => setEditFormData(prev => ({...prev, address_line2: e.target.value}))}
-                              className='h-10'
-                            />
-                          </div>
-                          
-                          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-                            <div className='space-y-2'>
-                            <Label htmlFor={`edit-address_city-${address.id}`} className='text-sm font-medium'>City *</Label>
-                            <Input
-                              id={`edit-address_city-${address.id}`}
-                              value={editFormData.address_city}
-                              onChange={(e) => setEditFormData(prev => ({...prev, address_city: e.target.value}))}
-                                className='h-10'
-                              />
-                            </div>
-                            <div className='space-y-2'>
-                            <Label htmlFor={`edit-address_state-${address.id}`} className='text-sm font-medium'>State *</Label>
-                            <Input
-                              id={`edit-address_state-${address.id}`}
-                              value={editFormData.address_state}
-                              onChange={(e) => setEditFormData(prev => ({...prev, address_state: e.target.value}))}
-                                className='h-10'
-                              />
-                            </div>
-                            <div className='space-y-2'>
-                            <Label htmlFor={`edit-address_zip-${address.id}`} className='text-sm font-medium'>Postal Code *</Label>
-                            <Input
-                              id={`edit-address_zip-${address.id}`}
-                              value={editFormData.address_zip}
-                              onChange={(e) => setEditFormData(prev => ({...prev, address_zip: e.target.value}))}
-                                className='h-10'
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                            <div className='space-y-2'>
-                            <Label htmlFor={`edit-address_country-${address.id}`} className='text-sm font-medium'>Country *</Label>
-                            <Select
-                              value={editFormData.address_country}
-                              onValueChange={(value) => setEditFormData(prev => ({...prev, address_country: value}))}
-                              >
-                                <SelectTrigger className='h-10'>
-                                  <SelectValue placeholder="Select country" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {SUPPORTED_COUNTRIES.map((country) => (
-                                    <SelectItem key={country} value={country}>
-                                      {country}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className='space-y-2'>
-                              <Label htmlFor={`edit-addressType-${address.id}`} className='text-sm font-medium'>Address Type *</Label>
-                              <Select
-                                value={editFormData.addressType}
-                                onValueChange={(value) => setEditFormData(prev => ({...prev, addressType: value}))}
-                              >
-                                <SelectTrigger className='h-10'>
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {ADDRESS_TYPES.map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          
-                          <div className='space-y-2'>
-                            <Label htmlFor={`edit-label-${address.id}`} className='text-sm font-medium'>Label</Label>
-                            <Input
-                              id={`edit-label-${address.id}`}
-                              value={editFormData.label}
-                              onChange={(e) => setEditFormData(prev => ({...prev, label: e.target.value}))}
-                              placeholder="e.g., Home, Office, Client ABC"
-                              className='h-10'
-                            />
-                          </div>
-                          
-                          <div className='flex gap-2 justify-end'>
-                            <Button onClick={handleEditCancel} variant='outline' size='sm'>
-                              Cancel
-                            </Button>
-                            <Button 
-                              onClick={() => handleEditSave(address.id)} 
-                              size='sm'
-                              isLoading={editingId === address.id && isCreating}
-                              loadingText="Saving..."
-                            >
-                              Save Changes
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        // Display mode
-                        <div className='flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4'>
-                          <div className="flex-1 min-w-0 space-y-3">
-                            {/* Header with name and badges */}
-                            <div className='flex items-center gap-3 flex-wrap'>
-                              <h4 className='text-lg font-semibold text-foreground'>{address.contactName}</h4>
-                              {address.isDefault && (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
-                                  Default Address
-                                </span>
-                              )}
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
-                                {address.addressType.charAt(0).toUpperCase() + address.addressType.slice(1)}
-                              </span>
-                            </div>
-                            
-                            {/* Company name */}
-                            {address.companyName && (
-                              <p className='text-muted-foreground font-medium'>{address.companyName}</p>
-                            )}
-                            
-                            {/* Address details */}
-                            <div className='space-y-1'>
-                              <p className='text-foreground'>
-                                {address.address_line1}
-                                {address.address_line2 && `, ${address.address_line2}`}
-                              </p>
-                              <p className='text-foreground'>
-                                {address.address_city}, {address.address_state} {address.address_zip}, {address.address_country}
-                              </p>
-                            </div>
-                            
-                            {/* Additional info */}
-                            <div className='flex gap-2 flex-wrap'>
-                              {address.label && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
-                                  📍 {address.label}
-                                </span>
-                              )}
-                              {address.usageCount > 0 && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                  📊 Used {address.usageCount} times
-                                </span>
-                              )}
-                              {/* Validation Status Badge */}
-                              {address.isValidated === true && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                                  ✅ Validated
-                                </span>
-                              )}
-                              {address.isValidated === false && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-                                  ❌ Invalid {address.validationError && `(${address.validationError})`}
-                                </span>
-                              )}
-                              {address.isValidated === null && (
-                                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
-                                  ⏳ Not Validated
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Action buttons */}
-                          <div className='flex gap-2 shrink-0'>
-                            <Button 
-                              variant='outline' 
-                              size='sm' 
-                              className='h-9'
-                              onClick={() => handleEditClick(address)}
-                            >
-                              Edit
-                            </Button>
-                            <Button 
-                              variant='outline' 
-                              size='sm' 
-                              className='h-9'
-                              onClick={() => handleValidateAddress(address.id)}
-                            >
-                              Validate
-                            </Button>
-                            <Button
-                              onClick={() => handleDelete(address.id)}
-                              variant='destructive'
-                              size='sm'
-                              className='h-9'
-                            >
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  ))}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Address Line 1 *</Label>
+                  <Input
+                    value={editFormData.address_line1 || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, address_line1: e.target.value }))}
+                  />
                 </div>
-              ) : !allUserAddresses.isLoading && (
-                <EmptyAddressesState onAdd={() => {
-                  const form = document.querySelector('form');
-                  if (form) {
-                    form.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }} />
-              )}
+                <div className="space-y-2">
+                  <Label>Address Line 2</Label>
+                  <Input
+                    value={editFormData.address_line2 || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, address_line2: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>City *</Label>
+                    <Input
+                      value={editFormData.address_city || ''}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, address_city: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>State *</Label>
+                    <Input
+                      value={editFormData.address_state || ''}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, address_state: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ZIP Code *</Label>
+                    <Input
+                      value={editFormData.address_zip || ''}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, address_zip: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Country *</Label>
+                    <Select
+                      value={editFormData.address_country || 'US'}
+                      onValueChange={(value) => setEditFormData(prev => ({ ...prev, address_country: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUPPORTED_COUNTRIES.map((country) => (
+                          <SelectItem key={country} value={country}>
+                            {country}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Address Type *</Label>
+                    <Select
+                      value={editFormData.addressType || 'both'}
+                      onValueChange={(value) => setEditFormData(prev => ({ ...prev, addressType: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ADDRESS_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type.charAt(0).toUpperCase() + type.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Label</Label>
+                  <Input
+                    value={editFormData.label || ''}
+                    onChange={(e) => setEditFormData(prev => ({ ...prev, label: e.target.value }))}
+                    placeholder="e.g., Home, Office"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-4">
+                <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditSave} disabled={isCreating}>
+                  {isCreating ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
 }
+
