@@ -4,12 +4,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HttpError } from 'wasp/server';
 import { 
   createMailPaymentIntent,
   confirmMailPayment,
   refundMailPayment,
 } from '../../mail/operations';
+import { HttpError } from 'wasp/server';
 import { 
   createMockWaspContext,
   mockStripe,

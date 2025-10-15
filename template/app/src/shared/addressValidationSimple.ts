@@ -49,6 +49,9 @@ export const mailCreationSchema = z.object({
   recipientAddressId: z.string().uuid(),
   fileId: z.string().uuid(),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
+}).refine((data) => data.senderAddressId !== data.recipientAddressId, {
+  message: 'must be different',
+  path: ['recipientAddressId'],
 });
 
 /**

@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { getDownloadFileSignedURL } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -10,9 +8,9 @@ import { ChevronLeft, ChevronRight, Loader2, AlertTriangle } from 'lucide-react'
 // Configure worker for react-pdf - use local worker from node_modules
 // This is more reliable than CDN and ensures version compatibility
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
+  'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url,
-).toString();
+).toString(); /* @vite-ignore */
 
 interface PDFViewerProps {
   fileKey: string;

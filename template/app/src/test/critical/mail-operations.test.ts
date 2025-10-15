@@ -4,7 +4,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HttpError } from 'wasp/server';
 import { 
   createMailPiece,
   updateMailPieceStatus,
@@ -13,6 +12,7 @@ import {
   getMailPiece,
   deleteMailPiece,
 } from '../../mail/operations';
+import { HttpError } from 'wasp/server';
 import { 
   createMockWaspContext,
   mockLob,

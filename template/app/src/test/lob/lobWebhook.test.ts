@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import crypto from 'crypto';
 import { WEBHOOK_TIMESTAMP_MAX_AGE_MS, MS_PER_SECOND } from '../../server/constants/resilience';
+import { LOB_STATUS_MAPPING, mapLobStatus } from '../../shared/statusMapping';
 
 describe('Lob Webhook Tests', () => {
   
@@ -163,7 +164,7 @@ describe('Lob Webhook Tests', () => {
   describe('Status Mapping', () => {
     
     it('should map all Lob statuses to internal statuses', () => {
-      const { LOB_STATUS_MAPPING } = require('../../shared/statusMapping');
+      // LOB_STATUS_MAPPING is now imported at the top
 
       // Test each mapping
       expect(LOB_STATUS_MAPPING['delivered']).toBe('delivered');
@@ -180,7 +181,7 @@ describe('Lob Webhook Tests', () => {
     });
 
     it('should handle unknown status with fallback', () => {
-      const { mapLobStatus } = require('../../shared/statusMapping');
+      // mapLobStatus is now imported at the top
 
       const unknownStatus = 'some_new_status';
       const mappedStatus = mapLobStatus(unknownStatus, 'unknown');
