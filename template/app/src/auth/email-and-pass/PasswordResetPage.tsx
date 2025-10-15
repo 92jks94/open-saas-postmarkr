@@ -4,6 +4,7 @@ import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { ResetPasswordForm } from 'wasp/client/auth';
 import AuthPageLayout from '../AuthPageLayout';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { AuthErrorHandler, AuthErrorConfigs } from '../components/AuthErrorHandler';
 
 const REDIRECT_DELAY_MS = 3000;
 
@@ -13,12 +14,13 @@ export default function PasswordResetPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [countdown, setCountdown] = useState(REDIRECT_DELAY_MS / 1000);
   
-  const hasToken = searchParams.has('token');
+  const token = searchParams.get('token');
+  const hasValidToken = Boolean(token);
 
   // Monitor for successful password reset
   // This is a workaround since Wasp's ResetPasswordForm doesn't provide success callback
   useEffect(() => {
-    if (!hasToken || resetSuccess) return;
+    if (!hasValidToken || resetSuccess) return;
 
     // Check for success message in DOM after a brief delay
     const checkTimer = setTimeout(() => {
@@ -34,7 +36,7 @@ export default function PasswordResetPage() {
     }, 1000);
 
     return () => clearTimeout(checkTimer);
-  }, [hasToken, resetSuccess]);
+  }, [hasValidToken, resetSuccess]);
 
   // Handle countdown and redirect after successful reset
   useEffect(() => {
@@ -59,6 +61,11 @@ export default function PasswordResetPage() {
       clearTimeout(redirectTimer);
     };
   }, [resetSuccess, navigate]);
+
+  // Handle missing or invalid token
+  if (!hasValidToken) {
+    return <AuthErrorHandler config={AuthErrorConfigs.invalidResetToken()} />;
+  }
 
   return (
     <AuthPageLayout>

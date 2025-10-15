@@ -10,9 +10,7 @@ import { Progress } from '../components/ui/progress';
 import { LoadingSpinner, InlineLoadingSpinner } from '../components/ui/loading-spinner';
 import { EmptyFilesState } from '../components/ui/empty-state';
 import { PageHeader } from '../components/ui/page-header';
-import { DataTable } from '../components/ui/data-table';
-import { ViewMode } from '../components/ui/view-mode-toggle';
-import { createFileColumns } from './columns';
+import { Badge } from '../components/ui/badge';
 import { cn } from '../lib/utils';
 import {
   type FileUploadError,
@@ -21,8 +19,8 @@ import {
   validateFile,
 } from './fileUploading';
 import { ALLOWED_FILE_TYPES, formatFileSize } from './validation';
-import { FilePreviewCard } from './FilePreviewCard';
-import { Upload, FileText, Image as ImageIcon, Clock, Loader2, CheckCircle, XCircle, X } from 'lucide-react';
+// Removed FilePreviewCard import - using simple template approach
+import { Upload, FileText, Image as ImageIcon, Clock, Loader2, CheckCircle, XCircle, X, Download, Trash2 } from 'lucide-react';
 import { generatePDFThumbnail } from './pdfThumbnail';
 import { DEBOUNCE_DELAY_MS, SECONDS_PER_MINUTE } from '../shared/constants/timing';
 // CostCalculatorWidget moved to docs/FILE_UPLOAD_TODOS.md for future reference
@@ -63,23 +61,17 @@ export default function FileUploadPage() {
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([]);
   const [isProcessingQueue, setIsProcessingQueue] = useState(false);
 
-  // Pagination and view state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  // Removed pagination and view mode state - using simple template approach
 
-  // Use paginated query for file list
-  const { data: paginatedData, isLoading: isFilesLoading, error: filesError, refetch: refetchFiles } = useQuery(
-    getPaginatedFilesByUser,
-    { page: currentPage, limit: 20, validationStatus: 'all' }
-  );
-
-  const files = paginatedData?.files || [];
-
-  // Still need to check for processing files for conditional polling
+  // Use simple query for file list (revert to working template approach)
   const allUserFiles = useQuery(getAllFilesByUser, undefined, {
     refetchInterval: false,
     refetchIntervalInBackground: false,
   }) as { data: FileEntity[] | undefined; isLoading: boolean; error: any; refetch: () => void };
+
+  const files = allUserFiles.data || [];
+  const isFilesLoading = allUserFiles.isLoading;
+  const filesError = allUserFiles.error;
 
   // Check if any files are currently being processed
   const hasProcessingFiles = allUserFiles.data?.some(
@@ -97,11 +89,10 @@ export default function FileUploadPage() {
     // Poll to check processing status
     const pollInterval = setInterval(() => {
       allUserFiles.refetch();
-      refetchFiles(); // Also refetch paginated files
     }, DEBOUNCE_DELAY_MS);
 
     return () => clearInterval(pollInterval);
-  }, [hasProcessingFiles, allUserFiles.refetch, refetchFiles]);
+  }, [hasProcessingFiles, allUserFiles.refetch]);
 
   const { isLoading: isDownloadUrlLoading, refetch: refetchDownloadUrl } = useQuery(
     getDownloadFileSignedURL,
@@ -111,7 +102,6 @@ export default function FileUploadPage() {
 
   useEffect(() => {
     allUserFiles.refetch();
-    refetchFiles();
   }, []);
 
   useEffect(() => {
@@ -138,7 +128,6 @@ export default function FileUploadPage() {
     try {
       await deleteFile({ fileId });
       allUserFiles.refetch();
-      refetchFiles(); // Refetch paginated files
     } catch (error) {
       console.error('Error deleting file:', error);
       setUploadError({
@@ -316,7 +305,6 @@ export default function FileUploadPage() {
 
       // Refetch to show the new file
       allUserFiles.refetch();
-      refetchFiles();
 
     } catch (error) {
       // Update status to error
@@ -582,52 +570,80 @@ export default function FileUploadPage() {
         }
       }} />
     ) : !isFilesLoading && (
-      <>
-        <DataTable
-          columns={createFileColumns(handleDownload, handleDelete)}
-          data={files}
-          enableViewToggle={true}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          cardRenderer={(row) => (
-            <FilePreviewCard
-              key={row.original.key}
-              file={row.original}
-              onDownload={() => setFileKeyForS3(row.original.key)}
-              onDelete={() => handleDelete(row.original.id)}
-              isDownloading={row.original.key === fileKeyForS3 && isDownloadUrlLoading}
-            />
-          )}
-          cardGridClassName="grid grid-cols-1 gap-3 md:grid-cols-2"
-        />
-
-        {/* Server-Side Pagination Controls */}
-        {paginatedData && paginatedData.totalPages > 1 && (
-          <div className="flex items-center justify-between px-2 py-4">
-            <div className="text-sm text-muted-foreground">
-              Page {paginatedData.page} of {paginatedData.totalPages} ({paginatedData.total} total files)
+      <div className="space-y-3">
+        {files.map((file: FileEntity) => (
+          <Card key={file.key} className="p-4">
+            <div
+              className={cn(
+                "flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center",
+                {
+                  "opacity-70":
+                    file.key === fileKeyForS3 && isDownloadUrlLoading,
+                },
+              )}
+            >
+              <div className="flex items-center gap-3">
+                {file.type.includes('pdf') ? (
+                  <FileText className="h-8 w-8 text-red-500" />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-blue-500" />
+                )}
+                <div>
+                  <p className="text-foreground font-medium">
+                    {file.name}
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{formatFileSize(file.size || 0)}</span>
+                    <span>•</span>
+                    <span>{file.type.split('/')[1]?.toUpperCase() || file.type}</span>
+                    {file.pageCount && (
+                      <>
+                        <span>•</span>
+                        <span>{file.pageCount} pages</span>
+                      </>
+                    )}
+                    {file.validationStatus && (
+                      <>
+                        <span>•</span>
+                        <Badge variant={
+                          file.validationStatus === 'valid' ? 'default' :
+                          file.validationStatus === 'processing' ? 'secondary' :
+                          file.validationStatus === 'invalid' ? 'destructive' : 'outline'
+                        }>
+                          {file.validationStatus}
+                        </Badge>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setFileKeyForS3(file.key)}
+                  disabled={
+                    file.key === fileKeyForS3 && isDownloadUrlLoading
+                  }
+                  variant="outline"
+                  size="sm"
+                >
+                  {file.key === fileKeyForS3 && isDownloadUrlLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleDelete(file.id)}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => prev + 1)}
-                disabled={currentPage >= (paginatedData.totalPages || 1)}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
-      </>
+          </Card>
+        ))}
+      </div>
     )}
   </div>
 </div>

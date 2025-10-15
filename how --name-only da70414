@@ -1,0 +1,18 @@
+[33mcommit 745d4bb55754e907dda3e2b48bd1227d95865821[m
+Author: Your Name <you@example.com>
+Date:   Wed Oct 15 10:26:46 2025 -0500
+
+    Admin dashboard - significant changes + lots of blogs related to HOA
+
+template/app/blog/src/content/docs/blog/2025-01-15-1-million-mistake-hoa-notice.md
+template/app/blog/src/content/docs/blog/2025-01-15-hidden-cost-in-house-hoa-mailings.md
+template/app/blog/src/content/docs/blog/2025-01-15-hoa-election-mailing-mastery.md
+template/app/blog/src/content/docs/blog/2025-01-15-hoa-legal-compliance-crisis.md
+template/app/blog/src/content/docs/blog/2025-01-15-litigation-trap-hoa-certified-mail.md
+template/app/blog/src/content/docs/blog/2025-01-22-30-hours-save-50-hoa-mailings.md
+template/app/blog/src/content/docs/blog/2025-01-22-logistical-nightmare-lean-operations-hoa-mailroom.md
+template/app/blog/src/content/docs/blog/2025-01-29-digital-exclusion-dilemma-hoa-email-only-policy.md
+template/app/blog/src/content/docs/blog/2025-01-29-virtual-hoa-mailroom-eliminate-time-drain.md
+template/app/blog/src/content/docs/blog/2025-02-05-annual-meeting-packet-complexity.md
+template/app/blog/src/content/docs/blog/2025-02-12-complete-guide-hoa-mailing-services.md
+template/app/blog/src/content/docs/blog/2025-02-12-stop-hemorrhaging-money-hoa-management-guide.md

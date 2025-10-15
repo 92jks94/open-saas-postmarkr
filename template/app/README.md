@@ -349,10 +349,6 @@ npm run test:critical
 
 # Run with coverage
 npm run test:coverage
-
-# Run E2E tests
-cd e2e-tests
-npm test
 ```
 
 ### Code Quality
@@ -429,4 +425,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Lob API Setup Guide](docs/LOB_SETUP_GUIDE.md)
 - [Physical Mail App Plan](docs/PHYSICAL_MAIL_APP_PLAN.md)
 - [Deployment Guide](DEPLOYMENT.md)
-- [E2E Testing Guide](e2e-tests/README.md)

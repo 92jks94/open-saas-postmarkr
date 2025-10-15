@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from 'wasp/client/operations';
-import { debugMailPieces, fixPaidOrders, debugMailPieceStatus, adminRefundMailPiece, adminUpdateMailPieceStatus } from 'wasp/client/operations';
+import { debugMailPieces, fixPaidOrders, debugMailPieceStatus } from 'wasp/client/operations';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ScrollArea } from '../components/ui/scroll-area';
-import { getStatusColor, getResultStatusColor, getStatusDisplayName, getSourceColor, getSourceIcon } from '../shared/statusUtils';
+import { getStatusColor, getResultStatusColor } from '../shared/statusUtils';
 
 type FixResult = {
   fixedCount: number;
@@ -443,10 +443,10 @@ export default function DebugMailPage() {
                     </div>
                     <div className="flex gap-2">
                       <Badge className={getStatusColor(piece.status)}>
-                        {getStatusDisplayName(piece.status)}
+                        {piece.status}
                       </Badge>
                       <Badge className={getStatusColor(piece.paymentStatus)}>
-                        Payment: {getStatusDisplayName(piece.paymentStatus)}
+                        Payment: {piece.paymentStatus}
                       </Badge>
                     </div>
                   </div>

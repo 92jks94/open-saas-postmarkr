@@ -1,3 +1,0 @@
-This is a test text file for e2e testing.
-It contains sample text that can be used to test file upload functionality.
-The file is simple and lightweight for testing purposes.

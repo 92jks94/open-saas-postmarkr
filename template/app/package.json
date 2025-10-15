@@ -1,5 +1,5 @@
 {
-  "name": "opensaas",
+  "name": "postmarkr",
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.523.0",

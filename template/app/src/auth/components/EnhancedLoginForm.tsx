@@ -11,19 +11,18 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Eye, EyeOff } from 'lucide-react';
+import { AuthFormWrapper, useAuthFormState } from './AuthFormWrapper';
 
 export function EnhancedLoginForm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { error, isLoading, handleError, handleLoading } = useAuthFormState();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsLoading(true);
+    handleLoading(true);
 
     try {
       await login({ email, password });
@@ -34,28 +33,21 @@ export function EnhancedLoginForm() {
       console.error('Login error:', err);
       // Better error messages
       if (err.message?.includes('verification')) {
-        setError('Please verify your email before logging in. Check your inbox for the verification link.');
+        handleError('Please verify your email before logging in. Check your inbox for the verification link.');
       } else if (err.message?.includes('invalid') || err.message?.includes('credentials')) {
-        setError('Invalid email or password. Please try again.');
+        handleError('Invalid email or password. Please try again.');
       } else {
-        setError(err.message || 'Unable to log in. Please try again.');
+        handleError(err.message || 'Unable to log in. Please try again.');
       }
-      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-card-foreground">Log in to your account</h2>
-      </div>
-
-      {error && (
-        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-md text-sm">
-          {error}
-        </div>
-      )}
-
+    <AuthFormWrapper
+      title="Log in to your account"
+      error={error}
+      isLoading={isLoading}
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">E-mail</Label>
@@ -107,7 +99,7 @@ export function EnhancedLoginForm() {
           {isLoading ? 'Logging in...' : 'Log in'}
         </Button>
       </form>
-    </div>
+    </AuthFormWrapper>
   );
 }
 
