@@ -25,8 +25,7 @@ import { FilePreviewCard } from './FilePreviewCard';
 import { Upload, FileText, Image as ImageIcon, Clock, Loader2, CheckCircle, XCircle, X } from 'lucide-react';
 import { generatePDFThumbnail } from './pdfThumbnail';
 import { DEBOUNCE_DELAY_MS, SECONDS_PER_MINUTE } from '../shared/constants/timing';
-// TODO: Re-enable when ready - see docs/FILE_UPLOAD_TODOS.md
-// import { CostCalculatorWidget } from './CostCalculatorWidget';
+// CostCalculatorWidget moved to docs/FILE_UPLOAD_TODOS.md for future reference
 
 // Upload queue item interface
 interface UploadQueueItem {

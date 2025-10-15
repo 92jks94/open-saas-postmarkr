@@ -22,32 +22,34 @@ model User {
   credits                       Int                  @default(3)
   contactFormMessages           ContactFormMessage[]
   files                         File[]
-  gptResponses                  GptResponse[]
+  // gptResponses                  GptResponse[]  // MOVED TO src/unused/demo-ai-app/
   mailAddresses                 MailAddress[]
   mailPieces                    MailPiece[]
-  tasks                         Task[]
+  // tasks                         Task[]  // MOVED TO src/unused/demo-ai-app/
   notifications                 Notification[]
   notificationPreferences       NotificationPreferences?
 }
 
-model GptResponse {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  content   String
-  user      User     @relation(fields: [userId], references: [id])
-}
+// MOVED TO src/unused/demo-ai-app/ FOR FUTURE USE
+// TODO: Re-enable when demo AI features are needed
+// model GptResponse {
+//   id        String   @id @default(uuid())
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+//   userId    String
+//   content   String
+//   user      User     @relation(fields: [userId], references: [id])
+// }
 
-model Task {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  userId      String
-  description String
-  time        String   @default("1")
-  isDone      Boolean  @default(false)
-  user        User     @relation(fields: [userId], references: [id])
-}
+// model Task {
+//   id          String   @id @default(uuid())
+//   createdAt   DateTime @default(now())
+//   userId      String
+//   description String
+//   time        String   @default("1")
+//   isDone      Boolean  @default(false)
+//   user        User     @relation(fields: [userId], references: [id])
+// }
 
 model File {
   id               String      @id @default(uuid())

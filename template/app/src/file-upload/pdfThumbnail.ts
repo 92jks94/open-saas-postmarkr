@@ -47,7 +47,11 @@ export async function generatePDFThumbnail(file: File): Promise<PDFPreviewData> 
   canvas.height = viewport.height;
   canvas.width = viewport.width;
   
-  await page.render({ canvasContext: context, viewport }).promise;
+  await page.render({ 
+    canvasContext: context, 
+    viewport,
+    canvas: canvas
+  }).promise;
   
   // Use 85% JPEG quality for sharp, professional-looking thumbnails
   // Balance between quality (no pixelation) and file size (fast upload)

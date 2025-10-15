@@ -2665,10 +2665,10 @@ model User {
   sendEmail                 Boolean         @default(false)
   datePaid                  DateTime?
   credits                   Int             @default(3)
-  gptResponses              GptResponse[]
+  // gptResponses              GptResponse[]  // MOVED TO docs/unused-demo-ai-app/
   contactFormMessages       ContactFormMessage[]
-  tasks                     Task[]
-  files                     File[] 
+  // tasks                     Task[]  // MOVED TO docs/unused-demo-ai-app/
+  files                     File[]  
 }
 ```
 

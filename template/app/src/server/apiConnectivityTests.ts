@@ -6,7 +6,8 @@
 
 import Stripe from 'stripe';
 import { S3Client, ListBucketsCommand } from '@aws-sdk/client-s3';
-import { OpenAI } from 'openai';
+// OpenAI removed - demo features disabled
+// import { OpenAI } from 'openai';
 import * as Sentry from '@sentry/node';
 import { SENTRY_FLUSH_TIMEOUT_MS } from './constants/resilience';
 import { lob } from './lob/client';
@@ -229,47 +230,47 @@ export async function testAwsS3Connectivity(): Promise<ApiTestResult> {
 }
 
 /**
- * Tests OpenAI API connectivity
+ * Tests OpenAI API connectivity - DISABLED (demo features removed)
  */
-export async function testOpenAIConnectivity(): Promise<ApiTestResult> {
-  const startTime = Date.now();
-  
-  try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return {
-        service: 'openai',
-        status: 'unknown',
-        error: 'OpenAI API key not configured (optional service)'
-      };
-    }
-
-    const openai = new OpenAI({
-      apiKey,
-    });
-
-    // Test API connectivity with a simple model list
-    await openai.models.list();
-    
-    const responseTime = Date.now() - startTime;
-    
-    return {
-      service: 'openai',
-      status: 'healthy',
-      responseTime,
-      details: {
-        keyPrefix: apiKey.substring(0, 8) + '...'
-      }
-    };
-  } catch (error: any) {
-    return {
-      service: 'openai',
-      status: 'unhealthy',
-      responseTime: Date.now() - startTime,
-      error: error.message || 'OpenAI API test failed'
-    };
-  }
-}
+// export async function testOpenAIConnectivity(): Promise<ApiTestResult> {
+//   const startTime = Date.now();
+//   
+//   try {
+//     const apiKey = process.env.OPENAI_API_KEY;
+//     if (!apiKey) {
+//       return {
+//         service: 'openai',
+//         status: 'unknown',
+//         error: 'OpenAI API key not configured (optional service)'
+//       };
+//     }
+//
+//     const openai = new OpenAI({
+//       apiKey,
+//     });
+//
+//     // Test API connectivity with a simple model list
+//     await openai.models.list();
+//     
+//     const responseTime = Date.now() - startTime;
+//     
+//     return {
+//       service: 'openai',
+//       status: 'healthy',
+//       responseTime,
+//       details: {
+//         keyPrefix: apiKey.substring(0, 8) + '...'
+//       }
+//     };
+//   } catch (error: any) {
+//     return {
+//       service: 'openai',
+//       status: 'unhealthy',
+//       responseTime: Date.now() - startTime,
+//       error: error.message || 'OpenAI API test failed'
+//     };
+//   }
+// }
 
 /**
  * Tests Google Analytics API connectivity
@@ -397,7 +398,7 @@ export async function runAllConnectivityTests(): Promise<ConnectivityTestResults
     testSendGridConnectivity,
     testLobConnectivity,
     testAwsS3Connectivity,
-    testOpenAIConnectivity,
+    // testOpenAIConnectivity, // DISABLED - demo features removed
     testGoogleAnalyticsConnectivity,
     testSentryConnectivity,
   ];

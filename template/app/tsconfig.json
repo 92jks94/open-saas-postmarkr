@@ -23,7 +23,8 @@
     "types": ["jest"],
     "skipLibCheck": true,
     "allowJs": true,
-    "outDir": ".wasp/out/user"
+    "outDir": ".wasp/out/user",
+    "incremental": true
   },
   "include": ["src"]
 }

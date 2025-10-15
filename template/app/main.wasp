@@ -157,32 +157,33 @@ action updateIsUserAdminById {
 }
 //#endregion
 
-//#region Demo AI App
-route DemoAppRoute { path: "/demo-app", to: DemoAppPage }
-page DemoAppPage {
-  authRequired: true,
-  component: import DemoAppPage from "@src/demo-ai-app/DemoAppPage"
-}
+//#region Demo AI App - MOVED TO src/unused/demo-ai-app/ FOR FUTURE USE
+// TODO: Re-enable demo AI features when needed
+// route DemoAppRoute { path: "/demo-app", to: DemoAppPage }
+// page DemoAppPage {
+//   authRequired: true,
+//   component: import DemoAppPage from "@src/unused/demo-ai-app/DemoAppPage"
+// }
 
-action generateGptResponse {
-  fn: import { generateGptResponse } from "@src/demo-ai-app/operations",
-  entities: [User, Task, GptResponse]
-}
+// action generateGptResponse {
+//   fn: import { generateGptResponse } from "@src/unused/demo-ai-app/operations",
+//   entities: [User, Task, GptResponse]
+// }
 
-action createTask {
-  fn: import { createTask } from "@src/demo-ai-app/operations",
-  entities: [Task]
-}
+// action createTask {
+//   fn: import { createTask } from "@src/unused/demo-ai-app/operations",
+//   entities: [Task]
+// }
 
-action deleteTask {
-  fn: import { deleteTask } from "@src/demo-ai-app/operations",
-  entities: [Task]
-}
+// action deleteTask {
+//   fn: import { deleteTask } from "@src/unused/demo-ai-app/operations",
+//   entities: [Task]
+// }
 
-action updateTask {
-  fn: import { updateTask } from "@src/demo-ai-app/operations",
-  entities: [Task]
-}
+// action updateTask {
+//   fn: import { updateTask } from "@src/unused/demo-ai-app/operations",
+//   entities: [Task]
+// }
 
 // Sentry test operations
 action testSentryError {
@@ -195,15 +196,15 @@ action testSentryMessage {
   entities: [User]
 }
 
-query getGptResponses {
-  fn: import { getGptResponses } from "@src/demo-ai-app/operations",
-  entities: [User, GptResponse]
-}
+// query getGptResponses {
+//   fn: import { getGptResponses } from "@src/unused/demo-ai-app/operations",
+//   entities: [User, GptResponse]
+// }
 
-query getAllTasksByUser {
-  fn: import { getAllTasksByUser } from "@src/demo-ai-app/operations",
-  entities: [Task]
-}
+// query getAllTasksByUser {
+//   fn: import { getAllTasksByUser } from "@src/unused/demo-ai-app/operations",
+//   entities: [Task]
+// }
 //#endregion
 
 //#region Payment
@@ -625,15 +626,13 @@ api webhookEvents {
 }
 
 
-//#region Contact Form Messages
-// TODO:
-// add functionality to allow users to send messages to admin
-// and make them accessible via the admin dashboard
-route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }     
-page AdminMessagesPage {
-  authRequired: true,
-  component: import AdminMessages from "@src/admin/dashboards/messages/MessagesPage"
-}
+//#region Contact Form Messages - REMOVED
+// TODO: Re-implement messages feature when needed
+// route AdminMessagesRoute { path: "/admin/messages", to: AdminMessagesPage }     
+// page AdminMessagesPage {
+//   authRequired: true,
+//   component: import AdminMessages from "@src/admin/dashboards/messages/MessagesPage"
+// }
 //#endregion
 
 

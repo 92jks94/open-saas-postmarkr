@@ -1,6 +1,7 @@
 import { type AuthUser } from 'wasp/auth';
 import { cn } from '../../lib/utils';
-import MessageButton from '../dashboards/messages/MessageButton';
+// MessageButton removed - messages feature disabled
+// import MessageButton from '../dashboards/messages/MessageButton';
 import UserDropdown from '../../user/UserDropdown';
 
 const Header = (props: {
@@ -74,8 +75,8 @@ const Header = (props: {
         </div>
 
         <ul className='flex items-center gap-2 2xsm:gap-4'>
-          {/* <!-- Chat Notification Area --> */}
-          <MessageButton />
+          {/* <!-- Chat Notification Area - DISABLED --> */}
+          {/* <MessageButton /> */}
           {/* <!-- Chat Notification Area --> */}
         </ul>
 
