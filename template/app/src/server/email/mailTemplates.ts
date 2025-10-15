@@ -793,3 +793,291 @@ Postmarkr - Physical Mail Made Simple
   };
 }
 
+/**
+ * Get mailed email template
+ * Sent when mail is handed off to USPS
+ */
+export function getMailedEmail(data: {
+  userName: string;
+  mailType: string;
+  recipientAddress: MailAddress;
+  trackingUrl: string;
+  expectedDeliveryDate?: Date;
+}): { subject: string; text: string; html: string } {
+  const { userName, mailType, recipientAddress, trackingUrl, expectedDeliveryDate } = data;
+  const mailTypeDisplay = getMailTypeDisplay(mailType);
+  
+  // Convert address to email format
+  const recipientForEmail = convertMailAddressForEmail(recipientAddress);
+
+  const text = `
+Hi ${userName},
+
+Great news! Your ${mailTypeDisplay.toLowerCase()} has been mailed and is now in the hands of USPS.
+
+MAIL DETAILS
+------------
+Mail Type: ${mailTypeDisplay}
+${formatAddressText(recipientForEmail, 'To')}
+
+${expectedDeliveryDate ? `Expected Delivery: ${formatDate(expectedDeliveryDate)}` : ''}
+
+NEXT STEPS
+----------
+1. Your mail is now in USPS hands
+2. It will be processed through their network
+3. We'll notify you when it's in transit
+
+Track your mail: ${trackingUrl}
+
+Thank you for using Postmarkr!
+
+---
+Postmarkr - Physical Mail Made Simple
+  `;
+
+  const bodyContent = `
+    <div class="icon">📮</div>
+    
+    <p>Hi ${userName},</p>
+    
+    <p>Great news! Your ${mailTypeDisplay.toLowerCase()} has been mailed and is now in the hands of USPS.</p>
+    
+    ${createDetailSection('📬 Mail Details', EmailColors.success, `
+      <div class="detail-row"><span class="detail-label">Mail Type:</span> ${mailTypeDisplay}</div>
+      ${formatAddressHtml(recipientForEmail, 'To', EmailColors.success)}
+      ${expectedDeliveryDate ? `
+        <div class="detail-row">
+          <span class="detail-label">Expected Delivery:</span> 
+          <span class="highlight">${formatDate(expectedDeliveryDate)}</span>
+        </div>
+      ` : ''}
+    `)}
+    
+    ${createDetailSection('📋 Next Steps', EmailColors.success, `
+      <ol style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Your mail is now in USPS hands</li>
+        <li style="margin-bottom: 8px;">It will be processed through their network</li>
+        <li style="margin-bottom: 8px;">We'll notify you when it's in transit</li>
+      </ol>
+    `)}
+    
+    ${createCtaButton(trackingUrl, 'Track Your Mail', EmailColors.success)}
+    
+    <p style="margin-top: 30px; font-size: 14px; color: #6B7280;">
+      Thank you for using Postmarkr! We'll notify you with updates as your mail progresses.
+    </p>
+  `;
+
+  const html = createEmailTemplate({
+    headerTitle: 'Mail Sent!',
+    headerColor: EmailColors.success,
+    headerIcon: '📮',
+    bodyContent
+  });
+
+  return {
+    subject: `📮 Your ${mailTypeDisplay} Has Been Mailed`,
+    text,
+    html
+  };
+}
+
+/**
+ * Get processed for delivery email template
+ * Sent when mail reaches destination facility
+ */
+export function getProcessedForDeliveryEmail(data: {
+  userName: string;
+  mailType: string;
+  recipientAddress: MailAddress;
+  trackingUrl: string;
+  expectedDeliveryDate?: Date;
+  location?: string;
+}): { subject: string; text: string; html: string } {
+  const { userName, mailType, recipientAddress, trackingUrl, expectedDeliveryDate, location } = data;
+  const mailTypeDisplay = getMailTypeDisplay(mailType);
+  
+  // Convert address to email format
+  const recipientForEmail = convertMailAddressForEmail(recipientAddress);
+
+  const text = `
+Hi ${userName},
+
+Exciting news! Your ${mailTypeDisplay.toLowerCase()} has arrived at the destination facility and is being processed for delivery.
+
+DELIVERY STATUS
+---------------
+Status: At Destination Facility
+${formatAddressText(recipientForEmail, 'To')}
+
+${location ? `Current Location: ${location}` : ''}
+${expectedDeliveryDate ? `Expected Delivery: ${formatDate(expectedDeliveryDate)}` : 'Should arrive within 1 business day'}
+
+Track your mail: ${trackingUrl}
+
+Your mail should be delivered very soon!
+
+---
+Postmarkr - Physical Mail Made Simple
+  `;
+
+  const bodyContent = `
+    <div class="icon">📍</div>
+    
+    <p>Hi ${userName},</p>
+    
+    <p>Exciting news! Your ${mailTypeDisplay.toLowerCase()} has arrived at the destination facility and is being processed for delivery.</p>
+    
+    ${createDetailSection('📬 Delivery Status', EmailColors.warning, `
+      <div class="detail-row"><span class="detail-label">Status:</span> <span class="highlight">At Destination Facility</span></div>
+      <div class="detail-row"><span class="detail-label">Mail Type:</span> ${mailTypeDisplay}</div>
+      ${formatAddressHtml(recipientForEmail, 'To', EmailColors.warning)}
+      ${location ? `
+        <div class="detail-row">
+          <span class="detail-label">Current Location:</span> 
+          <span class="highlight">${location}</span>
+        </div>
+      ` : ''}
+      ${expectedDeliveryDate ? `
+        <div class="detail-row">
+          <span class="detail-label">Expected Delivery:</span> 
+          <span class="highlight">${formatDate(expectedDeliveryDate)}</span>
+        </div>
+      ` : `
+        <div class="detail-row">
+          <span class="detail-label">Delivery Timeline:</span> 
+          <span class="highlight">Should arrive within 1 business day</span>
+        </div>
+      `}
+    `)}
+    
+    ${createDetailSection('🎯 Almost There!', EmailColors.warning, `
+      <ul style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Your mail is at the final destination facility</li>
+        <li style="margin-bottom: 8px;">It will be sorted and prepared for delivery</li>
+        <li style="margin-bottom: 8px;">You'll get a final notification when delivered</li>
+      </ul>
+    `)}
+    
+    ${createCtaButton(trackingUrl, 'Track Delivery', EmailColors.warning)}
+    
+    <p style="margin-top: 30px; font-size: 14px; color: #6B7280;">
+      Thank you for using Postmarkr! We'll notify you when your mail is delivered.
+    </p>
+  `;
+
+  const html = createEmailTemplate({
+    headerTitle: 'Almost There!',
+    headerColor: EmailColors.warning,
+    headerIcon: '📍',
+    bodyContent
+  });
+
+  return {
+    subject: `📍 Your ${mailTypeDisplay} is Almost There!`,
+    text,
+    html
+  };
+}
+
+/**
+ * Get re-routed email template
+ * Sent when mail is re-routed due to address changes
+ */
+export function getReRoutedEmail(data: {
+  userName: string;
+  mailType: string;
+  recipientAddress: MailAddress;
+  trackingUrl: string;
+  reason?: string;
+}): { subject: string; text: string; html: string } {
+  const { userName, mailType, recipientAddress, trackingUrl, reason } = data;
+  const mailTypeDisplay = getMailTypeDisplay(mailType);
+  
+  // Convert address to email format
+  const recipientForEmail = convertMailAddressForEmail(recipientAddress);
+
+  const text = `
+Hi ${userName},
+
+Your ${mailTypeDisplay.toLowerCase()} has been re-routed due to address changes or corrections.
+
+MAIL STATUS
+-----------
+Status: Re-Routed
+${formatAddressText(recipientForEmail, 'To')}
+
+${reason ? `Reason: ${reason}` : 'This typically happens when USPS has updated address information.'}
+
+WHAT THIS MEANS
+---------------
+• Re-routing is normal and happens automatically
+• USPS ensures your mail reaches the correct address
+• Your mail will continue to its destination
+• You'll still receive delivery confirmation
+
+Track your mail: ${trackingUrl}
+
+Don't worry - this is normal and your mail will still be delivered to the correct address.
+
+---
+Postmarkr - Physical Mail Made Simple
+  `;
+
+  const bodyContent = `
+    <div class="icon">🔄</div>
+    
+    <p>Hi ${userName},</p>
+    
+    <p>Your ${mailTypeDisplay.toLowerCase()} has been re-routed due to address changes or corrections.</p>
+    
+    ${createDetailSection('📬 Mail Status', EmailColors.primary, `
+      <div class="detail-row"><span class="detail-label">Status:</span> <span class="highlight">Re-Routed</span></div>
+      <div class="detail-row"><span class="detail-label">Mail Type:</span> ${mailTypeDisplay}</div>
+      ${formatAddressHtml(recipientForEmail, 'To', EmailColors.primary)}
+      ${reason ? `
+        <div class="detail-row">
+          <span class="detail-label">Reason:</span> 
+          <span class="highlight">${reason}</span>
+        </div>
+      ` : ''}
+    `)}
+    
+    ${createDetailSection('✅ Don\'t Worry!', EmailColors.primary, `
+      <ul style="margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">Re-routing is normal and happens automatically</li>
+        <li style="margin-bottom: 8px;">USPS ensures your mail reaches the correct address</li>
+        <li style="margin-bottom: 8px;">Your mail will continue to its destination</li>
+        <li style="margin-bottom: 8px;">You'll still receive delivery confirmation</li>
+      </ul>
+    `)}
+    
+    ${createDetailSection('💡 Why Does This Happen?', EmailColors.primary, `
+      <p style="margin: 0; color: #4B5563; font-size: 14px;">
+        USPS automatically re-routes mail when they have updated address information, 
+        ensuring your mail reaches the correct destination even if the address has changed.
+      </p>
+    `)}
+    
+    ${createCtaButton(trackingUrl, 'Track Re-Routing', EmailColors.primary)}
+    
+    <p style="margin-top: 30px; font-size: 14px; color: #6B7280;">
+      Thank you for using Postmarkr! Questions? We're here to help.
+    </p>
+  `;
+
+  const html = createEmailTemplate({
+    headerTitle: 'Mail Re-Routed',
+    headerColor: EmailColors.primary,
+    headerIcon: '🔄',
+    bodyContent
+  });
+
+  return {
+    subject: `🔄 Your ${mailTypeDisplay} Has Been Re-Routed`,
+    text,
+    html
+  };
+}
+

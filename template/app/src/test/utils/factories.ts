@@ -234,6 +234,11 @@ export const createMailPieceStatusHistory = (
   description: faker.lorem.sentence(),
   source: 'system',
   lobData: null,
+  expectedDeliveryDate: null,
+  actualDeliveryDate: null,
+  carrier: null,
+  location: null,
+  daysInTransit: null,
   ...overrides,
 });
 

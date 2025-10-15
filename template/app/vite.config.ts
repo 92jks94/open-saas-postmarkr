@@ -14,7 +14,7 @@ export default defineConfig({
         drop_console: true, // Remove console.log in production
         drop_debugger: true,
       },
-    },
+    } as any, // Type assertion to fix TypeScript error
     // Optimize chunk splitting
     rollupOptions: {
       output: {

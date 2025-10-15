@@ -100,6 +100,13 @@ export const lobWebhookStatusSchema = z.object({
   lobStatus: z.string().optional(),
   lobTrackingNumber: z.string().optional(),
   lobData: z.any().optional(),
+  trackingData: z.object({
+    expectedDeliveryDate: z.date().optional(),
+    actualDeliveryDate: z.date().optional(),
+    carrier: z.string().optional(),
+    location: z.string().optional(),
+    daysInTransit: z.number().optional(),
+  }).optional(),
 });
 
 /**

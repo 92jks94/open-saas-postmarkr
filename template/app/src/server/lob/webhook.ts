@@ -2,6 +2,7 @@ import { type MiddlewareConfigFn, HttpError } from 'wasp/server';
 import { updateMailPieceStatus } from '../../mail/operations';
 import { emailSender } from 'wasp/server/email';
 import { handleMailStatusChangeEmail } from '../email/mailNotifications';
+import { createMailStatusNotification } from '../notifications/notificationService';
 import express from 'express';
 import crypto from 'crypto';
 import { requireNodeEnvVar } from '../utils';
@@ -152,7 +153,7 @@ export const lobWebhook = async (request: express.Request, response: express.Res
 
     // Parse payload
     const payload = JSON.parse(rawBody);
-    const { id, status, tracking_number, object } = payload;
+    const { id, status, tracking_number, object, expected_delivery_date, carrier, location, tracking_events } = payload;
 
     webhookId = `webhook_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     lobId = id;
@@ -161,6 +162,15 @@ export const lobWebhook = async (request: express.Request, response: express.Res
     if (!lobId) {
       throw new HttpError(400, 'Missing required webhook data: id');
     }
+
+    // Extract tracking data from payload
+    const trackingData = {
+      expectedDeliveryDate: expected_delivery_date ? new Date(expected_delivery_date) : undefined,
+      actualDeliveryDate: status === 'delivered' ? new Date() : undefined,
+      carrier: carrier || 'USPS',
+      location: location,
+      daysInTransit: tracking_events ? tracking_events.length : undefined,
+    };
 
     // Check for duplicate processing (idempotency)
     const existingStatus = await context.entities.MailPieceStatusHistory.findFirst({
@@ -201,6 +211,7 @@ export const lobWebhook = async (request: express.Request, response: express.Res
       lobStatus: internalStatus,
       lobTrackingNumber: tracking_number,
       lobData: payload,
+      trackingData,
     }, context);
 
     // Send status change email if applicable
@@ -209,11 +220,27 @@ export const lobWebhook = async (request: express.Request, response: express.Res
         updatedMailPiece.id,
         internalStatus,
         previousStatus,
-        context
+        context,
+        trackingData
       );
     } catch (emailError) {
       console.error(`Error sending status change email for ${lobId}:`, emailError);
       // Don't fail the webhook if email fails
+    }
+
+    // Create in-app notification if applicable
+    try {
+      await createMailStatusNotification(
+        updatedMailPiece.userId,
+        updatedMailPiece.id,
+        internalStatus,
+        previousStatus,
+        trackingData,
+        context
+      );
+    } catch (notificationError) {
+      console.error(`Error creating in-app notification for ${lobId}:`, notificationError);
+      // Don't fail the webhook if notification fails
     }
 
     // Update metrics

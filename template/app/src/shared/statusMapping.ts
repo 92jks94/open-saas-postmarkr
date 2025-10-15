@@ -9,6 +9,8 @@ export const LOB_STATUS_MAPPING = {
   'returned_to_sender': 'returned',
   're-routed': 'in_transit',
   'in_transit': 'in_transit',
+  'processed_for_delivery': 'in_local_area',
+  'in_local_area': 'in_local_area',
   'processing': 'submitted',
   'printed': 'submitted',
   'mailed': 'submitted',

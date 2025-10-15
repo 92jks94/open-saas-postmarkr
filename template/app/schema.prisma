@@ -226,15 +226,21 @@ model MailPiece {
 }
 
 model MailPieceStatusHistory {
-  id             String    @id @default(uuid())
-  createdAt      DateTime  @default(now())
-  mailPieceId    String
-  status         String
-  previousStatus String?
-  description    String?
-  source         String    @default("system")
-  lobData        Json?
-  mailPiece      MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(uuid())
+  createdAt            DateTime  @default(now())
+  mailPieceId          String
+  status               String
+  previousStatus       String?
+  description          String?
+  source               String    @default("system")
+  lobData              Json?
+  // Enhanced tracking data from Lob webhooks
+  expectedDeliveryDate DateTime?
+  actualDeliveryDate   DateTime?
+  carrier              String?
+  location             String?
+  daysInTransit        Int?
+  mailPiece            MailPiece @relation(fields: [mailPieceId], references: [id], onDelete: Cascade)
 
   @@index([mailPieceId, createdAt])
   @@index([status])
@@ -262,21 +268,29 @@ model Notification {
 }
 
 model NotificationPreferences {
-  id                  String   @id @default(uuid())
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  userId              String   @unique
-  emailEnabled        Boolean  @default(true)
-  emailStatusChanges  Boolean  @default(true)
-  emailDeliveries     Boolean  @default(true)
-  emailFailures       Boolean  @default(true)
-  emailPayments       Boolean  @default(true)
-  inAppEnabled        Boolean  @default(true)
-  inAppStatusChanges  Boolean  @default(true)
-  inAppDeliveries     Boolean  @default(true)
-  inAppFailures       Boolean  @default(true)
-  inAppPayments       Boolean  @default(true)
-  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                        String   @id @default(uuid())
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  userId                    String   @unique
+  emailEnabled              Boolean  @default(true)
+  emailStatusChanges         Boolean  @default(true)
+  emailDeliveries            Boolean  @default(true)
+  emailFailures              Boolean  @default(true)
+  emailPayments              Boolean  @default(true)
+  // Enhanced granular email preferences
+  emailMailed                Boolean  @default(true)
+  emailProcessedForDelivery Boolean  @default(true)
+  emailReRouted              Boolean  @default(true)
+  inAppEnabled               Boolean  @default(true)
+  inAppStatusChanges         Boolean  @default(true)
+  inAppDeliveries            Boolean  @default(true)
+  inAppFailures              Boolean  @default(true)
+  inAppPayments              Boolean  @default(true)
+  // Enhanced granular in-app preferences
+  inAppMailed                Boolean  @default(true)
+  inAppProcessedForDelivery  Boolean  @default(true)
+  inAppReRouted              Boolean  @default(true)
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

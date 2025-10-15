@@ -363,6 +363,13 @@ type UpdateMailPieceStatusInput = {
   lobStatus?: string;
   lobTrackingNumber?: string;
   lobData?: any;
+  trackingData?: {
+    expectedDeliveryDate?: Date;
+    actualDeliveryDate?: Date;
+    carrier?: string;
+    location?: string;
+    daysInTransit?: number;
+  };
 };
 
 export const updateMailPieceStatus: UpdateMailPieceStatus<UpdateMailPieceStatusInput, MailPiece> = async (args, context) => {
@@ -397,7 +404,7 @@ export const updateMailPieceStatus: UpdateMailPieceStatus<UpdateMailPieceStatusI
       },
     });
 
-    // Create status history entry
+    // Create status history entry with enhanced tracking data
     await context.entities.MailPieceStatusHistory.create({
       data: {
         mailPieceId: mailPiece.id,
@@ -406,6 +413,11 @@ export const updateMailPieceStatus: UpdateMailPieceStatus<UpdateMailPieceStatusI
         description: `Status updated from Lob: ${validatedInput.lobStatus}`,
         source: 'webhook',
         lobData: validatedInput.lobData,
+        expectedDeliveryDate: validatedInput.trackingData?.expectedDeliveryDate,
+        actualDeliveryDate: validatedInput.trackingData?.actualDeliveryDate,
+        carrier: validatedInput.trackingData?.carrier,
+        location: validatedInput.trackingData?.location,
+        daysInTransit: validatedInput.trackingData?.daysInTransit,
       },
     });
 

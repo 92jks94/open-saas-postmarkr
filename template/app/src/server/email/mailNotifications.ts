@@ -5,6 +5,7 @@
  * It fetches necessary data from the database and sends formatted emails.
  */
 
+import { shouldSendNotification } from '../notifications/notificationService';
 import { emailSender } from 'wasp/server/email';
 import type { MailPiece, MailAddress, User } from 'wasp/entities';
 import {
@@ -15,6 +16,9 @@ import {
   getDeliveryFailedEmail,
   getPaymentFailedEmail,
   getWelcomeEmail,
+  getMailedEmail,
+  getProcessedForDeliveryEmail,
+  getReRoutedEmail,
 } from './mailTemplates';
 
 interface MailPieceWithRelations extends MailPiece {
@@ -316,17 +320,34 @@ export async function fetchMailPieceForEmail(
 
 /**
  * Determine which email to send based on status change
+ * Now includes preference checking and all tracking events
  */
 export async function handleMailStatusChangeEmail(
   mailPieceId: string,
   newStatus: string,
   previousStatus: string,
-  context: any
+  context: any,
+  trackingData?: {
+    expectedDeliveryDate?: Date;
+    actualDeliveryDate?: Date;
+    carrier?: string;
+    location?: string;
+    daysInTransit?: number;
+  }
 ): Promise<void> {
   const mailPiece = await fetchMailPieceForEmail(mailPieceId, context);
   
   if (!mailPiece) {
     console.error('Cannot send status change email: mail piece not found', { mailPieceId });
+    return;
+  }
+
+  // Check user preferences before sending email
+  const notificationType = getNotificationTypeForStatus(newStatus);
+  const shouldSend = await shouldSendNotification(mailPiece.userId, notificationType, context);
+  
+  if (!shouldSend.email) {
+    console.log(`Email notification skipped for ${mailPieceId}: user has disabled ${notificationType} emails`);
     return;
   }
 
@@ -339,8 +360,11 @@ export async function handleMailStatusChangeEmail(
       break;
       
     case 'in_transit':
-    case 'in_local_area':
       await sendInTransitEmail(mailPiece);
+      break;
+      
+    case 'in_local_area':
+      await sendProcessedForDeliveryEmail(mailPiece, trackingData);
       break;
       
     case 'delivered':
@@ -359,5 +383,51 @@ export async function handleMailStatusChangeEmail(
       // No email needed for other status changes
       break;
   }
+}
+
+/**
+ * Get notification type based on mail status
+ */
+function getNotificationTypeForStatus(status: string): string {
+  switch (status) {
+    case 'submitted':
+      return 'mail_mailed';
+    case 'in_transit':
+      return 'mail_status_change';
+    case 'in_local_area':
+      return 'mail_processed_for_delivery';
+    case 'delivered':
+      return 'delivery_confirmation';
+    case 'failed':
+    case 'returned':
+      return 'delivery_failed';
+    default:
+      return 'mail_status_change';
+  }
+}
+
+/**
+ * Send processed for delivery email
+ */
+async function sendProcessedForDeliveryEmail(
+  mailPiece: MailPieceWithRelations,
+  trackingData?: {
+    expectedDeliveryDate?: Date;
+    location?: string;
+  }
+): Promise<void> {
+  await sendMailEmail(
+    mailPiece,
+    getProcessedForDeliveryEmail,
+    {
+      userName: getUserName(mailPiece.user),
+      mailType: mailPiece.mailType,
+      recipientAddress: mailPiece.recipientAddress,
+      trackingUrl: getTrackingUrl(mailPiece.id),
+      expectedDeliveryDate: trackingData?.expectedDeliveryDate,
+      location: trackingData?.location,
+    },
+    'processed for delivery'
+  );
 }
 

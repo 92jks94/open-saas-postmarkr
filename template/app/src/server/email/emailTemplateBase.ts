@@ -123,6 +123,9 @@ export const EmailColors = {
   warning: '#F59E0B',    // Amber - In transit, payment issues
   error: '#EF4444',      // Red - Failed delivery
   purple: '#7C3AED',     // Purple - Welcome email
+  green: '#10B981',      // Green - Mail sent
+  orange: '#F59E0B',     // Orange - Processed for delivery
+  blue: '#3B82F6',       // Blue - Re-routed
 } as const;
 
 /**
