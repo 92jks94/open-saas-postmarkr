@@ -151,7 +151,7 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
       await handleCreateTask({ description });
       setDescription('');
     } catch (err: any) {
-      window.alert('Error: ' + (err.message || 'Something went wrong'));
+      window.alert('Error creating task: ' + (err.message || 'Something went wrong. Please try again.'));
     }
   };
 
@@ -165,7 +165,7 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
         setResponse(response as unknown as GeneratedSchedule);
       }
     } catch (err: any) {
-      window.alert('Error: ' + (err.message || 'Something went wrong'));
+      window.alert('Error creating task: ' + (err.message || 'Something went wrong. Please try again.'));
     } finally {
       setIsPlanGenerating(false);
     }
@@ -201,7 +201,7 @@ function NewTaskForm({ handleCreateTask }: { handleCreateTask: typeof createTask
       </div>
 
       <div className='space-y-10 col-span-full'>
-        {isTasksLoading && <div className='text-muted-foreground'>Loading...</div>}
+        {isTasksLoading && <div className='text-muted-foreground'>Loading tasks...</div>}
         {tasks!! && tasks.length > 0 ? (
           <div className='space-y-4'>
             {tasks.map((task: Task) => (

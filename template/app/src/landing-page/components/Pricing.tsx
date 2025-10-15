@@ -3,6 +3,8 @@ import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { PRICING_TIERS } from '../../shared/constants/pricing';
+import { SPACING } from '../constants';
+import SectionHeader from './SectionHeader';
 
 // Build plans from centralized pricing constants
 const plans = [
@@ -55,24 +57,22 @@ const plans = [
 
 export default function Pricing() {
   return (
-    <section className='py-20 md:py-28 relative overflow-hidden'>
+    <section className={`${SPACING.SECTION_PADDING_LG} relative overflow-hidden`}>
       <div className='absolute inset-0 bg-gradient-subtle -z-10' />
 
       {/* Decorative gradient orbs */}
       <div className='absolute top-1/2 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl -translate-y-1/2' />
       <div className='absolute top-1/2 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-y-1/2' />
 
-      <div className='container mx-auto px-4 md:px-6 lg:px-8 relative z-10'>
-        <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='pricing-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
-            Simple, <span className='bg-gradient-primary bg-clip-text text-transparent'>transparent pricing</span>
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            Pay only for what you send. No subscriptions, no hidden fees.
-          </p>
-        </div>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING} relative z-10`}>
+        <SectionHeader
+          id="pricing-heading"
+          title="Simple,"
+          highlightedText="transparent pricing"
+          subtitle="Pay only for what you send. No subscriptions, no hidden fees."
+        />
 
-        <div className='grid md:grid-cols-3 gap-8 max-w-6xl mx-auto'>
+        <div className={`grid md:grid-cols-3 ${SPACING.GRID_GAP_LG} max-w-6xl mx-auto`}>
           {plans.map((plan, index) => (
             <Card
               key={plan.name}
@@ -89,7 +89,7 @@ export default function Pricing() {
               )}
 
               {/* Plan Header */}
-              <div className='text-center mb-8'>
+              <div className={`text-center ${SPACING.SUBHEADING_MARGIN}`}>
                 <h3 className='text-2xl font-bold mb-2'>{plan.name}</h3>
                 <div className='mb-1'>
                   <span className='text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent'>
@@ -102,7 +102,7 @@ export default function Pricing() {
               </div>
 
               {/* Features List */}
-              <ul className='space-y-3 mb-8'>
+              <ul className={`space-y-3 ${SPACING.SUBHEADING_MARGIN}`}>
                 {plan.features.map((feature) => (
                   <li key={feature} className='flex items-start gap-3'>
                     <div className='w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5'>

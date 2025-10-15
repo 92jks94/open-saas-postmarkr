@@ -50,7 +50,7 @@ function DetailedMailPieceView({ mailPieceId }: { mailPieceId: string }) {
   return (
     <div className="space-y-4">
       <Button onClick={loadDetailedData} disabled={isLoading} variant="outline">
-        {isLoading ? 'Loading...' : 'Load Detailed Information'}
+        {isLoading ? 'Loading mail details...' : 'Load Detailed Information'}
       </Button>
 
       {error && (

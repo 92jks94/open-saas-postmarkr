@@ -1,4 +1,5 @@
 import logo from '../../client/static/logo.png';
+import { SPACING } from '../constants';
 
 interface NavigationItem {
   name: string;
@@ -14,10 +15,10 @@ export default function Footer({
   };
 }) {
   return (
-    <div className='mx-auto mt-6 max-w-7xl px-4 md:px-6 lg:px-8'>
+    <div className={`mx-auto mt-6 max-w-7xl ${SPACING.CONTAINER_PADDING}`}>
       <footer
         aria-labelledby='footer-heading'
-        className='relative border-t border-border py-16 md:py-20 sm:mt-32'
+        className={`relative border-t border-border ${SPACING.SECTION_PADDING_LG} sm:mt-32`}
       >
         <h2 id='footer-heading' className='sr-only'>
           Footer

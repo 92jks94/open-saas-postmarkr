@@ -23,6 +23,17 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
   const mailPiece = row.original;
   const visibleCells = row.getVisibleCells();
 
+  // Debug logging for mail piece data
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[MailPieceCard] Mail piece data:', {
+      id: mailPiece.id,
+      description: mailPiece.description,
+      file: mailPiece.file?.name,
+      recipient: mailPiece.recipientAddress?.contactName || mailPiece.recipientAddress?.companyName,
+      mailType: mailPiece.mailType
+    });
+  }
+
   const handleEdit = () => {
     navigate(`/mail/create?edit=${mailPiece.id}`);
   };

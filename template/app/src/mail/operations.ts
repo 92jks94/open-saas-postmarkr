@@ -270,6 +270,25 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
       customerPrice = pricing.price / 100; // Convert cents to dollars
     }
 
+    // Generate default description if none provided
+    const generateDefaultDescription = async () => {
+      const file = validatedInput.fileId ? await context.entities.File.findFirst({
+        where: { id: validatedInput.fileId, userId: context.user!.id },
+      }) : null;
+      
+      if (file?.name) {
+        return `${file.name} to ${recipientAddress.contactName || recipientAddress.companyName || 'recipient'}`;
+      }
+      
+      if (recipientAddress.contactName || recipientAddress.companyName) {
+        return `Mail to ${recipientAddress.contactName || recipientAddress.companyName}`;
+      }
+      
+      return `Mail piece (${validatedInput.mailType})`;
+    };
+
+    const finalDescription = validatedInput.description || await generateDefaultDescription();
+
     // Create the mail piece
     const mailPiece = await context.entities.MailPiece.create({
       data: {
@@ -280,7 +299,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
         senderAddressId: validatedInput.senderAddressId,
         recipientAddressId: validatedInput.recipientAddressId,
         fileId: validatedInput.fileId,
-        description: validatedInput.description,
+        description: finalDescription,
         status: 'draft',
         paymentStatus: 'pending',
         pageCount: pageCount,

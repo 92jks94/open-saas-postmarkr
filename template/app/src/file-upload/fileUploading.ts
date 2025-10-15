@@ -43,7 +43,10 @@ export async function uploadFileWithProgress({
   });
   const { s3UploadUrl, s3UploadFields } = createFileResult;
 
+  // Create FormData for S3 upload
   const formData = getFileUploadFormData(file, s3UploadFields);
+  
+  // Track upload start time for metrics calculation
   const startTime = Date.now();
 
   // Wrap the upload in retry logic with exponential backoff

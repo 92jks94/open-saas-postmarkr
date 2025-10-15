@@ -1,8 +1,8 @@
 import { type AuthUser } from 'wasp/auth';
 import { FC, ReactNode, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
+import AccessDeniedPage from '../components/AccessDeniedPage';
 
 interface Props {
   user: AuthUser;
@@ -13,7 +13,7 @@ const DefaultLayout: FC<Props> = ({ children, user }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!user.isAdmin) {
-    return <Navigate to='/' replace />;
+    return <AccessDeniedPage />;
   }
 
   return (

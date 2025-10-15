@@ -118,9 +118,40 @@ export const createMailPieceColumns = (
     },
     cell: ({ row }) => {
       const description = row.getValue("description") as string | null;
+      const mailPiece = row.original;
+      
+      // Generate meaningful default description if none provided
+      const getDefaultDescription = () => {
+        const file = mailPiece.file;
+        const recipient = mailPiece.recipientAddress;
+        
+        // Debug logging
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[MailColumns] Generating default description:', {
+            mailPieceId: mailPiece.id,
+            description,
+            file: file?.name,
+            recipient: recipient?.contactName || recipient?.companyName,
+            mailType: mailPiece.mailType
+          });
+        }
+        
+        if (file?.name) {
+          return `${file.name} to ${recipient?.contactName || recipient?.companyName || 'recipient'}`;
+        }
+        
+        if (recipient?.contactName || recipient?.companyName) {
+          return `Mail to ${recipient.contactName || recipient.companyName}`;
+        }
+        
+        return `Mail piece (${mailPiece.mailType})`;
+      };
+      
+      const finalDescription = description || getDefaultDescription();
+      
       return (
         <div className="font-medium text-foreground">
-          {description || 'Untitled Mail Piece'}
+          {finalDescription}
         </div>
       );
     },

@@ -65,6 +65,14 @@ export const createFile: CreateFile<
 
   const validatedInput = ensureArgsSchemaOrThrowHttpError(createFileInputSchema, rawArgs);
   const { fileType, fileName, fileSize } = validatedInput;
+  
+  // Ensure file size is always a number (default to 0 if not provided)
+  const finalFileSize = typeof fileSize === 'number' && fileSize >= 0 ? fileSize : 0;
+  
+  // Debug logging for file size
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[createFile] File size received: ${fileSize}, final: ${finalFileSize} for file: ${fileName}`);
+  }
 
   const { s3UploadUrl, s3UploadFields, key } = await getUploadFileSignedURLFromS3({
     fileType,
@@ -79,7 +87,7 @@ export const createFile: CreateFile<
       key,
       uploadUrl: s3UploadUrl,
       type: fileType,
-      size: fileSize, // Store file size from client
+      size: finalFileSize, // Store file size from client, ensuring it's always a number
       user: { connect: { id: context.user.id } },
       // Pre-populate page count if available (will be verified by background job)
       pageCount: validatedInput.previewPageCount,
@@ -169,7 +177,47 @@ export const getDownloadFileSignedURL: GetDownloadFileSignedURL<
     throw new HttpError(403, 'File not found or access denied');
   }
   
-  return await getDownloadFileSignedURLFromS3({ key });
+  try {
+    // First verify the file exists in S3 before generating signed URL
+    const s3Client = new S3Client({
+      region: process.env.AWS_S3_REGION || 'us-east-2',
+      credentials: {
+        accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
+        secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
+      },
+    });
+
+    const headCommand = new HeadObjectCommand({
+      Bucket: process.env.AWS_S3_FILES_BUCKET!,
+      Key: key,
+    });
+
+    // Check if file exists in S3
+    await s3Client.send(headCommand);
+    
+    // File exists, generate signed URL
+    return await getDownloadFileSignedURLFromS3({ key });
+  } catch (error: any) {
+    // If file doesn't exist in S3, mark it as invalid in database
+    if (error.name === 'NotFound' || error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      console.error(`[getDownloadFileSignedURL] File not found in S3: ${key}`);
+      
+      // Update file status to invalid
+      await context.entities.File.update({
+        where: { id: file.id },
+        data: {
+          validationStatus: 'invalid',
+          validationError: 'File not found in S3 storage. Upload may have failed.',
+        },
+      });
+      
+      throw new HttpError(404, 'File not found in storage. Please re-upload the file.');
+    }
+    
+    // Other S3 errors (permissions, network, etc.)
+    console.error(`[getDownloadFileSignedURL] S3 error for key ${key}:`, error);
+    throw new HttpError(500, 'Failed to access file storage. Please try again.');
+  }
 };
 
 const getThumbnailURLInputSchema = z.object({ 
@@ -304,10 +352,22 @@ export const verifyFileUpload: VerifyFileUpload<
 
     const response = await s3Client.send(headCommand);
 
-    // File exists, return success with file size
+    // File exists, update database with actual file size if different
+    const actualFileSize = response.ContentLength || 0;
+    if (actualFileSize !== file.size) {
+      await context.entities.File.update({
+        where: { id: fileId },
+        data: { size: actualFileSize }
+      });
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[verifyFileUpload] Updated file size for ${fileId}: ${file.size} -> ${actualFileSize} bytes`);
+      }
+    }
+    
     return {
       exists: true,
-      fileSize: response.ContentLength,
+      fileSize: actualFileSize,
     };
   } catch (error: any) {
     // If we get a 404 or NoSuchKey error, the file doesn't exist
@@ -430,20 +490,26 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
     // Extract metadata using existing function
     const metadata = await extractPDFMetadataFromBuffer(pdfBuffer);
 
-    // Capture file size from S3 if not already set
-    const fileSize = file.size || pdfBuffer.length;
-
+    // Capture file size from S3 - always update to ensure accuracy
+    const actualFileSize = pdfBuffer.length;
+    const currentFileSize = file.size || 0;
+    
     // Update file with metadata and processing timestamp
     await context.entities.File.update({
       where: { id: fileId },
       data: {
         pageCount: metadata.pageCount,
         pdfMetadata: metadata,
-        size: fileSize, // Update size if missing
+        size: actualFileSize, // Always update with actual S3 file size
         validationStatus: 'valid',
         lastProcessedAt: new Date()
       }
     });
+    
+    // Log size update for debugging
+    if (process.env.NODE_ENV === 'development' && currentFileSize !== actualFileSize) {
+      console.log(`[processPDFMetadata] Updated file size for ${fileId}: ${currentFileSize} -> ${actualFileSize} bytes`);
+    }
 
     // Successfully processed
   } catch (error) {

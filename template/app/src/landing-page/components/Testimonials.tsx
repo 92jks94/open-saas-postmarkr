@@ -1,5 +1,8 @@
 import { Star } from 'lucide-react';
 import { Card } from '../../components/ui/card';
+import { SPACING, CARD_STYLES } from '../constants';
+import SectionHeader from './SectionHeader';
+import IconContainer from './IconContainer';
 
 const testimonials = [
   {
@@ -34,25 +37,24 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <section className='py-16 md:py-20 relative overflow-hidden'>
+    <section className={`${SPACING.SECTION_PADDING_LG} relative overflow-hidden`}>
       {/* Background gradient */}
       <div className='absolute inset-0 bg-gradient-to-b from-background via-muted/20 to-background -z-10' />
 
-      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
-        <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='testimonials-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
-            Loved by <span className='bg-gradient-accent bg-clip-text text-transparent'>thousands</span> worldwide
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            See what our customers have to say about Postmarkr
-          </p>
-        </div>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING}`}>
+        <SectionHeader
+          id="testimonials-heading"
+          title="Loved by"
+          highlightedText="thousands"
+          subtitle="See what our customers have to say about Postmarkr"
+          highlightType="accent"
+        />
 
-        <div className='grid md:grid-cols-2 gap-6 max-w-6xl mx-auto'>
+        <div className={`grid md:grid-cols-2 ${SPACING.GRID_GAP} max-w-6xl mx-auto`}>
           {testimonials.map((testimonial, index) => (
             <Card
               key={testimonial.author}
-              className='p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 animate-fade-in-up'
+              className={`${CARD_STYLES.WITH_ANIMATION}`}
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Star Rating */}
@@ -70,12 +72,13 @@ export default function Testimonials() {
 
               {/* Author */}
               <div className='flex items-center gap-4'>
-                <div className='w-12 h-12 rounded-full bg-gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-lg'>
-                  {testimonial.author
+                <IconContainer
+                  variant="avatar"
+                  children={testimonial.author
                     .split(' ')
                     .map((n) => n[0])
                     .join('')}
-                </div>
+                />
                 <div>
                   <div className='font-semibold'>{testimonial.author}</div>
                   <div className='text-sm text-muted-foreground'>{testimonial.role}</div>

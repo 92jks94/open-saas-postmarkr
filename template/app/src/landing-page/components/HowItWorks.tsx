@@ -1,5 +1,8 @@
 import { Upload, Mail, MapPin, PackageCheck } from 'lucide-react';
 import { Card } from '../../components/ui/card';
+import { SPACING, CARD_STYLES } from '../constants';
+import SectionHeader from './SectionHeader';
+import IconContainer from './IconContainer';
 
 const steps = [
   {
@@ -30,26 +33,24 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section className='py-20 md:py-24 relative overflow-hidden'>
+    <section className={`${SPACING.SECTION_PADDING_LG} relative overflow-hidden`}>
       <div className='absolute inset-0 bg-gradient-subtle -z-10' />
 
-      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
-        <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='workflow-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
-            How It <span className='bg-gradient-primary bg-clip-text text-transparent'>Works</span>
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            Send physical mail in four simple steps. No post office required.
-          </p>
-        </div>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING}`}>
+        <SectionHeader
+          id="workflow-heading"
+          title="How It"
+          highlightedText="Works"
+          subtitle="Send physical mail in four simple steps. No post office required."
+        />
 
-        <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto'>
+        <div className={`grid md:grid-cols-2 lg:grid-cols-4 ${SPACING.GRID_GAP} max-w-7xl mx-auto`}>
           {steps.map((step, index) => {
             const Icon = step.icon;
             return (
               <Card
                 key={step.number}
-                className='relative p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 group animate-fade-in-up'
+                className={`relative ${CARD_STYLES.GROUP}`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {/* Step Number */}
@@ -58,9 +59,13 @@ export default function HowItWorks() {
                 </div>
 
                 {/* Icon */}
-                <div className='w-14 h-14 rounded-xl bg-gradient-primary flex items-center justify-center mb-6 shadow-glow group-hover:scale-110 transition-transform'>
-                  <Icon className='w-7 h-7 text-primary-foreground' />
-                </div>
+                <IconContainer
+                  icon={Icon}
+                  variant="primary"
+                  size="sm"
+                  withHoverScale={true}
+                  className="mb-6"
+                />
 
                 {/* Content */}
                 <h3 className='text-lg md:text-xl font-semibold mb-3'>{step.title}</h3>

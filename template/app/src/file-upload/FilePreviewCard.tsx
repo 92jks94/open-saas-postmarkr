@@ -40,9 +40,9 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
   // Determine actual loading state: only show loading if query is enabled and loading
   const isActuallyLoadingThumbnail = isPDF && !!file.thumbnailKey && isThumbnailLoading;
 
-  // Debug logging for thumbnail issues
+  // Debug logging for thumbnail issues (only in development)
   useEffect(() => {
-    if (isPDF) {
+    if (isPDF && process.env.NODE_ENV === 'development') {
       console.log('PDF Thumbnail Debug:', {
         fileId: file.id,
         fileName: file.name,
@@ -162,6 +162,9 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
                     onError={() => {
                       // Set failed state to show icon fallback
                       setThumbnailFailed(true);
+                      if (process.env.NODE_ENV === 'development') {
+                        console.warn(`[FileThumbnail] Thumbnail failed to load for file ${file.id}: ${file.name}`);
+                      }
                     }}
                   />
                 ) : (
@@ -300,7 +303,7 @@ export function FilePreviewCard({ file, onDownload, onDelete, isDownloading }: F
             variant='outline'
             size='sm'
           >
-            {isDownloading ? 'Loading...' : 'Download'}
+            {isDownloading ? 'Downloading...' : 'Download'}
           </Button>
           <Button onClick={onDelete} variant='destructive' size='sm'>
             Delete

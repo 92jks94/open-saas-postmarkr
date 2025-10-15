@@ -1,5 +1,8 @@
 import { Briefcase, Scale, Home, Users, Globe } from 'lucide-react';
 import { Card } from '../../components/ui/card';
+import { SPACING, CARD_STYLES } from '../constants';
+import SectionHeader from './SectionHeader';
+import FeatureCard from './FeatureCard';
 
 const useCases = [
   {
@@ -31,39 +34,27 @@ const useCases = [
 
 export default function WhoUses() {
   return (
-    <section className='py-16 md:py-20 relative overflow-hidden'>
+    <section className={`${SPACING.SECTION_PADDING_LG} relative overflow-hidden`}>
       <div className='absolute inset-0 bg-gradient-subtle -z-10' />
 
-      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
-        <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='who-uses-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
-            Who Uses <span className='bg-gradient-primary bg-clip-text text-transparent'>Postmarkr?</span>
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            Trusted by professionals across industries who need reliable mail services
-          </p>
-        </div>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING}`}>
+        <SectionHeader
+          id="who-uses-heading"
+          title="Who Uses"
+          highlightedText="Postmarkr?"
+          subtitle="Trusted by professionals across industries who need reliable mail services"
+        />
 
-        <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto'>
-          {useCases.map((useCase, index) => {
-            const Icon = useCase.icon;
-            return (
-              <Card
-                key={index}
-                className='p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 group animate-fade-in-up'
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {/* Icon */}
-                <div className='w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 shadow-glow group-hover:scale-110 transition-transform'>
-                  <Icon className='w-6 h-6 text-primary-foreground' />
-                </div>
-
-                {/* Content */}
-                <h3 className='text-lg md:text-xl font-semibold mb-2'>{useCase.title}</h3>
-                <p className='text-muted-foreground'>{useCase.description}</p>
-              </Card>
-            );
-          })}
+        <div className={`grid md:grid-cols-2 lg:grid-cols-3 ${SPACING.GRID_GAP} max-w-7xl mx-auto`}>
+          {useCases.map((useCase, index) => (
+            <FeatureCard
+              key={index}
+              icon={useCase.icon}
+              title={useCase.title}
+              description={useCase.description}
+              animationDelay={`${index * 0.1}s`}
+            />
+          ))}
         </div>
       </div>
     </section>

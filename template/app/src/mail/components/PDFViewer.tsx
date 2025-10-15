@@ -57,8 +57,22 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({ fileKey, className = '' })
       } else {
         throw new Error('Invalid PDF URL returned');
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load PDF';
+    } catch (err: any) {
+      let errorMessage = 'Failed to load PDF';
+      
+      // Handle specific error types with user-friendly messages
+      if (err?.message?.includes('File not found in storage')) {
+        errorMessage = 'File not found in storage. Please re-upload the file.';
+      } else if (err?.message?.includes('Failed to access file storage')) {
+        errorMessage = 'Unable to access file storage. Please try again later.';
+      } else if (err?.message?.includes('Authentication required')) {
+        errorMessage = 'Please log in to view this file.';
+      } else if (err?.message?.includes('File not found or access denied')) {
+        errorMessage = 'You do not have permission to view this file.';
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
       console.error('[PDFViewer] Error fetching PDF:', errorMessage);
       setError(errorMessage);
     } finally {

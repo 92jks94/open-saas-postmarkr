@@ -1,10 +1,11 @@
-import { ArrowRight } from 'lucide-react';
-import { Link as WaspRouterLink, routes } from 'wasp/client/router';
+import { routes } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
+import { SPACING } from '../constants';
+import CTAButton from './CTAButton';
 
 export default function Hero() {
   return (
-    <section className='relative min-h-[85vh] lg:min-h-[90vh] flex items-center justify-center overflow-hidden'>
+    <section className={`relative min-h-[85vh] lg:min-h-[90vh] flex items-center justify-center overflow-hidden ${SPACING.SECTION_PADDING_LG}`}>
       {/* Gradient Background */}
       <div className='absolute inset-0 bg-gradient-subtle -z-10' />
 
@@ -15,16 +16,16 @@ export default function Hero() {
         style={{ animationDelay: '3s' }}
       />
 
-      <div className='container mx-auto px-4 md:px-6 lg:px-8 py-20 relative z-10'>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING} py-20 relative z-10`}>
         <div className='max-w-5xl mx-auto text-center animate-fade-in-up'>
           {/* Badge */}
-          <div className='inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 backdrop-blur-sm border border-primary/20 mb-8'>
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 backdrop-blur-sm border border-primary/20 ${SPACING.SUBHEADING_MARGIN}`}>
             <span className='w-2 h-2 bg-primary rounded-full animate-pulse' />
             <span className='text-sm font-medium text-primary'>Processing 1,000+ pieces of mail daily</span>
           </div>
 
           {/* Main Headline with Gradient */}
-          <h1 id='hero-heading' className='text-4xl md:text-6xl lg:text-7xl font-bold mb-8 leading-tight'>
+          <h1 id='hero-heading' className={`text-4xl md:text-6xl lg:text-7xl font-bold ${SPACING.SUBHEADING_MARGIN} leading-tight`}>
             <span className='bg-gradient-primary bg-clip-text text-transparent'>Leave the Print Shop</span>
             <br />
             & Post Office
@@ -33,27 +34,20 @@ export default function Hero() {
           </h1>
 
           {/* Subheadline */}
-          <p className='text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto'>
+          <p className={`text-xl md:text-2xl text-muted-foreground ${SPACING.SUBHEADING_MARGIN} max-w-3xl mx-auto`}>
             We print, we stuff, we send, we track—you focus on what matters
           </p>
 
           {/* Sub-subheadline */}
-          <p className='text-lg text-muted-foreground/80 mb-12 max-w-2xl mx-auto'>
+          <p className={`text-lg text-muted-foreground/80 mb-12 max-w-2xl mx-auto`}>
             No equipment to buy, no supplies to manage, no trips to the post office. From upload to mailbox in days.
           </p>
 
           {/* CTA Buttons */}
           <div className='flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center'>
-            <Button
-              size='lg'
-              className='text-base md:text-lg px-8 py-6 shadow-glow hover:shadow-glow hover:scale-105 transition-all bg-gradient-primary border-0'
-              asChild
-            >
-              <WaspRouterLink to={routes.SignupRoute.to} className='inline-flex items-center'>
-                Start Sending Mail
-                <ArrowRight className='ml-2 h-5 w-5' />
-              </WaspRouterLink>
-            </Button>
+            <CTAButton href={routes.SignupRoute.to}>
+              Start Sending Mail
+            </CTAButton>
             <Button
               size='lg'
               variant='outline'

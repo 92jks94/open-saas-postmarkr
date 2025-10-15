@@ -1,5 +1,8 @@
 import { FileText, MapPinCheck, Mail, Globe, Shield, Bell, FolderOpen, CheckCircle, Zap } from 'lucide-react';
 import { Card } from '../../components/ui/card';
+import { SPACING, CARD_STYLES } from '../constants';
+import SectionHeader from './SectionHeader';
+import FeatureCard from './FeatureCard';
 
 const features = [
   {
@@ -51,43 +54,27 @@ const features = [
 
 export default function FeaturesGrid() {
   return (
-    <section className='py-16 md:py-20 relative'>
-      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
-        <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='features-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
-            Everything you need to send{' '}
-            <span className='bg-gradient-accent bg-clip-text text-transparent'>professional mail</span>
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto'>
-            Powerful features designed for modern remote professionals
-          </p>
-        </div>
+    <section className={`${SPACING.SECTION_PADDING_LG} relative`}>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING}`}>
+        <SectionHeader
+          id="features-heading"
+          title="Everything you need to send"
+          highlightedText="professional mail"
+          subtitle="Powerful features designed for modern remote professionals"
+          highlightType="accent"
+        />
 
         {/* Bento Grid Layout */}
-        <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto'>
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            const isLarge = index === 0 || index === 4;
-
-            return (
-              <Card
-                key={feature.title}
-                className={`p-6 md:p-8 bg-card/50 backdrop-blur border-border hover:border-primary/50 transition-all duration-300 hover:shadow-glass hover:-translate-y-1 group animate-fade-in-up ${
-                  isLarge ? 'lg:col-span-1 lg:row-span-1' : ''
-                }`}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                {/* Icon with gradient background */}
-                <div className='w-12 h-12 rounded-lg bg-gradient-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform shadow-md'>
-                  <Icon className='w-6 h-6 text-primary-foreground' />
-                </div>
-
-                {/* Content */}
-                <h3 className='text-lg md:text-xl font-semibold mb-3 group-hover:text-primary transition-colors'>{feature.title}</h3>
-                <p className='text-muted-foreground leading-relaxed'>{feature.description}</p>
-              </Card>
-            );
-          })}
+        <div className={`grid md:grid-cols-2 lg:grid-cols-3 ${SPACING.GRID_GAP} max-w-7xl mx-auto`}>
+          {features.map((feature, index) => (
+            <FeatureCard
+              key={feature.title}
+              icon={feature.icon}
+              title={feature.title}
+              description={feature.description}
+              animationDelay={`${index * 0.05}s`}
+            />
+          ))}
         </div>
       </div>
     </section>

@@ -4,6 +4,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '../../components/ui/accordion';
+import { SPACING } from '../constants';
+import SectionHeader from './SectionHeader';
 
 const faqs = [
   {
@@ -40,17 +42,14 @@ const faqs = [
 
 export default function FAQ() {
   return (
-    <section className='py-20 md:py-24 pb-32 relative'>
-      <div className='container mx-auto px-4 md:px-6 lg:px-8'>
-        <div className='text-center mb-16 animate-fade-in-up'>
-          <h2 id='faq-heading' className='text-3xl md:text-4xl lg:text-5xl font-bold mb-4'>
-            Frequently Asked{' '}
-            <span className='bg-gradient-primary bg-clip-text text-transparent'>Questions</span>
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            Everything you need to know about using Postmarkr
-          </p>
-        </div>
+    <section className={`${SPACING.SECTION_PADDING_LG} relative`}>
+      <div className={`container mx-auto ${SPACING.CONTAINER_PADDING}`}>
+        <SectionHeader
+          id="faq-heading"
+          title="Frequently Asked"
+          highlightedText="Questions"
+          subtitle="Everything you need to know about using Postmarkr"
+        />
 
         <div className='max-w-3xl mx-auto animate-fade-in-up' style={{ animationDelay: '0.1s' }}>
           <Accordion type='single' collapsible className='space-y-3'>
