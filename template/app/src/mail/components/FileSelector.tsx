@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useQuery, getAllFilesByUser, getThumbnailURL, getDownloadFileSignedURL } from 'wasp/client/operations';
+import { useQuery, getAllFilesByUser, getDownloadFileSignedURL } from 'wasp/client/operations';
+import { PreviewThumbnail } from '../../components/ThumbnailImage';
 import type { File } from 'wasp/entities';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -52,8 +53,6 @@ const ComprehensiveFilePreview: React.FC<{
   addressPlacement?: 'top_first_page' | 'insert_blank_page';
   onClose: () => void;
 }> = ({ file, addressPlacement = 'insert_blank_page', onClose }) => {
-  const [thumbnailFailed, setThumbnailFailed] = useState(false);
-  
   const isPDF = file.type === 'application/pdf';
   const pageCount = file.pageCount || 0;
   
@@ -63,16 +62,6 @@ const ComprehensiveFilePreview: React.FC<{
   // Get pricing information
   const pricingTier = getPricingTierForPageCount(totalPages);
   
-  // Fetch thumbnail (first page only - existing infrastructure) - refetch on error
-  const { data: thumbnailUrl, isLoading: thumbnailLoading, refetch } = useQuery(
-    getThumbnailURL,
-    { fileId: file.id },
-    { 
-      enabled: isPDF && !!file.thumbnailKey,
-      refetchInterval: false
-    }
-  );
-  
   // Handle PDF preview
   const handlePreviewPDF = async () => {
     if (!isPDF) return;
@@ -81,8 +70,15 @@ const ComprehensiveFilePreview: React.FC<{
       if (url) {
         window.open(url, '_blank');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to preview PDF:', error);
+      
+      // Show user-friendly error message for missing files
+      if (error?.message?.includes('File not found in storage')) {
+        alert('This file is no longer available in storage. Please re-upload the file.');
+      } else {
+        alert('Failed to preview PDF. Please try again.');
+      }
     }
   };
   
@@ -120,30 +116,7 @@ const ComprehensiveFilePreview: React.FC<{
             </h4>
             
             <div className="flex flex-col items-center">
-              {thumbnailLoading ? (
-                <div className="w-48 aspect-[8.5/11] bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
-                </div>
-              ) : thumbnailUrl && typeof thumbnailUrl === 'string' && !thumbnailFailed ? (
-                <img
-                  src={thumbnailUrl}
-                  alt="First page preview"
-                  className="w-48 rounded border-2 border-gray-300 shadow-md bg-white"
-                  onError={() => {
-                    // Try to refetch once in case URL expired
-                    if (!thumbnailFailed) {
-                      console.warn('[ComprehensiveFilePreview] Thumbnail failed to load, attempting refresh...');
-                      refetch();
-                      setThumbnailFailed(true);
-                    }
-                  }}
-                />
-              ) : (
-                <div className="w-48 aspect-[8.5/11] bg-gray-50 rounded border-2 border-gray-300 flex flex-col items-center justify-center">
-                  <FileText className="h-12 w-12 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">Preview unavailable</span>
-                </div>
-              )}
+              <PreviewThumbnail file={file} />
               
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Preview of first page • {pageCount} total page{pageCount !== 1 ? 's' : ''}

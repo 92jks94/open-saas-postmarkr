@@ -23,6 +23,7 @@ import { ALLOWED_FILE_TYPES, formatFileSize } from './validation';
 import { Upload, FileText, Image as ImageIcon, Clock, Loader2, CheckCircle, XCircle, X, Download, Trash2 } from 'lucide-react';
 import { generatePDFThumbnail } from './pdfThumbnail';
 import { DEBOUNCE_DELAY_MS, SECONDS_PER_MINUTE } from '../shared/constants/timing';
+import { FileListThumbnail } from '../components/ThumbnailImage';
 // CostCalculatorWidget moved to docs/FILE_UPLOAD_TODOS.md for future reference
 
 // Upload queue item interface
@@ -110,7 +111,14 @@ export default function FileUploadPage() {
         .then((urlQuery) => {
           if (urlQuery.status === 'error') {
             console.error('Error fetching download URL', urlQuery.error);
-            alert('Error fetching download');
+            
+            // Show user-friendly error message
+            const errorMessage = urlQuery.error?.message || 'Unknown error';
+            if (errorMessage.includes('File not found in storage')) {
+              alert('This file is no longer available in storage. Please re-upload the file.');
+            } else {
+              alert(`Error downloading file: ${errorMessage}`);
+            }
             return;
           }
           if (urlQuery.status === 'success') {
@@ -237,24 +245,24 @@ export default function FileUploadPage() {
         prev.map(q => q.id === item.id ? { ...q, status: 'uploading' as const } : q)
       );
 
-      // Generate thumbnail for PDF files before upload
-      let thumbnailData: {
-        clientThumbnail?: string;
+      // Generate preview data for PDF files (including thumbnail)
+      let previewData: {
         previewPageCount?: number;
         previewDimensions?: { width: number; height: number };
+        clientThumbnail?: string;
       } = {};
 
       if (item.file.type === 'application/pdf') {
         try {
-          const previewData = await generatePDFThumbnail(item.file);
-          thumbnailData = {
-            clientThumbnail: previewData.thumbnailDataUrl,
-            previewPageCount: previewData.pageCount,
-            previewDimensions: previewData.firstPageDimensions
+          const pdfPreview = await generatePDFThumbnail(item.file);
+          previewData = {
+            previewPageCount: pdfPreview.pageCount,
+            previewDimensions: pdfPreview.firstPageDimensions,
+            clientThumbnail: pdfPreview.thumbnailDataUrl
           };
         } catch (error) {
-          console.warn('Failed to generate thumbnail for queued file:', error);
-          // Continue upload without thumbnail
+          console.warn('Failed to generate preview data for queued file:', error);
+          // Continue upload without preview data
         }
       }
 
@@ -274,18 +282,22 @@ export default function FileUploadPage() {
             } : q)
           );
         },
-        // Pass thumbnail data if generated
-        ...thumbnailData
+        // Pass preview data including thumbnail
+        previewPageCount: previewData.previewPageCount,
+        previewDimensions: previewData.previewDimensions,
+        clientThumbnail: previewData.clientThumbnail
       });
 
       // Verify the file was actually uploaded to S3
       try {
         const verification = await verifyFileUpload({ fileId: createFileResult.fileId });
         if (!verification.exists) {
+          // The verifyFileUpload operation already marks the file as invalid in the database
           throw new Error('File not found in storage after upload');
         }
       } catch (verificationError) {
         console.error('File verification failed:', verificationError);
+        // The verifyFileUpload operation already marks the file as invalid in the database
         throw new Error('Upload verification failed: File may not have been saved correctly');
       }
 
@@ -579,15 +591,16 @@ export default function FileUploadPage() {
                 {
                   "opacity-70":
                     file.key === fileKeyForS3 && isDownloadUrlLoading,
+                  "border-red-200 bg-red-50":
+                    file.validationStatus === 'invalid',
                 },
               )}
             >
               <div className="flex items-center gap-3">
-                {file.type.includes('pdf') ? (
-                  <FileText className="h-8 w-8 text-red-500" />
-                ) : (
-                  <ImageIcon className="h-8 w-8 text-blue-500" />
-                )}
+                <FileListThumbnail 
+                  file={file} 
+                  onClick={() => setFileKeyForS3(file.key)}
+                />
                 <div>
                   <p className="text-foreground font-medium">
                     {file.name}
@@ -615,16 +628,29 @@ export default function FileUploadPage() {
                       </>
                     )}
                   </div>
+                  {file.validationStatus === 'invalid' && file.validationError && (
+                    <div className="mt-2">
+                      <p className="text-sm text-red-600">
+                        ⚠️ {file.validationError}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button
                   onClick={() => setFileKeyForS3(file.key)}
                   disabled={
-                    file.key === fileKeyForS3 && isDownloadUrlLoading
+                    file.key === fileKeyForS3 && isDownloadUrlLoading ||
+                    file.validationStatus === 'invalid'
                   }
                   variant="outline"
                   size="sm"
+                  title={
+                    file.validationStatus === 'invalid' 
+                      ? 'File is not available for download. Please re-upload.' 
+                      : 'Download file'
+                  }
                 >
                   {file.key === fileKeyForS3 && isDownloadUrlLoading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -632,6 +658,42 @@ export default function FileUploadPage() {
                     <Download className="h-4 w-4" />
                   )}
                 </Button>
+                {file.validationStatus === 'invalid' && (
+                  <Button
+                    onClick={() => {
+                      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                      if (fileInput) {
+                        fileInput.click();
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    title="Re-upload this file"
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                )}
+                {file.type === 'application/pdf' && !file.thumbnailKey && file.validationStatus === 'valid' && (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        // Import the regenerateThumbnail function
+                        const { regenerateThumbnail } = await import('wasp/client/operations');
+                        await regenerateThumbnail({ fileId: file.id });
+                        allUserFiles.refetch();
+                        alert('Thumbnail regenerated successfully!');
+                      } catch (error) {
+                        console.error('Failed to regenerate thumbnail:', error);
+                        alert('Failed to regenerate thumbnail. Please try again.');
+                      }
+                    }}
+                    variant="outline"
+                    size="sm"
+                    title="Generate thumbnail for this PDF"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   onClick={() => handleDelete(file.id)}
                   variant="destructive"

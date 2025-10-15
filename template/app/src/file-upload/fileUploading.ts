@@ -18,10 +18,10 @@ interface FileUploadProgress {
   setUploadProgressPercent: (percentage: number) => void;
   onRetry?: (attempt: number, error: Error) => void;
   onMetricsUpdate?: (metrics: UploadMetrics) => void;
-  // Phase 1: Optional thumbnail data
-  clientThumbnail?: string;
+  // Preview data including client-side thumbnail
   previewPageCount?: number;
   previewDimensions?: { width: number; height: number };
+  clientThumbnail?: string;
 }
 
 export async function uploadFileWithProgress({ 
@@ -29,17 +29,19 @@ export async function uploadFileWithProgress({
   setUploadProgressPercent,
   onRetry,
   onMetricsUpdate,
-  clientThumbnail,
+  // Include client-side thumbnail for immediate display
   previewPageCount,
-  previewDimensions
+  previewDimensions,
+  clientThumbnail
 }: FileUploadProgress) {
   const createFileResult = await createFile({ 
     fileType: file.type, 
     fileName: file.name,
     fileSize: file.size, // Pass file size to server
-    clientThumbnail,
+    // Include client-side thumbnail
     previewPageCount,
-    previewDimensions
+    previewDimensions,
+    clientThumbnail
   });
   const { s3UploadUrl, s3UploadFields } = createFileResult;
 

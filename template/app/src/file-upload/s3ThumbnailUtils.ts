@@ -82,17 +82,13 @@ function getThumbnailS3Key(userId: string, fileId: string): string {
 
 /**
  * Generate thumbnail from PDF buffer
- * Note: Server-side thumbnail generation requires additional dependencies (canvas, sharp)
- * For now, we rely on client-side generation. This function is a placeholder for future enhancement.
+ * Note: This function is deprecated - server-side thumbnail generation is now implemented
+ * in operations.ts using @napi-rs/canvas and pdfjs-dist
  * 
- * Future implementation options:
- * 1. Use sharp + pdf-poppler (requires system dependencies)
- * 2. Use canvas + pdfjs (requires node-canvas)
- * 3. Use external service (AWS Lambda, CloudConvert, etc.)
+ * Use the generateServerSideThumbnail function in operations.ts instead
  */
 export async function generateThumbnailFromPDF(pdfBuffer: Buffer): Promise<Buffer> {
-  // TODO: Implement server-side thumbnail generation
-  // For now, throw error - thumbnails should be generated client-side
-  throw new Error('Server-side thumbnail generation not yet implemented. Use client-side generation.');
+  // This function is deprecated - use generateServerSideThumbnail in operations.ts
+  throw new Error('This function is deprecated. Use generateServerSideThumbnail in operations.ts instead.');
 }
 

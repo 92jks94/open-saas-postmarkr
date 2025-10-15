@@ -25,6 +25,7 @@ import { ensureArgsSchemaOrThrowHttpError } from '../server/validation';
 import { ALLOWED_FILE_TYPES } from './validation';
 import { extractPDFMetadataFromBuffer, isPDFBuffer, type PDFMetadata } from './pdfMetadata';
 import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
+import { uploadThumbnailToS3 } from './s3ThumbnailUtils';
 
 // ============================================================================
 // EXTERNAL LIBRARY IMPORTS
@@ -37,13 +38,13 @@ const createFileInputSchema = z.object({
   fileType: z.enum(ALLOWED_FILE_TYPES),
   fileName: z.string().nonempty(),
   fileSize: z.number().int().positive().optional(), // File size in bytes
-  // Phase 1: Optional thumbnail data from client
-  clientThumbnail: z.string().optional(),
+  // Include client-side thumbnail for immediate display
   previewPageCount: z.number().optional(),
   previewDimensions: z.object({
     width: z.number(),
     height: z.number()
   }).optional(),
+  clientThumbnail: z.string().optional(), // Base64 data URL
 });
 
 type CreateFileInput = z.infer<typeof createFileInputSchema>;
@@ -64,7 +65,7 @@ export const createFile: CreateFile<
   checkOperationRateLimit('createFile', 'fileUpload', context.user.id);
 
   const validatedInput = ensureArgsSchemaOrThrowHttpError(createFileInputSchema, rawArgs);
-  const { fileType, fileName, fileSize } = validatedInput;
+  const { fileType, fileName, fileSize, clientThumbnail } = validatedInput;
   
   // Ensure file size is always a number (default to 0 if not provided)
   const finalFileSize = typeof fileSize === 'number' && fileSize >= 0 ? fileSize : 0;
@@ -94,28 +95,36 @@ export const createFile: CreateFile<
     },
   });
 
-  // Upload thumbnail to S3 if provided (client-side generated)
+  // Process client-side thumbnail if provided
   let thumbnailKey: string | undefined;
-  if (validatedInput.clientThumbnail) {
+  if (clientThumbnail && fileType === 'application/pdf') {
     try {
-      thumbnailKey = await uploadBase64ThumbnailToS3({
-        base64Data: validatedInput.clientThumbnail,
-        userId: context.user.id,
-        fileId: file.id, // Use the actual database file ID
+      // Convert base64 data URL to buffer
+      const base64Data = clientThumbnail.split(',')[1]; // Remove data:image/jpeg;base64, prefix
+      const thumbnailBuffer = Buffer.from(base64Data, 'base64');
+      
+      // Upload thumbnail to S3
+      thumbnailKey = await uploadThumbnailToS3({
+        fileId: file.id,
+        userId: context.user.id.toString(),
+        thumbnailBuffer
       });
       
       // Update file record with thumbnail key
       await context.entities.File.update({
         where: { id: file.id },
         data: {
-          thumbnailKey: thumbnailKey,
-          thumbnailGeneratedAt: new Date(),
-        },
+          thumbnailKey,
+          thumbnailGeneratedAt: new Date()
+        }
       });
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[createFile] Client thumbnail uploaded for file ${file.id}`);
+      }
     } catch (error) {
-      console.error('Failed to upload thumbnail to S3:', error);
-      // Don't fail file creation if thumbnail upload fails
-      thumbnailKey = undefined;
+      console.warn(`[createFile] Failed to upload client thumbnail for file ${file.id}:`, error);
+      // Continue without thumbnail - not critical for file creation
     }
   }
 
@@ -490,11 +499,20 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
     // Extract metadata using existing function
     const metadata = await extractPDFMetadataFromBuffer(pdfBuffer);
 
+    // Generate server-side thumbnail
+    let thumbnailKey: string | undefined;
+    try {
+      thumbnailKey = await generateServerSideThumbnail(pdfBuffer, fileId, context.user.id);
+    } catch (error) {
+      console.warn(`Failed to generate thumbnail for file ${fileId}:`, error);
+      // Continue without thumbnail - not critical for file processing
+    }
+
     // Capture file size from S3 - always update to ensure accuracy
     const actualFileSize = pdfBuffer.length;
     const currentFileSize = file.size || 0;
     
-    // Update file with metadata and processing timestamp
+    // Update file with metadata, thumbnail, and processing timestamp
     await context.entities.File.update({
       where: { id: fileId },
       data: {
@@ -502,7 +520,12 @@ export const processPDFMetadata = async (args: { fileId: string }, context: any)
         pdfMetadata: metadata,
         size: actualFileSize, // Always update with actual S3 file size
         validationStatus: 'valid',
-        lastProcessedAt: new Date()
+        lastProcessedAt: new Date(),
+        // Add thumbnail key if generated successfully
+        ...(thumbnailKey && {
+          thumbnailKey,
+          thumbnailGeneratedAt: new Date()
+        })
       }
     });
     
@@ -790,3 +813,114 @@ export const getPaginatedFilesByUser: GetPaginatedFilesByUser<
 
   return { files, total, page, totalPages: Math.ceil(total / limit) };
 };
+
+/**
+ * Regenerate thumbnail for existing PDF file
+ * Useful for files uploaded before thumbnail generation was fixed
+ */
+export const regenerateThumbnail: any = async (rawArgs: { fileId: string }, context: any) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { fileId } = rawArgs;
+  
+  // Get the file and verify ownership
+  const file = await context.entities.File.findFirst({
+    where: {
+      id: fileId,
+      userId: context.user.id,
+      type: 'application/pdf'
+    }
+  });
+
+  if (!file) {
+    throw new HttpError(404, 'PDF file not found');
+  }
+
+  try {
+    // Download PDF from S3
+    const s3Client = new S3Client({
+      region: process.env.AWS_S3_REGION || 'us-east-2',
+      credentials: {
+        accessKeyId: process.env.AWS_S3_IAM_ACCESS_KEY!,
+        secretAccessKey: process.env.AWS_S3_IAM_SECRET_KEY!,
+      },
+    });
+
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: process.env.AWS_S3_FILES_BUCKET!,
+      Key: file.key,
+    });
+
+    const response = await s3Client.send(getObjectCommand);
+    const pdfBuffer = Buffer.from(await response.Body!.transformToByteArray());
+
+    // Generate thumbnail
+    const thumbnailKey = await generateServerSideThumbnail(pdfBuffer, fileId, context.user.id);
+
+    // Update file record
+    await context.entities.File.update({
+      where: { id: fileId },
+      data: {
+        thumbnailKey,
+        thumbnailGeneratedAt: new Date()
+      }
+    });
+
+    return { success: true, thumbnailKey };
+  } catch (error) {
+    console.error(`Failed to regenerate thumbnail for file ${fileId}:`, error);
+    throw new HttpError(500, 'Failed to regenerate thumbnail');
+  }
+};
+
+/**
+ * Generate server-side thumbnail from PDF buffer using @napi-rs/canvas
+ * This replaces client-side thumbnail generation to prevent 413 errors
+ */
+async function generateServerSideThumbnail(
+  pdfBuffer: Buffer, 
+  fileId: string, 
+  userId: number
+): Promise<string> {
+  // Dynamic import to avoid loading canvas in environments where it's not available
+  const { createCanvas } = await import('@napi-rs/canvas');
+  const pdfjsLib = await import('pdfjs-dist');
+  
+  // Configure PDF.js for server-side use
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'pdfjs-dist/build/pdf.worker.min.js';
+  
+  // Load PDF document
+  const loadingTask = pdfjsLib.getDocument({ data: pdfBuffer });
+  const pdf = await loadingTask.promise;
+  
+  // Get first page
+  const page = await pdf.getPage(1);
+  
+  // Use 1.5x scale for high-quality thumbnails (same as client-side)
+  const viewport = page.getViewport({ scale: 1.5 });
+  
+  // Create canvas
+  const canvas = createCanvas(viewport.width, viewport.height);
+  const context = canvas.getContext('2d');
+  
+  // Render page to canvas
+  await page.render({
+    canvasContext: context as any, // Type assertion for @napi-rs/canvas compatibility
+    viewport,
+    canvas: canvas as any // Add canvas property for PDF.js compatibility
+  }).promise;
+  
+  // Convert to JPEG buffer with 85% quality (same as client-side)
+  const thumbnailBuffer = canvas.toBuffer('image/jpeg', 0.85);
+  
+  // Upload thumbnail to S3
+  const thumbnailKey = await uploadThumbnailToS3({
+    fileId,
+    userId: userId.toString(),
+    thumbnailBuffer
+  });
+  
+  return thumbnailKey;
+}

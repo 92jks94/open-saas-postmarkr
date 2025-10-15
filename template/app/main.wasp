@@ -286,6 +286,11 @@ action triggerPDFProcessing {
   entities: [User, File]
 }
 
+action regenerateThumbnail {
+  fn: import { regenerateThumbnail } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
 // Phase 3: Extract specific pages from PDF
 action extractPDFPages {
   fn: import { extractPDFPages } from "@src/file-upload/operations",
