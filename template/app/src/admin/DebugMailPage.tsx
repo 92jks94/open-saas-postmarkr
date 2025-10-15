@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { useQuery } from 'wasp/client/operations';
-import { debugMailPieces, fixPaidOrders, debugMailPieceStatus } from 'wasp/client/operations';
+import { debugMailPieces, fixPaidOrders, debugMailPieceStatus, adminRefundMailPiece, adminUpdateMailPieceStatus } from 'wasp/client/operations';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { ScrollArea } from '../components/ui/scroll-area';
-import { getStatusColor, getResultStatusColor } from '../shared/statusUtils';
+import { getStatusColor, getResultStatusColor, getStatusDisplayName, getSourceColor, getSourceIcon } from '../shared/statusUtils';
 
 type FixResult = {
   fixedCount: number;
@@ -242,28 +242,6 @@ export default function DebugMailPage() {
   
   const { data: debugData, isLoading, error, refetch } = useQuery(debugMailPieces, undefined);
 
-  const handleFixOrders = async () => {
-    setIsFixing(true);
-    setFixResult(null);
-    
-    try {
-      const result = await fixPaidOrders();
-      setFixResult(result);
-      // Refetch debug data to show updated state
-      refetch();
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setFixResult({
-        fixedCount: 0,
-        errorCount: 1,
-        submittedToLobCount: 0,
-        results: [{ id: 'error', status: 'error', message: errorMessage }]
-      });
-    } finally {
-      setIsFixing(false);
-    }
-  };
-
   if (isLoading) {
     return <div className="p-8">Loading debug information...</div>;
   }
@@ -378,9 +356,28 @@ export default function DebugMailPage() {
           </p>
           
           <Button 
-            onClick={handleFixOrders} 
             disabled={isFixing}
             className="mb-4 bg-blue-600 hover:bg-blue-700"
+            onClick={async () => {
+              setIsFixing(true);
+              setFixResult(null);
+              
+              try {
+                const result = await fixPaidOrders();
+                setFixResult(result);
+                refetch();
+              } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+                setFixResult({
+                  fixedCount: 0,
+                  errorCount: 1,
+                  submittedToLobCount: 0,
+                  results: [{ id: 'error', status: 'error', message: errorMessage }],
+                });
+              } finally {
+                setIsFixing(false);
+              }
+            }}
           >
             {isFixing ? 'Processing Orders...' : 'Fix & Submit Orders'}
           </Button>
@@ -446,10 +443,10 @@ export default function DebugMailPage() {
                     </div>
                     <div className="flex gap-2">
                       <Badge className={getStatusColor(piece.status)}>
-                        {piece.status}
+                        {getStatusDisplayName(piece.status)}
                       </Badge>
                       <Badge className={getStatusColor(piece.paymentStatus)}>
-                        Payment: {piece.paymentStatus}
+                        Payment: {getStatusDisplayName(piece.paymentStatus)}
                       </Badge>
                     </div>
                   </div>

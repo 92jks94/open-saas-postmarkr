@@ -12,6 +12,9 @@ import {
   Activity,
   Bug,
   Users,
+  Mail,
+  DollarSign,
+  FileText,
 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -122,85 +125,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
 
               {/* <!-- Menu Item Dashboard --> */}
 
-              {/* <!-- Menu Item Users --> */}
-              <li>
-                <NavLink
-                  to='/admin/users'
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
-                      {
-                        'bg-accent text-accent-foreground': isActive,
-                      }
-                    )
-                  }
-                >
-                  <Users />
-                  Users
-                </NavLink>
-              </li>
-              {/* <!-- Menu Item Users --> */}
-
-              {/* <!-- Menu Item Messages --> */}
-              <li>
-                <NavLink
-                  to='/admin/messages'
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
-                      {
-                        'bg-accent text-accent-foreground': isActive,
-                      }
-                    )
-                  }
-                >
-                  <MessageSquare />
-                  Messages
-                </NavLink>
-              </li>
-              {/* <!-- Menu Item Messages --> */}
-
-              {/* <!-- Menu Item Settings --> */}
-              <li>
-                <NavLink
-                  to='/admin/settings'
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
-                      {
-                        'bg-accent text-accent-foreground': isActive,
-                      }
-                    )
-                  }
-                >
-                  <Settings />
-                  Settings
-                </NavLink>
-              </li>
-              {/* <!-- Menu Item Settings --> */}
-
-              {/* <!-- Menu Item App Settings --> */}
-              <li>
-                <NavLink
-                  to='/admin/app-settings'
-                  end
-                  className={({ isActive }) =>
-                    cn(
-                      'group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-muted-foreground duration-300 ease-in-out hover:bg-accent hover:text-accent-foreground',
-                      {
-                        'bg-accent text-accent-foreground': isActive,
-                      }
-                    )
-                  }
-                >
-                  <Cog />
-                  App Settings
-                </NavLink>
-              </li>
-              {/* <!-- Menu Item App Settings --> */}
             </ul>
           </div>
 
