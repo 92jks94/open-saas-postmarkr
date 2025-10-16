@@ -47,6 +47,13 @@ let analyticsDataClient: BetaAnalyticsDataClient | null = null;
 if (CLIENT_EMAIL && PRIVATE_KEY && PROPERTY_ID) {
   try {
     console.log('🚀 Initializing Google Analytics Data Client...');
+    
+    // Set NODE_OPTIONS to use legacy OpenSSL provider to fix decoder issues
+    if (!process.env.NODE_OPTIONS?.includes('--openssl-legacy-provider')) {
+      process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --openssl-legacy-provider';
+      console.log('🔧 Set NODE_OPTIONS for legacy OpenSSL provider');
+    }
+    
     analyticsDataClient = new BetaAnalyticsDataClient({
       credentials: {
         client_email: CLIENT_EMAIL,
@@ -83,66 +90,93 @@ export async function getSources() {
     throw new Error('Google Analytics is not configured. Please set GOOGLE_ANALYTICS_CLIENT_EMAIL, GOOGLE_ANALYTICS_PRIVATE_KEY, and GOOGLE_ANALYTICS_PROPERTY_ID environment variables.');
   }
   
-  try {
-    console.log('🔍 GA API: Requesting sources data...');
-    console.log('   Property:', `properties/${PROPERTY_ID}`);
-    console.log('   Date range: 2020-01-01 to today');
-    
-    const startTime = Date.now();
-    const [response] = await analyticsDataClient.runReport({
-      property: `properties/${PROPERTY_ID}`,
-      dateRanges: [
-        {
-          startDate: '2020-01-01',
-          endDate: 'today',
-        },
-      ],
-      // for a list of dimensions and metrics see https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
-      dimensions: [
-        {
-          name: 'source',
-        },
-      ],
-      metrics: [
-        {
-          name: 'activeUsers',
-        },
-      ],
-    });
-    
-    const duration = Date.now() - startTime;
-    console.log(`✅ GA API: Response received (${duration}ms)`);
-    console.log('   Row count:', response?.rows?.length || 0);
-    console.log('   Response metadata:', response?.metadata);
-
-    let activeUsersPerReferrer: any[] = [];
-    if (response?.rows) {
-      activeUsersPerReferrer = response.rows.map((row) => {
-        if (row.dimensionValues && row.metricValues) {
-          return {
-            source: row.dimensionValues[0].value,
-            visitors: row.metricValues[0].value,
-          };
-        }
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔍 GA API: Requesting sources data (attempt ${attempt}/${maxRetries})...`);
+      console.log('   Property:', `properties/${PROPERTY_ID}`);
+      console.log('   Date range: 2020-01-01 to today');
+      
+      const startTime = Date.now();
+      const [response] = await analyticsDataClient.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        dateRanges: [
+          {
+            startDate: '2020-01-01',
+            endDate: 'today',
+          },
+        ],
+        // for a list of dimensions and metrics see https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema
+        dimensions: [
+          {
+            name: 'source',
+          },
+        ],
+        metrics: [
+          {
+            name: 'activeUsers',
+          },
+        ],
       });
-      console.log('✅ GA API: Processed sources:', activeUsersPerReferrer.length);
-    } else {
-      console.error('❌ GA API: No response rows from Google Analytics');
-      console.error('   Full response:', JSON.stringify(response, null, 2));
-      throw new Error('No response from Google Analytics');
-    }
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ GA API: Response received (${duration}ms)`);
+      console.log('   Row count:', response?.rows?.length || 0);
+      console.log('   Response metadata:', response?.metadata);
 
-    return activeUsersPerReferrer;
-  } catch (error) {
-    console.error('❌ GA API: getSources() failed');
-    console.error('🔍 Error:', error);
-    console.error('📚 Stack:', error instanceof Error ? error.stack : 'No stack trace');
-    if (error instanceof Error && 'code' in error) {
-      console.error('🔍 Error code:', (error as any).code);
-      console.error('🔍 Error details:', (error as any).details);
+      let activeUsersPerReferrer: any[] = [];
+      if (response?.rows) {
+        activeUsersPerReferrer = response.rows.map((row) => {
+          if (row.dimensionValues && row.metricValues) {
+            return {
+              source: row.dimensionValues[0].value,
+              visitors: row.metricValues[0].value,
+            };
+          }
+        });
+        console.log('✅ GA API: Processed sources:', activeUsersPerReferrer.length);
+      } else {
+        console.error('❌ GA API: No response rows from Google Analytics');
+        console.error('   Full response:', JSON.stringify(response, null, 2));
+        throw new Error('No response from Google Analytics');
+      }
+
+      return activeUsersPerReferrer;
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`❌ GA API: getSources() failed (attempt ${attempt}/${maxRetries})`);
+      console.error('🔍 Error:', error);
+      console.error('📚 Stack:', error instanceof Error ? error.stack : 'No stack trace');
+      
+      if (error instanceof Error && 'code' in error) {
+        console.error('🔍 Error code:', (error as any).code);
+        console.error('🔍 Error details:', (error as any).details);
+      }
+      
+      // Check if this is the SSL decoder error
+      if (error instanceof Error && error.message.includes('DECODER routines::unsupported')) {
+        console.error('🔧 SSL Decoder Error detected - this may require Node.js restart with --openssl-legacy-provider');
+        if (attempt < maxRetries) {
+          console.log(`⏳ Retrying in ${attempt * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+          continue;
+        }
+      }
+      
+      // If this is the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      // Wait before retrying
+      console.log(`⏳ Retrying in ${attempt * 2} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
     }
-    throw error;
   }
+  
+  throw lastError || new Error('Failed to get sources after all retry attempts');
 }
 
 export async function getDailyPageViews() {
@@ -163,45 +197,71 @@ async function getTotalPageViews() {
     throw new Error('Google Analytics is not configured. Please set GOOGLE_ANALYTICS_CLIENT_EMAIL, GOOGLE_ANALYTICS_PRIVATE_KEY, and GOOGLE_ANALYTICS_PROPERTY_ID environment variables.');
   }
   
-  try {
-    console.log('🔍 GA API: Requesting total page views...');
-    console.log('   Property:', `properties/${PROPERTY_ID}`);
-    
-    const startTime = Date.now();
-    const [response] = await analyticsDataClient.runReport({
-      property: `properties/${PROPERTY_ID}`,
-      dateRanges: [
-        {
-          startDate: '2020-01-01', // go back to earliest date of your app
-          endDate: 'today',
-        },
-      ],
-      metrics: [
-        {
-          name: 'screenPageViews',
-        },
-      ],
-    });
-    
-    const duration = Date.now() - startTime;
-    console.log(`✅ GA API: Total page views response received (${duration}ms)`);
-    
-    let totalViews = 0;
-    if (response?.rows) {
-      // @ts-ignore
-      totalViews = parseInt(response.rows[0].metricValues[0].value);
-      console.log('   Total views:', totalViews);
-    } else {
-      console.error('❌ GA API: No response rows');
-      console.error('   Full response:', JSON.stringify(response, null, 2));
-      throw new Error('No response from Google Analytics');
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔍 GA API: Requesting total page views (attempt ${attempt}/${maxRetries})...`);
+      console.log('   Property:', `properties/${PROPERTY_ID}`);
+      
+      const startTime = Date.now();
+      const [response] = await analyticsDataClient.runReport({
+        property: `properties/${PROPERTY_ID}`,
+        dateRanges: [
+          {
+            startDate: '2020-01-01', // go back to earliest date of your app
+            endDate: 'today',
+          },
+        ],
+        metrics: [
+          {
+            name: 'screenPageViews',
+          },
+        ],
+      });
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ GA API: Total page views response received (${duration}ms)`);
+      
+      let totalViews = 0;
+      if (response?.rows) {
+        // @ts-ignore
+        totalViews = parseInt(response.rows[0].metricValues[0].value);
+        console.log('   Total views:', totalViews);
+      } else {
+        console.error('❌ GA API: No response rows');
+        console.error('   Full response:', JSON.stringify(response, null, 2));
+        throw new Error('No response from Google Analytics');
+      }
+      return totalViews;
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`❌ GA API: getTotalPageViews() failed (attempt ${attempt}/${maxRetries})`);
+      console.error('🔍 Error:', error);
+      
+      // Check if this is the SSL decoder error
+      if (error instanceof Error && error.message.includes('DECODER routines::unsupported')) {
+        console.error('🔧 SSL Decoder Error detected - this may require Node.js restart with --openssl-legacy-provider');
+        if (attempt < maxRetries) {
+          console.log(`⏳ Retrying in ${attempt * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+          continue;
+        }
+      }
+      
+      // If this is the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      // Wait before retrying
+      console.log(`⏳ Retrying in ${attempt * 2} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
     }
-    return totalViews;
-  } catch (error) {
-    console.error('❌ GA API: getTotalPageViews() failed');
-    console.error('🔍 Error:', error);
-    throw error;
   }
+  
+  throw lastError || new Error('Failed to get total page views after all retry attempts');
 }
 
 async function getPrevDayViewsChangePercent() {
@@ -212,77 +272,103 @@ async function getPrevDayViewsChangePercent() {
     throw new Error('Google Analytics is not configured. Please set GOOGLE_ANALYTICS_CLIENT_EMAIL, GOOGLE_ANALYTICS_PRIVATE_KEY, and GOOGLE_ANALYTICS_PROPERTY_ID environment variables.');
   }
   
-  try {
-    console.log('🔍 GA API: Requesting previous day views change...');
-    
-    const startTime = Date.now();
-    const [response] = await analyticsDataClient.runReport({
-      property: `properties/${PROPERTY_ID}`,
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🔍 GA API: Requesting previous day views change (attempt ${attempt}/${maxRetries})...`);
+      
+      const startTime = Date.now();
+      const [response] = await analyticsDataClient.runReport({
+        property: `properties/${PROPERTY_ID}`,
 
-      dateRanges: [
-        {
-          startDate: '2daysAgo',
-          endDate: 'yesterday',
-        },
-      ],
-      orderBys: [
-        {
-          dimension: {
-            dimensionName: 'date',
+        dateRanges: [
+          {
+            startDate: '2daysAgo',
+            endDate: 'yesterday',
           },
-          desc: true,
-        },
-      ],
-      dimensions: [
-        {
-          name: 'date',
-        },
-      ],
-      metrics: [
-        {
-          name: 'screenPageViews',
-        },
-      ],
-    });
-    
-    const duration = Date.now() - startTime;
-    console.log(`✅ GA API: Previous day views response received (${duration}ms)`);
-    console.log('   Row count:', response?.rows?.length || 0);
+        ],
+        orderBys: [
+          {
+            dimension: {
+              dimensionName: 'date',
+            },
+            desc: true,
+          },
+        ],
+        dimensions: [
+          {
+            name: 'date',
+          },
+        ],
+        metrics: [
+          {
+            name: 'screenPageViews',
+          },
+        ],
+      });
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ GA API: Previous day views response received (${duration}ms)`);
+      console.log('   Row count:', response?.rows?.length || 0);
 
-    let viewsFromYesterday;
-    let viewsFromDayBeforeYesterday;
+      let viewsFromYesterday;
+      let viewsFromDayBeforeYesterday;
 
-    if (response?.rows && response.rows.length === 2) {
-      // @ts-ignore
-      viewsFromYesterday = response.rows[0].metricValues[0].value;
-      // @ts-ignore
-      viewsFromDayBeforeYesterday = response.rows[1].metricValues[0].value;
+      if (response?.rows && response.rows.length === 2) {
+        // @ts-ignore
+        viewsFromYesterday = response.rows[0].metricValues[0].value;
+        // @ts-ignore
+        viewsFromDayBeforeYesterday = response.rows[1].metricValues[0].value;
 
-      if (viewsFromYesterday && viewsFromDayBeforeYesterday) {
-        viewsFromYesterday = parseInt(viewsFromYesterday);
-        viewsFromDayBeforeYesterday = parseInt(viewsFromDayBeforeYesterday);
-        
-        console.log('   Yesterday views:', viewsFromYesterday);
-        console.log('   Day before views:', viewsFromDayBeforeYesterday);
-        
-        if (viewsFromYesterday === 0 || viewsFromDayBeforeYesterday === 0) {
-          console.log('   Change: 0% (zero values)');
-          return '0';
+        if (viewsFromYesterday && viewsFromDayBeforeYesterday) {
+          viewsFromYesterday = parseInt(viewsFromYesterday);
+          viewsFromDayBeforeYesterday = parseInt(viewsFromDayBeforeYesterday);
+          
+          console.log('   Yesterday views:', viewsFromYesterday);
+          console.log('   Day before views:', viewsFromDayBeforeYesterday);
+          
+          if (viewsFromYesterday === 0 || viewsFromDayBeforeYesterday === 0) {
+            console.log('   Change: 0% (zero values)');
+            return '0';
+          }
+          console.table({ viewsFromYesterday, viewsFromDayBeforeYesterday });
+
+          const change = ((viewsFromYesterday - viewsFromDayBeforeYesterday) / viewsFromDayBeforeYesterday) * 100;
+          console.log(`   Change: ${change.toFixed(0)}%`);
+          return change.toFixed(0);
         }
-        console.table({ viewsFromYesterday, viewsFromDayBeforeYesterday });
-
-        const change = ((viewsFromYesterday - viewsFromDayBeforeYesterday) / viewsFromDayBeforeYesterday) * 100;
-        console.log(`   Change: ${change.toFixed(0)}%`);
-        return change.toFixed(0);
+      } else {
+        console.warn('⚠️  GA API: Unexpected response format or insufficient data');
+        console.log('   Expected 2 rows, got:', response?.rows?.length || 0);
+        return '0';
       }
-    } else {
-      console.warn('⚠️  GA API: Unexpected response format or insufficient data');
-      console.log('   Expected 2 rows, got:', response?.rows?.length || 0);
-      return '0';
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`❌ GA API: getPrevDayViewsChangePercent() failed (attempt ${attempt}/${maxRetries})`);
+      console.error('🔍 Error:', error);
+      
+      // Check if this is the SSL decoder error
+      if (error instanceof Error && error.message.includes('DECODER routines::unsupported')) {
+        console.error('🔧 SSL Decoder Error detected - this may require Node.js restart with --openssl-legacy-provider');
+        if (attempt < maxRetries) {
+          console.log(`⏳ Retrying in ${attempt * 2} seconds...`);
+          await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+          continue;
+        }
+      }
+      
+      // If this is the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw lastError;
+      }
+      
+      // Wait before retrying
+      console.log(`⏳ Retrying in ${attempt * 2} seconds...`);
+      await new Promise(resolve => setTimeout(resolve, attempt * 2000));
     }
-  } catch (error) {
-    console.error('❌ GA API: getPrevDayViewsChangePercent() failed');
-    console.error('🔍 Error:', error);
-    throw error;
   }
+  
+  throw lastError || new Error('Failed to get previous day views change after all retry attempts');
 }

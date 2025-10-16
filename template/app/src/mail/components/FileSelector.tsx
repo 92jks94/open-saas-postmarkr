@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useQuery, getAllFilesByUser, getDownloadFileSignedURL } from 'wasp/client/operations';
+import { useQuery, getAllFilesByUser, getDownloadFileSignedURL, getThumbnailURL } from 'wasp/client/operations';
 import { PreviewThumbnail } from '../../components/ThumbnailImage';
 import type { File } from 'wasp/entities';
 import { Button } from '../../components/ui/button';
@@ -481,23 +481,27 @@ const FileSelector: React.FC<FileSelectorProps> = ({
         <CardContent className="space-y-6">
           {/* Compact View: Show selected file with change button */}
           {showCompactView ? (
-            <div className="flex items-center justify-between p-3 border border-blue-500 bg-blue-50 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border transition-all duration-200 hover:border-primary/50">
               <div className="flex items-center gap-3">
-                <FileThumbnail file={selectedFile} />
-                <div>
-                  <p className="font-medium text-sm">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-600">
-                    {selectedFile.pageCount ? `${selectedFile.pageCount} pages` : 'Unknown pages'} • 
-                    {selectedFile.size ? formatFileSize(selectedFile.size) : 'Unknown size'}
-                  </p>
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">File</p>
+                    <p className="font-medium text-sm">{selectedFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedFile.pageCount ? `${selectedFile.pageCount} pages` : 'Unknown pages'} • 
+                      {selectedFile.size ? formatFileSize(selectedFile.size) : 'Unknown size'}
+                    </p>
+                  </div>
                 </div>
               </div>
               <Button 
-                variant="outline" 
+                variant="ghost" 
                 size="sm"
                 onClick={() => onFileSelect(null)}
               >
-                Change File
+                Change
               </Button>
             </div>
           ) : files?.length === 0 ? (

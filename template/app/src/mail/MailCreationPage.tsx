@@ -69,7 +69,7 @@ export default function MailCreationPage() {
         {/* Header */}
         <PageHeader
           title="Create Mail Piece"
-          description="Send physical mail with professional tracking and delivery confirmation."
+          description="Complete the form to send your physical mail. Select your file, addresses, and configuration to see real-time pricing."
         />
 
         {/* Mail Creation Form */}

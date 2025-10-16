@@ -181,77 +181,80 @@ export const MailConfigurationSection: React.FC<MailConfigurationSectionProps> =
           </Select>
         </div>
 
-        {/* Advanced Settings Accordion - Only show in non-compact mode or always? Let's always show but make it more compact */}
-        <Accordion type="single" collapsible className="border rounded-lg px-4">
-          <AccordionItem value="advanced" className="border-none">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                <span className={cn("font-medium", compact && "text-sm")}>Advanced Settings</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="space-y-4 pt-2">
-              {/* Address Placement */}
-              <div className="space-y-2">
-                <Label htmlFor="addressPlacement" className={cn(compact && "text-sm")}>
-                  Address Placement
-                </Label>
-                <Select
-                  value={formData.addressPlacement}
-                  onValueChange={(value: 'top_first_page' | 'insert_blank_page') => 
-                    onChange({ addressPlacement: value })
-                  }
-                >
-                  <SelectTrigger className={cn(compact && "text-sm")}>
-                    <SelectValue placeholder="Select address placement" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="insert_blank_page">
-                      <div>
-                        <div className={cn("font-medium", compact && "text-sm")}>Insert Blank Page</div>
-                        <div className="text-xs text-gray-500">Adds an extra page for address (recommended)</div>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="top_first_page">
-                      <div>
-                        <div className={cn("font-medium", compact && "text-sm")}>Top of First Page</div>
-                        <div className="text-xs text-gray-500">Address printed on your first page (cost-effective)</div>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-gray-500">
-                  {formData.addressPlacement === 'insert_blank_page' 
-                    ? 'Lob will add a blank page at the beginning for the recipient address. This ensures your content remains unchanged but adds an extra page cost.'
-                    : 'Lob will print the recipient address at the top of your first page. Make sure to leave space at the top of your document for the address block.'
-                  }
+        {/* Advanced Settings - Hidden for letter-only launch */}
+        {/* TODO: Re-enable when supporting additional mail types */}
+        {false && (
+          <Accordion type="single" collapsible className="border rounded-lg px-4">
+            <AccordionItem value="advanced" className="border-none">
+              <AccordionTrigger className="hover:no-underline">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span className={cn("font-medium", compact && "text-sm")}>Advanced Settings</span>
                 </div>
-              </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                {/* Address Placement */}
+                <div className="space-y-2">
+                  <Label htmlFor="addressPlacement" className={cn(compact && "text-sm")}>
+                    Address Placement
+                  </Label>
+                  <Select
+                    value={formData.addressPlacement}
+                    onValueChange={(value: 'top_first_page' | 'insert_blank_page') => 
+                      onChange({ addressPlacement: value })
+                    }
+                  >
+                    <SelectTrigger className={cn(compact && "text-sm")}>
+                      <SelectValue placeholder="Select address placement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="insert_blank_page">
+                        <div>
+                          <div className={cn("font-medium", compact && "text-sm")}>Insert Blank Page</div>
+                          <div className="text-xs text-gray-500">Adds an extra page for address (recommended)</div>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="top_first_page">
+                        <div>
+                          <div className={cn("font-medium", compact && "text-sm")}>Top of First Page</div>
+                          <div className="text-xs text-gray-500">Address printed on your first page (cost-effective)</div>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <div className="text-xs text-gray-500">
+                    {formData.addressPlacement === 'insert_blank_page' 
+                      ? 'Lob will add a blank page at the beginning for the recipient address. This ensures your content remains unchanged but adds an extra page cost.'
+                      : 'Lob will print the recipient address at the top of your first page. Make sure to leave space at the top of your document for the address block.'
+                    }
+                  </div>
+                </div>
 
-              {/* Description */}
-              <div className="space-y-2">
-                <Label htmlFor="description" className={cn(compact && "text-sm")}>
-                  Description (Optional)
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder="Brief description of this mail piece..."
-                  value={formData.description}
-                  onChange={(e) => onChange({ description: e.target.value })}
-                  maxLength={500}
-                  rows={3}
-                  className={cn(compact && "text-sm")}
-                />
-                <div className="text-xs text-gray-500">
-                  {formData.description.length}/500 characters
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description" className={cn(compact && "text-sm")}>
+                    Description (Optional)
+                  </Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Brief description of this mail piece..."
+                    value={formData.description}
+                    onChange={(e) => onChange({ description: e.target.value })}
+                    maxLength={500}
+                    rows={3}
+                    className={cn(compact && "text-sm")}
+                  />
+                  <div className="text-xs text-gray-500">
+                    {formData.description.length}/500 characters
+                  </div>
+                  {errors.description && (
+                    <p className="text-xs text-red-600">{errors.description}</p>
+                  )}
                 </div>
-                {errors.description && (
-                  <p className="text-xs text-red-600">{errors.description}</p>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        )}
       </CardContent>
     </Card>
   );

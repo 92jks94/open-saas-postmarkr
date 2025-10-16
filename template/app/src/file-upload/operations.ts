@@ -12,6 +12,7 @@ import type {
   TriggerPDFProcessing,
   ExtractPDFPages,
   VerifyFileUpload,
+  DeleteInvalidFiles,
 } from 'wasp/server/operations';
 import type { File } from 'wasp/entities';
 import { processPDFMetadata as processPDFMetadataJob } from 'wasp/server/jobs';
@@ -924,3 +925,53 @@ async function generateServerSideThumbnail(
   
   return thumbnailKey;
 }
+
+// ============================================================================
+// CLEANUP OPERATIONS FOR INVALID FILES
+// ============================================================================
+
+const deleteInvalidFilesInputSchema = z.object({
+  // Optional: delete only files older than this many days
+  olderThanDays: z.number().optional(),
+});
+
+type DeleteInvalidFilesInput = z.infer<typeof deleteInvalidFilesInputSchema>;
+
+/**
+ * Delete invalid files from the database
+ * Useful for cleaning up files that failed S3 upload
+ */
+export const deleteInvalidFiles: DeleteInvalidFiles<
+  DeleteInvalidFilesInput,
+  { deletedCount: number }
+> = async (rawArgs, context) => {
+  if (!context.user) {
+    throw new HttpError(401);
+  }
+
+  const { olderThanDays } = ensureArgsSchemaOrThrowHttpError(deleteInvalidFilesInputSchema, rawArgs);
+
+  // Build where clause
+  const whereClause: any = {
+    userId: context.user.id,
+    validationStatus: 'invalid',
+  };
+
+  // Optionally filter by age
+  if (olderThanDays) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+    whereClause.createdAt = {
+      lt: cutoffDate,
+    };
+  }
+
+  // Delete invalid files
+  const result = await context.entities.File.deleteMany({
+    where: whereClause,
+  });
+
+  return {
+    deletedCount: result.count,
+  };
+};

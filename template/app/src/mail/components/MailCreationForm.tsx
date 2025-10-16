@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { createMailPiece, getMailPiece, getAllFilesByUser, useQuery } from 'wasp/client/operations';
+import { createMailPiece, createMailCheckoutSession, getAllFilesByUser, getMailAddressesByUser, useQuery } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft, CheckCircle, CreditCard } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { FileText } from 'lucide-react';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 import FileSelector from './FileSelector';
 import AddressSelector from './AddressSelector';
-import PaymentStep from './PaymentStep';
 import QuickAddressModal from './QuickAddressModal';
-import PDFViewer from './PDFViewer';
-import BottomActionBar from './BottomActionBar';
 import MailConfigurationSection from './MailConfigurationSection';
-import type { MailPiece, MailAddress, File } from 'wasp/entities';
+import { CompactAddressSection } from './CompactAddressSection';
+import { OrderSummaryCard } from './OrderSummaryCard';
+import { QuickFileUpload } from './QuickFileUpload';
+import type { MailAddress, File } from 'wasp/entities';
 import { SimpleAddressValidator } from '../../shared/addressValidationSimple';
 
 /**
@@ -70,39 +73,39 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   
-  // Payment step state
-  const [currentStep, setCurrentStep] = useState<'form' | 'payment'>('form');
-  const [createdMailPiece, setCreatedMailPiece] = useState<MailPiece & {
-    senderAddress: MailAddress;
-    recipientAddress: MailAddress;
-    file?: File | null;
-  } | null>(null);
+  // Smart progressive form state
+  const [activeSection, setActiveSection] = useState<'file' | 'sender' | 'recipient' | 'config' | 'complete'>('file');
 
   // Quick add modal state
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [showRecipientModal, setShowRecipientModal] = useState(false);
 
-  // Fetch user's files to get selected file details
+  // Fetch user's files and addresses
   const { data: userFiles, isLoading: filesLoading } = useQuery(getAllFilesByUser);
+  const { data: userAddresses, isLoading: addressesLoading } = useQuery(getMailAddressesByUser);
   
-  // Find selected file for PDF viewer
+  // Find selected file
   const selectedFile = useMemo(() => {
     if (!formData.fileId || !userFiles) {
       return null;
     }
-    const file = userFiles.find((f: File) => f.id === formData.fileId) || null;
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[MailCreationForm] Selected file:', { 
-        fileId: formData.fileId, 
-        found: !!file,
-        hasKey: !!file?.key
-      });
-    }
-    return file;
+    return userFiles.find((f: File) => f.id === formData.fileId) || null;
   }, [formData.fileId, userFiles]);
 
-  // Determine if we should show the two-column layout
-  const shouldShowTwoColumn = !!(selectedFile && selectedFile.key);
+  // Find selected addresses
+  const senderAddress = useMemo(() => {
+    if (!formData.senderAddressId || !userAddresses) {
+      return null;
+    }
+    return userAddresses.find((a: MailAddress) => a.id === formData.senderAddressId) || null;
+  }, [formData.senderAddressId, userAddresses]);
+
+  const recipientAddress = useMemo(() => {
+    if (!formData.recipientAddressId || !userAddresses) {
+      return null;
+    }
+    return userAddresses.find((a: MailAddress) => a.id === formData.recipientAddressId) || null;
+  }, [formData.recipientAddressId, userAddresses]);
 
   // Direct action call - no useAction hook needed
 
@@ -144,18 +147,41 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     setErrors(formValidation.errors);
   }, [formValidation.errors]);
 
+  // Smart progression logic - auto-advance sections
+  useEffect(() => {
+    if (!formData.fileId) {
+      setActiveSection('file');
+    } else if (!formData.senderAddressId) {
+      setActiveSection('sender');
+    } else if (!formData.recipientAddressId) {
+      setActiveSection('recipient');
+    } else if (formData.fileId && formData.senderAddressId && formData.recipientAddressId) {
+      setActiveSection('config');
+    }
+  }, [formData.fileId, formData.senderAddressId, formData.recipientAddressId]);
+
+  // Mark form as complete when valid
+  useEffect(() => {
+    if (formValidation.isValid && activeSection === 'config') {
+      setActiveSection('complete');
+    }
+  }, [formValidation.isValid, activeSection]);
+
   // Validation function for form submission
   const validateForm = useCallback((): boolean => {
     return formValidation.isValid;
   }, [formValidation.isValid]);
 
-  // Shared submit logic - prevents duplication and race conditions
+  // Streamlined submit logic - creates mail piece and redirects to Stripe immediately
   const submitMailPiece = async () => {
+    if (!formValidation.isValid || isSubmitting) return;
+    
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      const result = await createMailPiece({
+      // Step 1: Create mail piece
+      const mailPiece = await createMailPiece({
         mailType: formData.mailType,
         mailClass: formData.mailClass,
         mailSize: formData.mailSize,
@@ -166,62 +192,23 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
         addressPlacement: formData.addressPlacement
       });
 
-      // Fetch the complete mail piece with relations for payment step
-      const completeMailPiece = await getMailPiece({ id: result.id });
-      if (completeMailPiece) {
-        setCreatedMailPiece(completeMailPiece);
-        setCurrentStep('payment');
-      } else {
-        throw new Error('Failed to load mail piece details');
-      }
+      // Step 2: Create Stripe checkout session and redirect immediately
+      const checkoutData = await createMailCheckoutSession({
+        mailPieceId: mailPiece.id
+      });
+
+      // Redirect to Stripe Checkout
+      window.location.href = checkoutData.sessionUrl;
+
     } catch (error: unknown) {
-      setSubmitError(error instanceof Error ? error.message : 'Failed to create mail piece');
-    } finally {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to process. Please try again.');
       setIsSubmitting(false);
     }
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm() || isSubmitting) {
-      return;
-    }
-
+  const handleSubmit = async () => {
     await submitMailPiece();
-  };
-
-  // Handle submit from bottom action bar (non-form event)
-  const handleBottomBarSubmit = (e?: React.FormEvent | React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-    }
-    
-    if (!validateForm() || isSubmitting) {
-      return;
-    }
-
-    submitMailPiece();
-  };
-
-  // Handle payment success
-  const handlePaymentSuccess = (mailPieceId: string) => {
-    if (onSuccess) {
-      onSuccess(mailPieceId);
-    }
-  };
-
-  // Handle payment cancellation
-  const handlePaymentCancel = () => {
-    setCurrentStep('form');
-    setCreatedMailPiece(null);
-  };
-
-  // Go back to form step
-  const handleBackToForm = () => {
-    setCurrentStep('form');
-    setCreatedMailPiece(null);
   };
 
   // Memoized form update handler to prevent unnecessary re-renders
@@ -234,141 +221,110 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     return formValidation.isValid;
   }, [formValidation.isValid]);
 
-  // Render payment step
-  if (currentStep === 'payment' && createdMailPiece) {
-    return (
-      <div className={className}>
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={handleBackToForm}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Mail Configuration
-          </Button>
-          
-          <div className="flex items-center gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-sm font-medium">
-                1
-              </div>
-              <span className="text-sm text-gray-600">Mail Created</span>
-            </div>
-            <div className="flex-1 h-px bg-gray-200"></div>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-medium">
-                2
-              </div>
-              <span className="text-sm font-medium text-blue-600">Payment</span>
-            </div>
-          </div>
-        </div>
-
-        <PaymentStep
-          mailPiece={createdMailPiece}
-          onPaymentSuccess={handlePaymentSuccess}
-          onPaymentCancel={handlePaymentCancel}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className={className}>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* File Selection - Always at top */}
-        <FileSelector
-          selectedFileId={formData.fileId}
-          onFileSelect={(fileId) => setFormData(prev => ({ ...prev, fileId }))}
-          mailType={formData.mailType}
-          mailSize={formData.mailSize}
-          addressPlacement={formData.addressPlacement}
-          showPreview={false}
-          compact={true}
-        />
+      {/* Error Alert */}
+      {submitError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
 
-        {/* Two-Column Layout: PDF Viewer + Form Elements */}
-        {shouldShowTwoColumn ? (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] xl:grid-cols-[1fr_500px] gap-6">
-            {/* LEFT COLUMN: PDF Viewer */}
-            <div className="w-full">
-              <PDFViewer 
-                fileKey={selectedFile.key}
-              />
-            </div>
+      {/* Two-Column Split Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-8">
+        {/* LEFT COLUMN: Smart Progressive Form */}
+        <div className="space-y-4">
+          {/* Sticky Selection Sections */}
+          <div className="lg:sticky lg:top-6 lg:z-10 space-y-4">
+          {/* File Section - with tabs for existing/upload */}
+          {activeSection === 'file' ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5" />
+                  Select or Upload File
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="existing" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="existing">Select Existing</TabsTrigger>
+                    <TabsTrigger value="upload">Upload New</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="existing">
+                    <FileSelector
+                      selectedFileId={formData.fileId}
+                      onFileSelect={(fileId) => setFormData(prev => ({ ...prev, fileId }))}
+                      mailType={formData.mailType}
+                      mailSize={formData.mailSize}
+                      addressPlacement={formData.addressPlacement}
+                      showPreview={false}
+                      compact={false}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="upload">
+                    <QuickFileUpload
+                      onUploadSuccess={(fileId) => {
+                        setFormData(prev => ({ ...prev, fileId }));
+                      }}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          ) : (
+            <FileSelector
+              selectedFileId={formData.fileId}
+              onFileSelect={() => setActiveSection('file')}
+              mailType={formData.mailType}
+              mailSize={formData.mailSize}
+              addressPlacement={formData.addressPlacement}
+              showPreview={false}
+              compact={true}
+            />
+          )}
 
-            {/* RIGHT COLUMN: Address Selection + Mail Config */}
-            <div className="space-y-6">
-              {/* Address Selection */}
-              <div className="space-y-6">
-                <AddressSelector
-                  selectedAddressId={formData.senderAddressId}
-                  onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, senderAddressId: addressId }))}
-                  addressType="sender"
-                  onQuickAdd={() => setShowSenderModal(true)}
-                />
-                
-                <AddressSelector
-                  selectedAddressId={formData.recipientAddressId}
-                  onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, recipientAddressId: addressId }))}
-                  addressType="recipient"
-                  onQuickAdd={() => setShowRecipientModal(true)}
-                />
-              </div>
-
-              {/* Mail Configuration - Compact mode */}
-              <MailConfigurationSection
-                formData={{
-                  mailType: formData.mailType,
-                  mailClass: formData.mailClass,
-                  mailSize: formData.mailSize,
-                  description: formData.description,
-                  addressPlacement: formData.addressPlacement
-                }}
-                onChange={handleFormDataChange}
-                compact={true}
-                errors={errors}
-              />
-            </div>
-          </div>
-
-          {/* Sticky Bottom Action Bar - Shows only in two-column layout */}
-          <BottomActionBar
-            isValid={isFormValid}
-            isSubmitting={isSubmitting}
-            pageCount={selectedFile?.pageCount || 0}
-            mailClass={formData.mailClass}
-            mailType={formData.mailType}
-            addressPlacement={formData.addressPlacement}
-            onSubmit={handleBottomBarSubmit}
-            errors={errors}
-            fileSelected={!!formData.fileId}
-            addressesSelected={!!(formData.senderAddressId && formData.recipientAddressId)}
-          />
-          </>
-        ) : (
-          /* Single Column: No file selected yet - show original layout */
-          <div className="space-y-6">
-            {/* Address Selection */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Sender Section */}
+          {formData.fileId && (
+            activeSection === 'sender' ? (
               <AddressSelector
                 selectedAddressId={formData.senderAddressId}
                 onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, senderAddressId: addressId }))}
                 addressType="sender"
                 onQuickAdd={() => setShowSenderModal(true)}
               />
-              
+            ) : senderAddress ? (
+              <CompactAddressSection
+                address={senderAddress}
+                label="Sender"
+                onEdit={() => setActiveSection('sender')}
+              />
+            ) : null
+          )}
+
+          {/* Recipient Section */}
+          {formData.senderAddressId && (
+            activeSection === 'recipient' ? (
               <AddressSelector
                 selectedAddressId={formData.recipientAddressId}
                 onAddressSelect={(addressId) => setFormData(prev => ({ ...prev, recipientAddressId: addressId }))}
                 addressType="recipient"
                 onQuickAdd={() => setShowRecipientModal(true)}
               />
-            </div>
+            ) : recipientAddress ? (
+              <CompactAddressSection
+                address={recipientAddress}
+                label="Recipient"
+                onEdit={() => setActiveSection('recipient')}
+              />
+            ) : null
+          )}
+          </div>
 
-            {/* Mail Configuration */}
+          {/* Config Section - Not sticky, appears below */}
+          {formData.recipientAddressId && activeSection !== 'complete' && (
             <MailConfigurationSection
               formData={{
                 mailType: formData.mailType,
@@ -379,32 +335,30 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
               }}
               onChange={handleFormDataChange}
               errors={errors}
+              compact={activeSection !== 'config'}
             />
+          )}
+        </div>
 
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <Button
-                type="submit"
-                isLoading={isSubmitting}
-                loadingText="Creating..."
-                disabled={!isFormValid}
-                className="min-w-[200px]"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Create & Pay
-              </Button>
-            </div>
-
-            {/* Form Status */}
-            {isFormValid && (
-              <div className="flex items-center gap-2 text-green-600 text-sm">
-                <CheckCircle className="h-4 w-4" />
-                <span>Ready to create mail piece and proceed to payment</span>
-              </div>
-            )}
-          </div>
-        )}
-      </form>
+        {/* RIGHT COLUMN: Order Summary (sticky on desktop) */}
+        <div className="lg:sticky lg:top-6 lg:h-fit order-first lg:order-last">
+          <OrderSummaryCard
+            selectedFile={selectedFile}
+            senderAddress={senderAddress}
+            recipientAddress={recipientAddress}
+            mailType={formData.mailType}
+            mailClass={formData.mailClass}
+            mailSize={formData.mailSize}
+            addressPlacement={formData.addressPlacement}
+            isValid={isFormValid}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            fileId={formData.fileId}
+            senderAddressId={formData.senderAddressId}
+            recipientAddressId={formData.recipientAddressId}
+          />
+        </div>
+      </div>
 
       {/* Quick Add Address Modals */}
       <QuickAddressModal

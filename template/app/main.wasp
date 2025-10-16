@@ -281,6 +281,11 @@ action deleteFile {
   entities: [User, File]
 }
 
+action deleteInvalidFiles {
+  fn: import { deleteInvalidFiles } from "@src/file-upload/operations",
+  entities: [User, File]
+}
+
 action triggerPDFProcessing {
   fn: import { triggerPDFProcessing } from "@src/file-upload/operations",
   entities: [User, File]

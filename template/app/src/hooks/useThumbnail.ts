@@ -17,7 +17,7 @@ export function useThumbnail(file: File) {
       enabled: isPDF && hasThumbnailKey,
       refetchInterval: false,
       // Retry on error to handle expired URLs
-      retry: (failureCount, error: any) => {
+      retry: (failureCount: number, error: any) => {
         // Don't retry if it's a 404 (thumbnail doesn't exist)
         if (error?.message?.includes('not found') || error?.status === 404) {
           return false;

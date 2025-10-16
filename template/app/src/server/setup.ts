@@ -5,6 +5,7 @@ import "../instrument.js";
 import { validateServerStartup } from './startupValidation';
 import type { MiddlewareConfigFn } from 'wasp/server';
 import cors from 'cors';
+import express from 'express';
 
 // Validate CORS environment variables
 function validateCorsEnvironment(): void {
@@ -49,6 +50,16 @@ export async function setupServer(): Promise<void> {
 
 // Server middleware configuration function
 export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) => {
+  // Increase JSON body size limit to handle large base64 thumbnails
+  // Base64 thumbnails can be several MB, default 100kb is too small
+  middlewareConfig.set('express.json', express.json({ 
+    limit: '50mb' 
+  }));
+  middlewareConfig.set('express.urlencoded', express.urlencoded({ 
+    limit: '50mb',
+    extended: true 
+  }));
+  
   // Configure CORS to allow client-server communication
   const corsOptions = {
     origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
