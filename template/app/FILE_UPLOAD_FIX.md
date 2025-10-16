@@ -31,7 +31,6 @@ https://s3.console.aws.amazon.com/s3/buckets/myawspostmarrbucket?region=us-east-
     "AllowedHeaders": ["*"],
     "AllowedMethods": ["GET", "HEAD", "POST", "PUT"],
     "AllowedOrigins": [
-      "https://postmarkr-server-client.fly.dev",
       "https://postmarkr.com",
       "https://www.postmarkr.com",
       "http://localhost:3000",

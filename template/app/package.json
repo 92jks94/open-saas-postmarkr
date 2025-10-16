@@ -92,7 +92,7 @@
     "test:integration-only": "vitest run src/test/integration/**/*.test.ts --reporter=verbose",
     "test:performance-only": "vitest run src/test/performance/**/*.test.ts --reporter=verbose",
     "check:production": "tsx src/server/productionReadinessCheck.ts",
-    "check:health": "curl -f https://postmarkr-server.fly.dev/health || echo 'Server not responding'",
+    "check:health": "curl -f https://postmarkr.com/health || echo 'Server not responding'",
     "deploy": "./scripts/deploy.sh",
     "deploy:quick": "./scripts/deploy-quick.sh",
     "deploy:fixed": "./deploy-fixed.sh",

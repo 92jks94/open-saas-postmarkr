@@ -1,9 +1,12 @@
 ---
 title: "The Digital Mailroom: How to Manage Physical Mail for Your Remote Business"
 date: 2025-08-09
-description: Transform your business mail into a seamless digital workflow.
+description: "Transform physical mail into digital workflows with virtual mailboxes. Receive scans, automate sending, and manage business correspondence remotely without a physical office."
 authors: ["Postmarkr Team"]
 tags: ["digital mailroom", "virtual mailbox", "remote business", "mail automation"]
+image:
+  url: "/banner-images/2025-08-09-digital-mailroom.webp"
+  alt: "Digital mailroom showing virtual mailbox management and automated mail workflows"
 ---
 
 ## Introduction

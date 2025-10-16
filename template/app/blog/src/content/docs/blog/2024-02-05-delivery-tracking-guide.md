@@ -1,9 +1,12 @@
 ---
 title: "Complete Guide to Mail Delivery Tracking"
 date: 2024-02-05
-description: "Maximize visibility and reliability in your mail operations"
+description: "Track USPS, FedEx, and UPS shipments with real-time updates. Learn how delivery tracking improves accountability, reduces lost mail, and enhances customer service."
 authors: ["Postmarkr Team"]
 tags: ["delivery-tracking", "mail-monitoring", "business-logistics", "customer-service"]
+image:
+  url: "/banner-images/2024-02-05-delivery-tracking-guide.webp"
+  alt: "Mail delivery tracking dashboard showing real-time package and letter tracking"
 ---
 
 ## Why Delivery Tracking Matters

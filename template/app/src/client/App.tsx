@@ -16,8 +16,6 @@ import { demoNavigationitems, marketingNavigationItems, adminNavigationItems } f
 import { initSentry } from './sentry';
 import './chromeExtensionErrorHandler'; // Import error handler
 import Footer from '../landing-page/components/Footer';
-import { footerNavigation } from '../landing-page/contentSections';
-
 /**
  * Root application component that handles layout and navigation
  * 
@@ -84,7 +82,7 @@ export default function App() {
               <div className='mx-auto max-w-screen-2xl flex-1'>
                 <Outlet />
               </div>
-              <Footer footerNavigation={footerNavigation} />
+              <Footer />
             </>
           )}
         </div>

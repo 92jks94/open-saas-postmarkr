@@ -90,7 +90,7 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
         <>
           <WaspRouterLink
             to={routes.LoginRoute.to}
-            className={cn('font-semibold leading-6 ml-3 transition-all duration-300 hover:text-primary', {
+            className={cn('font-semibold leading-6 transition-all duration-300 hover:text-primary', {
               'text-sm': !isScrolled,
               'text-xs': isScrolled,
             })}
@@ -105,6 +105,15 @@ function NavBarDesktopUserDropdown({ isScrolled }: { isScrolled: boolean }) {
                 })}
               />
             </div>
+          </WaspRouterLink>
+          <WaspRouterLink
+            to={routes.SignupRoute.to}
+            className={cn('font-semibold leading-6 transition-all duration-300 px-4 py-2 rounded-md border border-primary text-primary hover:bg-primary/10', {
+              'text-sm': !isScrolled,
+              'text-xs px-3 py-1.5': isScrolled,
+            })}
+          >
+            Sign Up
           </WaspRouterLink>
           <WaspRouterLink
             to={routes.SignupRoute.to}
@@ -178,13 +187,25 @@ function NavBarMobileMenu({
           <div className='mt-6 flow-root'>
             <div className='-my-6 divide-y divide-border'>
               <ul className='space-y-1 py-6'>{renderNavigationItems(navigationItems, setMobileMenuOpen)}</ul>
-              <div className='py-6'>
+              <div className='py-6 space-y-3'>
                 {isUserLoading ? null : !user ? (
-                  <WaspRouterLink to={routes.LoginRoute.to}>
-                    <div className='flex justify-end items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors p-3 rounded-lg hover:bg-accent min-h-[44px]'>
-                      Log in <LogIn size='1.1rem' className='ml-1' />
-                    </div>
-                  </WaspRouterLink>
+                  <>
+                    <WaspRouterLink to={routes.LoginRoute.to}>
+                      <div className='flex justify-center items-center duration-300 ease-in-out text-foreground hover:text-primary transition-colors p-3 rounded-lg hover:bg-accent min-h-[44px]'>
+                        Sign In <LogIn size='1.1rem' className='ml-1' />
+                      </div>
+                    </WaspRouterLink>
+                    <WaspRouterLink to={routes.SignupRoute.to}>
+                      <div className='flex justify-center items-center duration-300 ease-in-out p-3 rounded-lg border border-primary text-primary hover:bg-primary/10 min-h-[44px]'>
+                        Sign Up
+                      </div>
+                    </WaspRouterLink>
+                    <WaspRouterLink to={routes.SignupRoute.to}>
+                      <div className='flex justify-center items-center duration-300 ease-in-out p-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 min-h-[44px]'>
+                        Send Mail Now
+                      </div>
+                    </WaspRouterLink>
+                  </>
                 ) : (
                   <ul className='space-y-1'>
                     <UserMenuItems user={user} onItemClick={() => setMobileMenuOpen(false)} />

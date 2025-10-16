@@ -1,9 +1,12 @@
 ---
 title: "When Does the Mail Actually Show Up?"
 date: 2025-10-13
-description: Your Complete Guide to USPS Delivery Days and Hours
+description: "USPS delivers Monday-Saturday from 8 AM to 5 PM, with Sunday service for Priority Mail Express. Learn delivery schedules, holiday closures, and how to track your mail."
 authors: ["Postmarkr Team"]
 tags: ["USPS delivery hours", "USPS hours", "USPS delivery window", "USPS delivery days"]
+image:
+  url: "/banner-images/2025-10-13-when-does-the-mail-actually-show-up.webp"
+  alt: "USPS mail carrier delivering packages - delivery schedule and hours guide"
 ---
 
 ## Introduction

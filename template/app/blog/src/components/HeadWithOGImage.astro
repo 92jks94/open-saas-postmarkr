@@ -24,9 +24,47 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 // Get page title and description for additional SEO
 const pageTitle = Astro.props.entry?.data?.title || Astro.props.title || 'Postmarkr Blog';
 const pageDescription = Astro.props.entry?.data?.description || Astro.props.description || 'Expert guides on virtual mailboxes, certified mail, and digital mail services.';
+
+// Get date information for articles
+const publishedDate = Astro.props.entry?.data?.date;
+const modifiedDate = Astro.props.entry?.data?.updatedDate || publishedDate;
+const isBlogPost = Astro.props.entry?.data?.date ? true : false;
+
+// Create JSON-LD structured data for blog posts
+const jsonLd = isBlogPost ? {
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": pageTitle,
+  "description": pageDescription,
+  "image": ogImageUrl.href,
+  "datePublished": publishedDate ? new Date(publishedDate).toISOString() : undefined,
+  "dateModified": modifiedDate ? new Date(modifiedDate).toISOString() : undefined,
+  "author": {
+    "@type": "Organization",
+    "name": "Postmarkr Team",
+    "url": "https://postmarkr.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Postmarkr",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://blog.postmarkr.com/postmarkr-team.png"
+    },
+    "url": "https://postmarkr.com"
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": canonicalURL.href
+  }
+} : null;
 ---
 
 <Default {...Astro.props}><slot /></Default>
+
+{jsonLd && (
+  <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+)}
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />

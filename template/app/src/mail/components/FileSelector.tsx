@@ -6,9 +6,10 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import { CheckCircle, XCircle, FileText, Upload, AlertTriangle, DollarSign, Package, FileStack } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, Upload, AlertTriangle, DollarSign, Package, FileStack, Plus } from 'lucide-react';
 import { MAX_FILE_SIZE_BYTES, MAIL_TYPE_PAGE_REQUIREMENTS, BYTES_PER_KB } from '../../shared/constants/files';
 import { getPricingTierForPageCount } from '../../shared/constants/pricing';
+import QuickUploadModal from './QuickUploadModal';
 
 /**
  * Props for the FileSelector component */
@@ -353,6 +354,7 @@ const FileSelector: React.FC<FileSelectorProps> = ({
   compact = false
 }) => {
   const { data: files, isLoading, error } = useQuery(getAllFilesByUser);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   
   // Find the selected file
   const selectedFile = useMemo(() => {
@@ -465,18 +467,31 @@ const FileSelector: React.FC<FileSelectorProps> = ({
     <div className={className}>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Select File
-            {selectedFileId && (
-              <CheckCircle className="h-5 w-5 text-green-500 ml-1" />
-            )}
-          </CardTitle>
-          {!showCompactView && (
-            <p className="text-sm text-gray-600">
-              Choose a PDF file to send. Only validated files are shown.
-            </p>
-          )}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Select File
+                {selectedFileId && (
+                  <CheckCircle className="h-5 w-5 text-green-500 ml-1" />
+                )}
+              </CardTitle>
+              {!showCompactView && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Choose a PDF file to send. Only validated files are shown.
+                </p>
+              )}
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowUploadModal(true)}
+              className="flex-shrink-0"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Quick Upload
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Compact View: Show selected file with change button */}
@@ -508,8 +523,9 @@ const FileSelector: React.FC<FileSelectorProps> = ({
             <div className="text-center py-8">
               <Upload className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500 mb-4">No files uploaded yet</p>
-              <Button variant="outline" onClick={() => window.location.href = '/file-upload'}>
-                Upload Files
+              <Button variant="outline" onClick={() => setShowUploadModal(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Upload Your First File
               </Button>
             </div>
           ) : (
@@ -612,16 +628,6 @@ const FileSelector: React.FC<FileSelectorProps> = ({
             )}
 
             {/* Upload more files button */}
-            <div className="pt-6 border-t">
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={() => window.location.href = '/file-upload'}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload More Files
-              </Button>
-            </div>
           </>
         )}
         </CardContent>
@@ -635,6 +641,16 @@ const FileSelector: React.FC<FileSelectorProps> = ({
           onClose={() => onFileSelect(null)}
         />
       )}
+
+      {/* Quick Upload Modal */}
+      <QuickUploadModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onSuccess={(file) => {
+          onFileSelect(file.id);
+          setShowUploadModal(false);
+        }}
+      />
     </div>
   );
 };

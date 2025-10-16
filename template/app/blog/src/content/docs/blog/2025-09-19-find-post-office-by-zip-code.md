@@ -1,9 +1,12 @@
 ---
 title: "Where Is the Nearest Post Office? Find USPS Locations by ZIP Code or Address"
 date: 2025-09-19
-description: "A practical guide to quickly finding the right USPS location for your needs, from retail branches to collection boxes and self-service kiosks."
+description: "Find USPS locations using the official locator tool, filter by services like passport acceptance, and discover collection boxes, self-service kiosks, and retail branches near you."
 authors: ["Postmarkr Team"]
 tags: ["post office finder", "ZIP code lookup", "USPS locations", "postal services", "mail drop-off"]
+image:
+  url: "/banner-images/2025-09-19-find-post-office-by-zip-code.webp"
+  alt: "USPS location finder showing post offices, collection boxes, and service kiosks by ZIP code"
 ---
 
 ## Introduction

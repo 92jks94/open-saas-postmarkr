@@ -64,12 +64,13 @@ export default function MailCreationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div className="min-h-screen bg-background py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* Header */}
         <PageHeader
           title="Create Mail Piece"
           description="Complete the form to send your physical mail. Select your file, addresses, and configuration to see real-time pricing."
+          className="space-y-2"
         />
 
         {/* Mail Creation Form */}

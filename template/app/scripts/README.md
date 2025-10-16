@@ -54,7 +54,7 @@ Synchronizes environment variables with Fly.io secrets.
 ## Deployment URLs
 
 After successful deployment:
-- **Client**: https://postmarkr-client.fly.dev
-- **Server**: https://postmarkr-server.fly.dev
-- **Health Check**: https://postmarkr-server.fly.dev/health
-- **Monitoring**: https://fly.io/apps/postmarkr-server/monitoring
+- **Client**: https://postmarkr.com
+- **Server**: https://postmarkr.com/api
+- **Health Check**: https://postmarkr.com/health
+- **Monitoring**: Check your hosting provider's monitoring dashboard

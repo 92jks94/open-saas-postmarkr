@@ -130,12 +130,45 @@ export default function Pricing() {
         </div>
 
         {/* Additional Info */}
-        <p
-          className='text-center text-muted-foreground mt-12 animate-fade-in-up'
-          style={{ animationDelay: '0.4s' }}
-        >
-          All plans include free address validation and secure payment processing
-        </p>
+        <div className='mt-12 max-w-3xl mx-auto animate-fade-in-up' style={{ animationDelay: '0.4s' }}>
+          <p className='text-center text-muted-foreground mb-6'>
+            All plans include free address validation and secure payment processing
+          </p>
+          
+          {/* Pricing Details Card */}
+          <Card className='bg-primary/5 border-primary/20 p-6'>
+            <h4 className='text-sm font-semibold mb-4 text-center'>What's Included in Every Price</h4>
+            <div className='grid sm:grid-cols-2 gap-4 text-sm text-muted-foreground'>
+              <div className='flex items-start gap-2'>
+                <Check className='w-4 h-4 text-primary flex-shrink-0 mt-0.5' />
+                <div>
+                  <span className='font-medium text-foreground'>Professional Printing:</span> High-quality color or B&W printing on premium paper
+                </div>
+              </div>
+              <div className='flex items-start gap-2'>
+                <Check className='w-4 h-4 text-primary flex-shrink-0 mt-0.5' />
+                <div>
+                  <span className='font-medium text-foreground'>USPS Postage:</span> All postage costs included in the price
+                </div>
+              </div>
+              <div className='flex items-start gap-2'>
+                <Check className='w-4 h-4 text-primary flex-shrink-0 mt-0.5' />
+                <div>
+                  <span className='font-medium text-foreground'>Envelope & Stuffing:</span> Professional envelope with addressing and sealing
+                </div>
+              </div>
+              <div className='flex items-start gap-2'>
+                <Check className='w-4 h-4 text-primary flex-shrink-0 mt-0.5' />
+                <div>
+                  <span className='font-medium text-foreground'>Delivery Tracking:</span> USPS tracking number for every piece
+                </div>
+              </div>
+            </div>
+            <p className='text-xs text-muted-foreground/80 mt-4 text-center'>
+              Pages are counted as single-sided letter-size (8.5" × 11"). No hidden fees or surprise charges.
+            </p>
+          </Card>
+        </div>
       </div>
     </section>
   );

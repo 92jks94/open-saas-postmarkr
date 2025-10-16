@@ -13,23 +13,25 @@ app OpenSaaS {
     "<link rel='manifest' href='/site.webmanifest' />",
     "<meta charset='utf-8' />",
     "<meta name='viewport' content='width=device-width, initial-scale=1.0' />",
-    "<meta name='description' content='Postmarkr - Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
+    "<meta name='description' content='Send certified mail & manage business correspondence without visiting the post office. Virtual mailbox, automated mail sending, and secure digital mail management for remote teams.' />",
     "<meta name='author' content='Postmarkr' />",
-    "<meta name='keywords' content='mail service, remote work, startup, small business, document delivery, business mail, package tracking, certified mail, business documents, contract delivery, startup mail, remote worker, business correspondence, mail tracking, document management' />",
+    "<meta name='keywords' content='virtual mailbox, certified mail automation, digital mail service, remote business mail, virtual print room, USPS certified mail, mail without printer, business mail management, virtual address, mail forwarding service, secure mail handling, remote work mail solutions' />",
     "<link rel='canonical' href='https://postmarkr.com' />",
     
     "<meta property='og:type' content='website' />",
-    "<meta property='og:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",
+    "<meta property='og:title' content='Postmarkr - Virtual Mailbox & Automated Mail Service' />",
     "<meta property='og:site_name' content='Postmarkr' />",
     "<meta property='og:url' content='https://postmarkr.com' />",
-    "<meta property='og:description' content='Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
+    "<meta property='og:description' content='Send certified mail, receive mail digitally, and manage business correspondence without visiting the post office. Virtual mailbox and automated mail sending for remote businesses.' />",
     "<meta property='og:image' content='https://postmarkr.com/public-banner.webp' />",
-    "<meta name='twitter:image' content='https://postmarkr.com/public-banner.webp' />",
-    "<meta name='twitter:image:width' content='800' />",
-    "<meta name='twitter:image:height' content='400' />",
+    "<meta property='og:image:width' content='1200' />",
+    "<meta property='og:image:height' content='630' />",
+    "<meta property='og:image:alt' content='Postmarkr Virtual Mailbox and Digital Mail Service' />",
     "<meta name='twitter:card' content='summary_large_image' />",
-    "<meta name='twitter:title' content='Postmarkr - Simple Mail Service for Modern Businesses' />",
-    "<meta name='twitter:description' content='Simple, reliable mail service for remote workers, startups, and small businesses. Send important documents, contracts, and packages with tracking and delivery confirmation.' />",
+    "<meta name='twitter:title' content='Postmarkr - Virtual Mailbox & Automated Mail Service' />",
+    "<meta name='twitter:description' content='Send certified mail & manage business correspondence from anywhere. Virtual mailbox with digital mail scanning and automated sending.' />",
+    "<meta name='twitter:image' content='https://postmarkr.com/public-banner.webp' />",
+    "<meta name='twitter:image:alt' content='Postmarkr Virtual Mailbox Service' />",
     
     // Google Analytics - Script loads and initializes in head for proper detection
     "<script async src='https://www.googletagmanager.com/gtag/js?id=G-6H2SB3GJDW'></script>",
@@ -99,6 +101,11 @@ app OpenSaaS {
 route LandingPageRoute { path: "/", to: LandingPage }
 page LandingPage {
   component: import LandingPage from "@src/landing-page/LandingPage"
+}
+
+route AboutRoute { path: "/about", to: AboutPage }
+page AboutPage {
+  component: import AboutPage from "@src/landing-page/components/AboutPage"
 }
 
 //#region Auth Pages

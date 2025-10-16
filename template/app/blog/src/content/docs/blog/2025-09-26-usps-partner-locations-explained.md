@@ -1,9 +1,12 @@
 ---
 title: "USPS Partner Locations Explained: CPUs, Approved Shippers, and Self-Service Kiosks"
 date: 2025-09-26
-description: "Understand the different types of USPS access points and avoid hidden fees at contract locations and approved shippers."
+description: "CPUs guarantee USPS pricing while Approved Shippers may charge extra fees. Learn which USPS partner location saves you money and time for your business mail needs."
 authors: ["Postmarkr Team"]
 tags: ["USPS partners", "Contract Postal Units", "Approved Shippers", "self-service kiosks", "postal pricing"]
+image:
+  url: "/banner-images/2025-09-26-usps-partner-locations-explained.webp"
+  alt: "USPS Contract Postal Units, Approved Shippers, and Self-Service Kiosks comparison"
 ---
 
 ## Introduction

@@ -15,64 +15,43 @@ export type GridFeature = {
 
 export const features: GridFeature[] = [
   {
-    name: 'PDF Upload',
-    description: 'Upload documents securely from your home office',
+    name: 'PDF Upload & Validation',
+    description: 'Upload any PDF document with automatic validation and real-time address verification',
     emoji: '📄',
-    size: 'small',
+    size: 'large',
     href: undefined,
   },
   {
-    name: 'Address Validation',
-    description: 'Real-time address verification ensures delivery',
-    emoji: '📍',
-    size: 'small',
-    href: undefined,
-  },
-  {
-    name: 'Mail Service Selection',
-    description: 'Choose from First Class, Certified, Priority, and Express mail',
+    name: 'Flexible Mail Services',
+    description: 'Choose from First Class, Certified, Priority, and Express mail with transparent pricing',
     emoji: '✉️',
-    size: 'medium',
+    size: 'large',
     href: undefined,
   },
   {
     name: 'Real-time Tracking',
-    description: 'Track your mail from anywhere with detailed status updates',
+    description: 'Monitor your mail journey from printing to delivery with live updates and notifications',
     emoji: '📊',
-    size: 'large',
+    size: 'medium',
     href: undefined,
   },
   {
     name: 'Professional Delivery',
-    description: 'Maintain professional image with reliable mail service',
+    description: 'High-quality printing, secure handling, and reliable USPS delivery every time',
     emoji: '📬',
-    size: 'large',
+    size: 'medium',
     href: undefined,
   },
   {
-    name: 'Secure Payments',
-    description: 'Safe and secure payment processing with Stripe',
+    name: 'Secure & Easy Payment',
+    description: 'Bank-level encryption with Stripe payment processing and saved address management',
     emoji: '💳',
-    size: 'small',
-    href: undefined,
-  },
-  {
-    name: 'Address Management',
-    description: 'Save client addresses for quick access',
-    emoji: '📋',
-    size: 'small',
-    href: undefined,
-  },
-  {
-    name: 'Delivery Notifications',
-    description: 'Get notified when your mail is delivered',
-    emoji: '🔔',
     size: 'medium',
     href: undefined,
   },
   {
     name: 'Work from Anywhere',
-    description: 'Send mail from your laptop, anywhere in the world',
+    description: 'Send physical mail from any location with just an internet connection',
     emoji: '🌍',
     size: 'medium',
     href: undefined,
@@ -155,21 +134,47 @@ export const faqs = [
   },
 ];
 
-export const footerNavigation = {
+// Footer navigation for signed-out users (marketing focus)
+export const footerNavigationSignedOut = {
+  product: [
+    { name: 'How It Works', href: '/#how-it-works' },
+    { name: 'Features', href: '/#features' },
+    { name: 'Pricing', href: '/#pricing' },
+  ],
+  company: [
+    { name: 'About', href: '/about' },
+    { name: 'Blog', href: BlogUrl },
+    { name: 'Testimonials', href: '/#testimonials' },
+    { name: 'FAQ', href: '/#faq' },
+  ],
+  connect: [
+    { name: 'Support', href: 'mailto:support@postmarkr.com' },
+    { name: 'Contact', href: 'mailto:hello@postmarkr.com' },
+  ],
+};
+
+// Footer navigation for signed-in users (app focus)
+export const footerNavigationSignedIn = {
   app: [
     { name: 'Send Mail', href: '/mail/create' },
     { name: 'Mail History', href: '/mail/history' },
     { name: 'Addresses', href: '/addresses' },
+    { name: 'Settings', href: '/account' },
   ],
   company: [
-    { name: 'About Postmarkr', href: '#' },
     { name: 'Blog', href: BlogUrl },
-    { name: 'Testimonials', href: '/#testimonials' },
     { name: 'FAQ', href: '/#faq' },
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' },
+    { name: 'Privacy', href: '/privacy' },
+    { name: 'Terms', href: '/terms' },
+  ],
+  connect: [
+    { name: 'Support', href: 'mailto:support@postmarkr.com' },
+    { name: 'Account', href: '/account' },
   ],
 };
+
+// Legacy export for backward compatibility
+export const footerNavigation = footerNavigationSignedOut;
 
 export const workflowSteps = [
   {

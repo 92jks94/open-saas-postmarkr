@@ -13,6 +13,10 @@
 // - Testimonials: Social proof and customer stories
 // - FAQ: Common questions and answers
 
+import { useEffect } from 'react';
+import { useAuth } from 'wasp/client/auth';
+import { useNavigate } from 'react-router-dom';
+import { routes } from 'wasp/client/router';
 import Hero from './components/Hero';
 import WhatWeHandle from './components/WhatWeHandle';
 import WhoUses from './components/WhoUses';
@@ -24,11 +28,18 @@ import FinalCTA from './components/FinalCTA';
 import FAQ from './components/FAQ';
 
 export default function LandingPage() {
+  const { data: user, isLoading } = useAuth();
+
+  // Show nothing while checking auth
+  if (isLoading) {
+    return null;
+  }
+
   return (
     <div className='bg-background text-foreground'>
       <main className='isolate'>
         <section id='hero' aria-labelledby='hero-heading'>
-          <Hero />
+          <Hero user={user} />
         </section>
         <section id='what-we-handle' aria-labelledby='what-we-handle-heading'>
           <WhatWeHandle />

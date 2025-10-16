@@ -1,17 +1,39 @@
 ---
 import { Image } from 'astro:assets';
 import { BANNER_PATH, getBannerImageFilename, checkBannerImageExists } from './imagePaths'
+import { getReadingTime } from '../utils/readingTime'
 
 const { id, entry } = Astro.props;
 // Handle both Starlight pages and blog posts
 const pageData = entry?.data || Astro.props;
-const { title, subtitle, hideBannerImage } = pageData;
+const { title, subtitle, hideBannerImage, date } = pageData;
 const bannerImageFileName = getBannerImageFilename({ path: id })
 const imageExists = checkBannerImageExists({ bannerImageFileName })
+
+// Calculate reading time for blog posts
+const isBlogPost = date ? true : false;
+let readingTime = '';
+if (isBlogPost && entry?.body) {
+  readingTime = getReadingTime(entry.body);
+}
+
+// Format date for display
+const displayDate = date ? new Date(date).toLocaleDateString('en-US', { 
+  year: 'numeric', 
+  month: 'short', 
+  day: 'numeric' 
+}) : '';
 ---
 
 <h1 id='_top' class="gradient-title">{title}</h1>
 {subtitle && <p class="subtitle">{subtitle}</p>}
+{isBlogPost && (displayDate || readingTime) && (
+  <div class="post-meta">
+    {displayDate && <time datetime={date}>{displayDate}</time>}
+    {displayDate && readingTime && <span class="separator">·</span>}
+    {readingTime && <span class="reading-time">{readingTime}</span>}
+  </div>
+)}
 {imageExists && <div class="image-container">
   <Image src={`${BANNER_PATH}/${bannerImageFileName}`} loading="eager" alt={title || 'Banner image'} width="50" height="50" class={!hideBannerImage ? 'cover-image' : 'hidden'} />
 </div>}
@@ -27,6 +49,28 @@ const imageExists = checkBannerImageExists({ bannerImageFileName })
     font-size: var(--sl-text-h4);
     color: var(--sl-color-gray-2);
     margin: 0.5rem 0;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0 1rem 0;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3);
+  }
+
+  .post-meta time {
+    font-weight: 500;
+  }
+
+  .post-meta .separator {
+    opacity: 0.5;
+  }
+
+  .post-meta .reading-time {
+    font-style: italic;
+    opacity: 0.9;
   }
 
   .cover-image {

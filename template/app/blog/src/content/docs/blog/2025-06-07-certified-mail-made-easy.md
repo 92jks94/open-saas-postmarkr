@@ -1,9 +1,12 @@
 ---
 title: "Certified Mail Made Easy: Skip the Post Office, Keep the Proof"
 date: 2025-06-07
-description: "How to handle your most important mail without wasting hours at the counter."
+description: "Send USPS Certified Mail online without visiting the post office. Upload documents, get instant electronic proof of acceptance, and track delivery—all from your computer."
 authors: ["Postmarkr Team"]
 tags: ["certified mail", "virtual print room", "mail automation", "business compliance"]
+image:
+  url: "/banner-images/2025-06-07-certified-mail-made-easy.webp"
+  alt: "Automated certified mail service with electronic proof of delivery and online tracking"
 ---
 
 ## Introduction
