@@ -9,8 +9,8 @@ export const sendWelcomeEmailAction = async (args: void, context: any): Promise<
   }
 
   try {
-    // Get user email
-    const userEmail = context.user.identities?.email?.email || context.user.email;
+    // Get user email (email is stored in id field)
+    const userEmail = context.user.identities?.email?.id || '';
     const userName = context.user.username || userEmail?.split('@')[0] || 'Valued Customer';
     
     if (!userEmail) {

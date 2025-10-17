@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Row } from "@tanstack/react-table";
 import { useNavigate } from 'react-router-dom';
-import { Eye, Trash2, MoreHorizontal, Package } from 'lucide-react';
+import { Eye, Trash2, MoreHorizontal, Package, CreditCard, Edit2, Copy } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
+import { createMailCheckoutSession } from 'wasp/client/operations';
 import type { MailPieceWithRelations } from '../columns';
 
 interface MailPieceCardProps {
@@ -22,6 +24,7 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
   const navigate = useNavigate();
   const mailPiece = row.original;
   const visibleCells = row.getVisibleCells();
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Debug logging for mail piece data
   if (process.env.NODE_ENV === 'development') {
@@ -44,6 +47,27 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
     }
   };
 
+  const handlePayNow = async () => {
+    try {
+      setIsProcessingPayment(true);
+      // Create Stripe Checkout Session
+      const checkoutData = await createMailCheckoutSession({
+        mailPieceId: mailPiece.id
+      });
+      // Redirect to Stripe Checkout
+      window.location.href = checkoutData.sessionUrl;
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      alert(error.message || 'Failed to start payment process. Please try again.');
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const handleDuplicate = () => {
+    // Navigate to create page with data from this mail piece
+    navigate(`/mail/create?duplicate=${mailPiece.id}`);
+  };
+
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-6">
@@ -63,14 +87,36 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
           </div>
           
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/mail/${mailPiece.id}`)}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
+            {/* Primary action based on status */}
+            {mailPiece.status === 'pending_payment' ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handlePayNow}
+                disabled={isProcessingPayment}
+              >
+                <CreditCard className="h-4 w-4 mr-1" />
+                {isProcessingPayment ? 'Processing...' : 'Pay Now'}
+              </Button>
+            ) : mailPiece.status === 'draft' ? (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleEdit}
+              >
+                <Edit2 className="h-4 w-4 mr-1" />
+                Complete
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/mail/${mailPiece.id}`)}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                View
+              </Button>
+            )}
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -83,21 +129,47 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
+                
+                {/* Status-specific actions */}
                 {mailPiece.status === 'draft' && (
-                  <DropdownMenuItem onClick={handleEdit}>
-                    <Package className="h-4 w-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={handleEdit}>
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit Draft
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
                 )}
+                
+                {mailPiece.status === 'pending_payment' && (
+                  <>
+                    <DropdownMenuItem onClick={handlePayNow} disabled={isProcessingPayment}>
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      {isProcessingPayment ? 'Processing...' : 'Complete Payment'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                
+                {/* Common actions */}
+                <DropdownMenuItem onClick={handleDuplicate}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Duplicate
+                </DropdownMenuItem>
+                
+                {/* Delete only for drafts */}
                 {mailPiece.status === 'draft' && (
-                  <DropdownMenuItem
-                    className="text-red-600"
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {isDeleting ? 'Deleting...' : 'Delete'}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isDeleting ? 'Deleting...' : 'Delete'}
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

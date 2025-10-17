@@ -431,6 +431,17 @@ job dailyStatsJob {
   },
   entities: [User, DailyStats, Logs, PageViewSource]
 }
+
+job receiptCleanupJob {
+  executor: PgBoss,
+  perform: {
+    fn: import { cleanupOldReceipts } from "@src/server/receipts/s3ReceiptStorage"
+  },
+  schedule: {
+    cron: "0 2 * * *" // daily at 2 AM
+  },
+  entities: []
+}
 //#endregion
 
 //#region Admin Dashboard
@@ -595,6 +606,22 @@ action syncMailPieceStatus {
 action bulkDeleteMailPieces {
   fn: import { bulkDeleteMailPieces } from "@src/mail/operations",
   entities: [MailPiece, MailPieceStatusHistory]
+}
+
+// Receipt operations
+action generateReceiptPDF {
+  fn: import { generateReceiptPDF } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, File]
+}
+
+query getReceiptDownloadUrl {
+  fn: import { getReceiptDownloadUrl } from "@src/mail/operations",
+  entities: [MailPiece]
+}
+
+action sendReceiptEmail {
+  fn: import { sendReceiptEmail } from "@src/mail/operations",
+  entities: [MailPiece, MailAddress, File]
 }
 
 api lobWebhook {

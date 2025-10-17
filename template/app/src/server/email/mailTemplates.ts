@@ -15,22 +15,15 @@ import {
   createDetailSection,
   convertMailAddressForEmail
 } from './emailTemplateBase';
-
-// Helper function to format date
-function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return d.toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-}
-
-// Helper function to format currency
-function formatCurrency(amountInCents: number): string {
-  return `$${(amountInCents / 100).toFixed(2)}`;
-}
+import { 
+  formatCurrency, 
+  formatDate
+} from '../../mail/columns';
+import { 
+  formatMailClass,
+  generateOrderNumber,
+  formatAddressFull
+} from '../../mail/utils/formatting';
 
 // Helper to get mail type display name
 function getMailTypeDisplay(mailType: string): string {
@@ -1076,6 +1069,165 @@ Postmarkr - Physical Mail Made Simple
 
   return {
     subject: `🔄 Your ${mailTypeDisplay} Has Been Re-Routed`,
+    text,
+    html
+  };
+}
+
+/**
+ * Get receipt email template
+ * Sent when user requests receipt via email
+ */
+interface ReceiptEmailData {
+  mailPiece: any;
+  recipientAddress: any;
+  senderAddress: any;
+  userName: string;
+  userEmail: string;
+  trackingUrl: string;
+  hasPDFAttachment: boolean;
+}
+
+export function getReceiptEmail(data: ReceiptEmailData) {
+  const { mailPiece, recipientAddress, senderAddress, userName, trackingUrl, hasPDFAttachment } = data;
+  
+  const orderNumber = generateOrderNumber(mailPiece.paymentIntentId, mailPiece.id);
+  const mailTypeDisplay = getMailTypeDisplay(mailPiece.mailType);
+  const cost = formatCurrency(mailPiece.cost || mailPiece.customerPrice || 0);
+  
+  const text = `
+Hi ${userName},
+
+Here's your receipt for Order #${orderNumber}:
+
+ORDER DETAILS
+-------------
+Order Number: ${orderNumber}
+Order Date: ${formatDate(mailPiece.createdAt)}
+Status: ${mailPiece.status.replace('_', ' ').toUpperCase()}
+Payment: ${mailPiece.paymentStatus.toUpperCase()}
+
+MAIL SPECIFICATIONS
+-------------------
+Type: ${mailPiece.mailType}
+Class: ${formatMailClass(mailPiece.mailClass)}
+Size: ${mailPiece.mailSize}
+${mailPiece.pageCount ? `Pages: ${mailPiece.pageCount}` : ''}
+${mailPiece.lobTrackingNumber ? `Tracking: ${mailPiece.lobTrackingNumber}` : ''}
+
+FROM ADDRESS
+------------
+${formatAddressFull(senderAddress).join('\n')}
+
+TO ADDRESS
+----------
+${formatAddressFull(recipientAddress).join('\n')}
+
+COST BREAKDOWN
+--------------
+Total: ${cost}
+
+${hasPDFAttachment ? 'A detailed PDF receipt is attached to this email.' : 'A text receipt is attached to this email.'}
+
+TRACK YOUR MAIL
+---------------
+View full details and track delivery: ${trackingUrl}
+
+Questions? We're here to help!
+• Email: support@postmarkr.com
+• Visit our Help Center: https://postmarkr.com/help
+
+Thank you for choosing Postmarkr!
+
+Best regards,
+The Postmarkr Team
+
+---
+Postmarkr - Physical Mail Made Simple
+  `.trim();
+
+  const bodyContent = `
+    <div style="font-size: 64px; text-align: center; margin-bottom: 20px;">📄</div>
+    
+    <p style="text-align: center; font-size: 18px; color: #6B7280; margin-bottom: 30px;">
+      Hi ${userName},
+    </p>
+    
+    <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">
+      Here's your receipt for <strong>Order #${orderNumber}</strong>:
+    </p>
+    
+    <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #111827; margin: 0 0 15px 0; font-size: 16px;">Order Details</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+        <div><strong>Order Number:</strong> ${orderNumber}</div>
+        <div><strong>Order Date:</strong> ${formatDate(mailPiece.createdAt)}</div>
+        <div><strong>Status:</strong> ${mailPiece.status.replace('_', ' ').toUpperCase()}</div>
+        <div><strong>Payment:</strong> ${mailPiece.paymentStatus.toUpperCase()}</div>
+      </div>
+    </div>
+    
+    <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #111827; margin: 0 0 15px 0; font-size: 16px;">Mail Specifications</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px;">
+        <div><strong>Type:</strong> ${mailPiece.mailType}</div>
+        <div><strong>Class:</strong> ${formatMailClass(mailPiece.mailClass)}</div>
+        <div><strong>Size:</strong> ${mailPiece.mailSize}</div>
+        ${mailPiece.pageCount ? `<div><strong>Pages:</strong> ${mailPiece.pageCount}</div>` : ''}
+        ${mailPiece.lobTrackingNumber ? `<div><strong>Tracking:</strong> ${mailPiece.lobTrackingNumber}</div>` : ''}
+      </div>
+    </div>
+    
+    <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #111827; margin: 0 0 15px 0; font-size: 16px;">Addresses</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px;">
+        <div>
+          <strong>From:</strong><br>
+          ${formatAddressFull(senderAddress).map(line => `${line}<br>`).join('')}
+        </div>
+        <div>
+          <strong>To:</strong><br>
+          ${formatAddressFull(recipientAddress).map(line => `${line}<br>`).join('')}
+        </div>
+      </div>
+    </div>
+    
+    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <h3 style="color: #111827; margin: 0 0 15px 0; font-size: 16px;">Cost Breakdown</h3>
+      <div style="font-size: 18px; font-weight: bold; color: #059669;">
+        Total: ${cost}
+      </div>
+    </div>
+    
+    <div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px; padding: 20px; margin: 20px 0;">
+      <p style="margin: 0; font-size: 14px; color: #1E40AF;">
+        ${hasPDFAttachment ? '📄 A detailed PDF receipt is attached to this email.' : '📄 A text receipt is attached to this email.'}
+      </p>
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${trackingUrl}" 
+         style="display: inline-block; background: #10B981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 500;">
+        Track Your Mail
+      </a>
+    </div>
+    
+    <div style="border-top: 1px solid #E5E7EB; padding-top: 20px; margin-top: 30px; font-size: 14px; color: #6B7280;">
+      <p>Questions? We're here to help!</p>
+      <p>• Email: support@postmarkr.com<br>
+      • Visit our Help Center: <a href="https://postmarkr.com/help" style="color: #10B981;">https://postmarkr.com/help</a></p>
+    </div>
+  `;
+
+  const html = createEmailTemplate({
+    headerTitle: 'Your Order Receipt',
+    headerColor: EmailColors.primary,
+    headerIcon: '📄',
+    bodyContent
+  });
+
+  return {
+    subject: `📄 Receipt for Order #${orderNumber} - ${mailTypeDisplay}`,
     text,
     html
   };

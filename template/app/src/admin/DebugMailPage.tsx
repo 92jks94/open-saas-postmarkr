@@ -81,7 +81,7 @@ function DetailedMailPieceView({ mailPieceId }: { mailPieceId: string }) {
                   </div>
                   <div>
                     <span className="text-sm text-gray-500">User:</span>
-                    <p className="text-sm">{detailedData.mailPiece.user.email}</p>
+                    <p className="text-sm">{detailedData.mailPiece.user.email || 'No email'}</p>
                   </div>
                   <div>
                     <span className="text-sm text-gray-500">Mail Type:</span>
@@ -439,7 +439,7 @@ export default function DebugMailPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-gray-600">{piece.user.email}</p>
+                      <p className="text-sm text-gray-600">{piece.user.email || 'No email'}</p>
                     </div>
                     <div className="flex gap-2">
                       <Badge className={getStatusColor(piece.status)}>

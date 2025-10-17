@@ -189,27 +189,29 @@ export const createMailPieceColumns = (
           variant="ghost"
           onClick={() => onSort('mailType')}
         >
-          Type
+          Mail Type
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      ) : "Type"
+      ) : "Mail Type"
     },
     cell: ({ row }) => {
       const mailType = row.getValue("mailType") as string;
-      return <span className="text-sm text-foreground">{mailType}</span>;
+      return <span className="text-sm text-foreground capitalize">{mailType}</span>;
     },
   },
   {
     accessorKey: "mailClass",
-    header: "Class",
+    header: "Shipping Class",
     cell: ({ row }) => {
       const mailClass = row.getValue("mailClass") as string;
-      return <span className="text-sm text-foreground">{mailClass}</span>;
+      // Make it more readable
+      const friendlyClass = mailClass.replace('usps_', 'USPS ').replace('_', ' ');
+      return <span className="text-sm text-foreground">{friendlyClass}</span>;
     },
   },
   {
     accessorKey: "mailSize",
-    header: "Size",
+    header: "Paper Size",
     cell: ({ row }) => {
       const mailSize = row.getValue("mailSize") as string;
       return <span className="text-sm text-foreground">{mailSize}</span>;
@@ -262,10 +264,10 @@ export const createMailPieceColumns = (
           variant="ghost"
           onClick={() => onSort('createdAt')}
         >
-          Created
+          Date Created
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
-      ) : "Created"
+      ) : "Date Created"
     },
     cell: ({ row }) => {
       const createdAt = row.getValue("createdAt") as Date;
@@ -277,11 +279,18 @@ export const createMailPieceColumns = (
     header: "Tracking",
     cell: ({ row }) => {
       const tracking = row.getValue("lobTrackingNumber") as string | null;
-      return tracking ? (
-        <span className="text-xs font-mono text-muted-foreground">{tracking}</span>
-      ) : (
-        <span className="text-xs text-muted-foreground">-</span>
-      );
+      const status = row.getValue("status") as string;
+      
+      // Only show tracking for mail pieces that should have tracking
+      const shouldHaveTracking = ['in_transit', 'delivered', 'processing'].includes(status);
+      
+      if (tracking) {
+        return <span className="text-xs font-mono text-muted-foreground">{tracking}</span>;
+      } else if (shouldHaveTracking) {
+        return <span className="text-xs text-muted-foreground italic">Pending</span>;
+      } else {
+        return <span className="text-xs text-muted-foreground">—</span>;
+      }
     },
   },
 ];

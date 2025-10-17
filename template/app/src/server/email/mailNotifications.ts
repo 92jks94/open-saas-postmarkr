@@ -19,21 +19,22 @@ import {
   getMailedEmail,
   getProcessedForDeliveryEmail,
   getReRoutedEmail,
+  getReceiptEmail,
 } from './mailTemplates';
 
 interface MailPieceWithRelations extends MailPiece {
   recipientAddress: MailAddress;
   senderAddress: MailAddress;
-  user: User & { email?: string };
+  user: User;
 }
 
 /**
  * Get user email from auth identities or user model
  */
 function getUserEmail(user: any): string | null {
-  // Try to get email from identities (AuthUser structure)
-  if (user.identities?.email?.email) {
-    return user.identities.email.email;
+  // Try to get email from identities (AuthUser structure) - email is in id field
+  if (user.identities?.email?.id) {
+    return user.identities.email.id;
   }
   
   // Try to get email from user model directly
@@ -53,9 +54,9 @@ function getUserName(user: any): string {
     return user.username;
   }
   
-  // Try email identities
-  if (user.identities?.email?.email) {
-    return user.identities.email.email.split('@')[0];
+  // Try email identities - email is in id field
+  if (user.identities?.email?.id) {
+    return user.identities.email.id.split('@')[0];
   }
   
   // Try direct email
@@ -404,6 +405,189 @@ function getNotificationTypeForStatus(status: string): string {
     default:
       return 'mail_status_change';
   }
+}
+
+/**
+ * Send receipt email with PDF attachment
+ * Used when user requests receipt via email
+ */
+export async function sendReceiptEmailWithPDF(
+  mailPiece: MailPieceWithRelations,
+  user: any
+): Promise<void> {
+  try {
+    const userEmail = getUserEmail(user);
+    if (!userEmail) {
+      console.error('Cannot send receipt email: user email not found', {
+        mailPieceId: mailPiece.id,
+        userId: user.id
+      });
+      return;
+    }
+
+    // Generate PDF receipt
+    const { generateMailReceipt, generateTextReceipt } = await import('../receipts/pdfReceiptGenerator');
+    
+    let pdfBuffer: Buffer | undefined;
+    let textReceipt: string | undefined;
+    
+    try {
+      const receiptResult = await generateMailReceipt(mailPiece, userEmail);
+      
+      if (receiptResult.success && receiptResult.receiptUrl) {
+        // Fetch PDF from S3 URL
+        const response = await fetch(receiptResult.receiptUrl);
+        if (response.ok) {
+          pdfBuffer = Buffer.from(await response.arrayBuffer());
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to generate PDF receipt, falling back to text:', error);
+    }
+    
+    // Generate text receipt as fallback
+    if (!pdfBuffer) {
+      textReceipt = generateTextReceipt({
+        mailPieceId: mailPiece.id,
+        orderNumber: generateOrderNumber(mailPiece.paymentIntentId, mailPiece.id),
+        createdAt: mailPiece.createdAt,
+        status: mailPiece.status,
+        paymentStatus: mailPiece.paymentStatus,
+        mailType: mailPiece.mailType,
+        mailClass: mailPiece.mailClass,
+        mailSize: mailPiece.mailSize,
+        pageCount: mailPiece.pageCount || undefined,
+        cost: mailPiece.cost || mailPiece.customerPrice || 0,
+        lobTrackingNumber: mailPiece.lobTrackingNumber || undefined,
+        senderAddress: mailPiece.senderAddress,
+        recipientAddress: mailPiece.recipientAddress,
+        userEmail,
+        paymentIntentId: mailPiece.paymentIntentId || undefined,
+      });
+    }
+
+    // Prepare email content
+    const emailContent = getReceiptEmail({
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      senderAddress: mailPiece.senderAddress,
+      userName: getUserName(user),
+      userEmail,
+      trackingUrl: getTrackingUrl(mailPiece.id),
+      hasPDFAttachment: !!pdfBuffer,
+    });
+
+    // Send email with attachment
+    const emailData: any = {
+      to: userEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
+    };
+
+    // Add PDF attachment if available
+    if (pdfBuffer) {
+      emailData.attachments = [{
+        filename: `receipt-${mailPiece.id}.pdf`,
+        content: pdfBuffer.toString('base64'),
+        type: 'application/pdf',
+        disposition: 'attachment',
+      }];
+    } else if (textReceipt) {
+      // Add text receipt as attachment if no PDF
+      emailData.attachments = [{
+        filename: `receipt-${mailPiece.id}.txt`,
+        content: textReceipt,
+        type: 'text/plain',
+        disposition: 'attachment',
+      }];
+    }
+
+    await emailSender.send(emailData);
+
+    console.log(`✅ Receipt email sent for mail piece ${mailPiece.id} to ${userEmail}`);
+  } catch (error) {
+    console.error('Failed to send receipt email:', error);
+    // Don't throw - email failures shouldn't break the user flow
+  }
+}
+
+/**
+ * Send payment confirmation email with receipt attachment
+ * Enhanced version of existing function to include PDF receipt
+ */
+export async function sendPaymentConfirmationEmailWithReceipt(
+  mailPiece: MailPieceWithRelations
+): Promise<void> {
+  try {
+    const userEmail = getUserEmail(mailPiece.user);
+    if (!userEmail) return;
+
+    // Generate PDF receipt
+    const { generateMailReceipt } = await import('../receipts/pdfReceiptGenerator');
+    let pdfBuffer: Buffer | undefined;
+    
+    try {
+      const receiptResult = await generateMailReceipt(mailPiece, userEmail);
+      
+      if (receiptResult.success && receiptResult.receiptUrl) {
+        // Fetch PDF from S3 URL
+        const response = await fetch(receiptResult.receiptUrl);
+        if (response.ok) {
+          pdfBuffer = Buffer.from(await response.arrayBuffer());
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to generate PDF receipt for payment confirmation:', error);
+    }
+
+    // Prepare email content
+    const emailContent = getPaymentConfirmationEmail({
+      mailPiece,
+      recipientAddress: mailPiece.recipientAddress,
+      senderAddress: mailPiece.senderAddress,
+      userName: getUserName(mailPiece.user),
+      userEmail,
+      trackingUrl: getTrackingUrl(mailPiece.id),
+    });
+
+    // Send email with receipt attachment
+    const emailData: any = {
+      to: userEmail,
+      subject: emailContent.subject,
+      text: emailContent.text,
+      html: emailContent.html,
+    };
+
+    // Add PDF receipt as attachment if available
+    if (pdfBuffer) {
+      emailData.attachments = [{
+        filename: `receipt-${mailPiece.id}.pdf`,
+        content: pdfBuffer.toString('base64'),
+        type: 'application/pdf',
+        disposition: 'attachment',
+      }];
+    }
+
+    await emailSender.send(emailData);
+
+    console.log(`✅ Payment confirmation email with receipt sent for mail piece ${mailPiece.id} to ${userEmail}`);
+  } catch (error) {
+    console.error('Failed to send payment confirmation email with receipt:', error);
+    // Fall back to regular payment confirmation email
+    await sendPaymentConfirmationEmail(mailPiece);
+  }
+}
+
+// Helper function to generate order number (reuse existing logic)
+function generateOrderNumber(paymentIntentId?: string | null, mailPieceId?: string): string {
+  if (paymentIntentId) {
+    return paymentIntentId.slice(-8).toUpperCase();
+  }
+  if (mailPieceId) {
+    return `MP-${mailPieceId.slice(0, 8).toUpperCase()}`;
+  }
+  return 'N/A';
 }
 
 /**

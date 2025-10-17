@@ -28,9 +28,13 @@ import type {
   ConfirmMailPayment,
   RefundMailPayment,
   SubmitMailPieceToLob,
-  SyncMailPieceStatus
+  SyncMailPieceStatus,
+  GenerateReceiptPDF,
+  GetReceiptDownloadUrl,
+  SendReceiptEmail
 } from 'wasp/server/operations';
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
+import { generateMailReceipt } from '../server/receipts/pdfReceiptGenerator';
 import { AddressPlacement } from '@prisma/client';
 import type { MailPieceWithRelations } from './types';
 import { hasFullAccess } from '../shared/accessHelpers';
@@ -45,6 +49,11 @@ import {
   validateFileOwnership,
   validationErrors
 } from './validation';
+import { 
+  generateReceiptPDFInputSchema,
+  getReceiptDownloadUrlInputSchema,
+  sendReceiptEmailInputSchema
+} from '../server/receipts/validation';
 import { getThumbnailSignedUrl } from '../file-upload/s3ThumbnailUtils';
 import { 
   createMailPaymentIntent as createMailPaymentIntentService, 
@@ -820,9 +829,10 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(404, validationErrors.MAIL_PIECE_NOT_FOUND);
     }
 
-    // Only allow checkout creation for draft status
-    if (mailPiece.status !== 'draft') {
-      throw new HttpError(400, 'Checkout can only be created for draft mail pieces');
+    // Only allow checkout creation for draft or pending_payment status
+    // pending_payment allows retry if user abandoned previous checkout (sessions expire after 24 hours)
+    if (mailPiece.status !== 'draft' && mailPiece.status !== 'pending_payment') {
+      throw new HttpError(400, 'Checkout can only be created for draft or pending payment mail pieces');
     }
 
     // Validate page count is available for pricing calculation
@@ -998,7 +1008,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
         totalCost: (costData.cost / 100).toFixed(2),
         pricePerPage: (costData.cost / 100 / mailPiece.pageCount).toFixed(2),
       },
-      customer_email: context.user.email ?? undefined,
+      customer_email: context.user.identities?.email?.id ?? undefined,
     });
 
     if (!session.url) {
@@ -1006,15 +1016,16 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
     }
 
     // Update mail piece with checkout session ID using conditional update to prevent race conditions
-    // This will only update if the status is still 'draft', preventing duplicate checkout sessions
+    // This will only update if the status is still 'draft' or 'pending_payment' (for retries)
+    const previousStatus = mailPiece.status;
     const updateResult = await context.entities.MailPiece.updateMany({
       where: { 
         id: args.mailPieceId,
         userId: context.user.id,
-        status: 'draft' // Only update if still in draft status
+        status: { in: ['draft', 'pending_payment'] } // Allow both draft and pending_payment for retries
       },
       data: {
-        paymentIntentId: session.id, // Store session ID for reference
+        paymentIntentId: session.id, // Store new session ID for reference (overwrites expired one)
         status: 'pending_payment',
       },
     });
@@ -1024,16 +1035,30 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(409, 'Mail piece status changed during checkout creation. Please try again.');
     }
 
-    // Create status history entry
-    await context.entities.MailPieceStatusHistory.create({
-      data: {
-        mailPieceId: args.mailPieceId,
-        status: 'pending_payment',
-        previousStatus: 'draft',
-        description: 'Checkout session created',
-        source: 'system',
-      },
-    });
+    // Create status history entry (only if transitioning from draft, not for retries)
+    if (previousStatus === 'draft') {
+      await context.entities.MailPieceStatusHistory.create({
+        data: {
+          mailPieceId: args.mailPieceId,
+          status: 'pending_payment',
+          previousStatus: 'draft',
+          description: 'Checkout session created',
+          source: 'system',
+        },
+      });
+    } else {
+      // Log retry attempt for debugging
+      console.log(`Checkout session retry for mail piece ${args.mailPieceId}`);
+      await context.entities.MailPieceStatusHistory.create({
+        data: {
+          mailPieceId: args.mailPieceId,
+          status: 'pending_payment',
+          previousStatus: 'pending_payment',
+          description: 'New checkout session created (retry after abandoned/expired session)',
+          source: 'system',
+        },
+      });
+    }
 
     return {
       sessionUrl: session.url,
@@ -1476,5 +1501,161 @@ export const bulkDeleteMailPieces: BulkDeleteMailPieces<BulkDeleteMailPiecesInpu
     // Log unexpected errors
     console.error('Failed to bulk delete mail pieces:', error);
     throw new HttpError(500, 'Failed to bulk delete mail pieces due to an internal error.');
+  }
+};
+
+// ============================================================================
+// RECEIPT OPERATIONS
+// ============================================================================
+
+/**
+ * Generate PDF receipt for a mail piece
+ * Pre-generates receipt when payment is confirmed
+ */
+export const generateReceiptPDF: GenerateReceiptPDF<{ mailPieceId: string }, { success: boolean; receiptUrl?: string; error?: string }> = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, 'Not authorized');
+    }
+
+    // Validate input
+    const { mailPieceId } = generateReceiptPDFInputSchema.parse(args);
+
+    // Get mail piece with relations
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { 
+        id: mailPieceId, 
+        userId: context.user.id 
+      },
+      include: {
+        senderAddress: true,
+        recipientAddress: true,
+        file: true,
+      },
+    });
+
+    if (!mailPiece) {
+      throw new HttpError(404, 'Mail piece not found');
+    }
+
+    // Get user email from AuthUser identities (email is stored in id field)
+    const userEmail = context.user.identities?.email?.id || '';
+
+    // Get thumbnail if file exists
+    let thumbnailDataUrl: string | undefined;
+    if (mailPiece.file) {
+      try {
+        const thumbnailUrl = await getThumbnailSignedUrl(mailPiece.file.id);
+        // Convert to data URL (simplified - in production you'd fetch and convert)
+        thumbnailDataUrl = thumbnailUrl;
+      } catch (error) {
+        console.warn('Failed to get thumbnail for receipt:', error);
+      }
+    }
+
+    // Generate receipt
+    const result = await generateMailReceipt(mailPiece, userEmail, thumbnailDataUrl);
+    
+    return result;
+  } catch (error) {
+    console.error('Failed to generate receipt PDF:', error);
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError(500, 'Failed to generate receipt PDF');
+  }
+};
+
+/**
+ * Get download URL for existing receipt
+ */
+export const getReceiptDownloadUrl: GetReceiptDownloadUrl<{ mailPieceId: string }, { downloadUrl: string }> = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, 'Not authorized');
+    }
+
+    // Validate input
+    const { mailPieceId } = getReceiptDownloadUrlInputSchema.parse(args);
+
+    // Verify mail piece ownership
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { 
+        id: mailPieceId, 
+        userId: context.user.id 
+      },
+    });
+
+    if (!mailPiece) {
+      throw new HttpError(404, 'Mail piece not found');
+    }
+
+    // For now, generate a new receipt if one doesn't exist
+    // In production, you'd want to store the S3 key in the database
+    // Get user email from AuthUser identities (email is stored in id field)
+    const userEmail = context.user.identities?.email?.id || '';
+    
+    const result = await generateMailReceipt(mailPiece, userEmail);
+    
+    if (!result.success || !result.receiptUrl) {
+      throw new HttpError(500, 'Failed to generate receipt');
+    }
+
+    return { downloadUrl: result.receiptUrl };
+  } catch (error) {
+    console.error('Failed to get receipt download URL:', error);
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError(500, 'Failed to get receipt download URL');
+  }
+};
+
+/**
+ * Send receipt via email with PDF attachment
+ */
+export const sendReceiptEmail: SendReceiptEmail<{ mailPieceId: string }, { success: boolean; message: string }> = async (args, context) => {
+  try {
+    if (!context.user) {
+      throw new HttpError(401, 'Not authorized');
+    }
+
+    // Validate input
+    const { mailPieceId } = sendReceiptEmailInputSchema.parse(args);
+
+    // Get mail piece with relations
+    const mailPiece = await context.entities.MailPiece.findFirst({
+      where: { 
+        id: mailPieceId, 
+        userId: context.user.id 
+      },
+      include: {
+        senderAddress: true,
+        recipientAddress: true,
+        file: true,
+        user: true,
+      },
+    });
+
+    if (!mailPiece) {
+      throw new HttpError(404, 'Mail piece not found');
+    }
+
+    // Import receipt email sender
+    const { sendReceiptEmailWithPDF } = await import('../server/email/mailNotifications');
+    
+    // Send receipt email
+    await sendReceiptEmailWithPDF(mailPiece, context.user);
+    
+    return { 
+      success: true, 
+      message: 'Receipt email sent successfully' 
+    };
+  } catch (error) {
+    console.error('Failed to send receipt email:', error);
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError(500, 'Failed to send receipt email');
   }
 };

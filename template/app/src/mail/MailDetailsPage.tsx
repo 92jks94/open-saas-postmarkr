@@ -2,30 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'wasp/client/operations';
-import { getMailPiece, deleteMailPiece, getDownloadFileSignedURL } from 'wasp/client/operations';
+import { getMailPiece, deleteMailPiece, getDownloadFileSignedURL, createMailCheckoutSession } from 'wasp/client/operations';
 import type { MailPieceWithRelations } from './types';
 import { 
   ArrowLeft, 
-  CheckCircle, 
-  XCircle, 
   AlertCircle, 
-  Package, 
-  Mail, 
   Clock,
-  Calendar,
-  MapPin,
-  User,
-  FileText,
-  CreditCard,
   RefreshCw,
   Download,
   Edit,
   Trash2,
   MoreHorizontal,
-  ExternalLink
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { 
@@ -34,19 +25,32 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '../components/ui/dropdown-menu';
-import { Separator } from '../components/ui/separator';
 import { MailPreview } from './components/MailPreview';
+import { PDFViewer } from './components/PDFViewer';
+import { OrderReceipt } from './components/OrderReceipt';
+import { 
+  generateOrderNumber, 
+  formatDate,
+  getStatusIcon
+} from './utils';
 
 /**
- * Detailed view component for individual mail pieces
+ * Detailed view component for individual mail pieces (Receipt-Focused Layout)
  * 
- * Displays comprehensive mail piece information including:
- * - Status tracking with visual indicators and progress
- * - Address information (sender/recipient) with validation status
- * - File attachments and previews
- * - Payment details and history
- * - Action buttons (edit, delete, refresh, submit to Lob)
- * - Real-time status updates and error handling
+ * Features:
+ * - Receipt-style order summary with all essential details
+ * - Interactive PDF preview of uploaded document
+ * - Lob-generated mail preview (when available)
+ * - User-friendly order number generation
+ * - Consolidated payment and status information
+ * - Itemized cost breakdown
+ * - Complete status timeline
+ * - Streamlined actions menu
+ * 
+ * Layout:
+ * - Desktop: 50/50 split - PDF viewer left, receipt right
+ * - Mobile: Single column stacked layout
+ * - Print-optimized receipt display
  */
 export default function MailDetailsPage() {
   const { data: user } = useAuth();
@@ -55,6 +59,7 @@ export default function MailDetailsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const { data: mailPiece, isLoading, error, refetch } = useQuery(getMailPiece, { id: id! }) as {
@@ -132,88 +137,25 @@ export default function MailDetailsPage() {
     window.open(lobDashboardUrl, '_blank');
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'failed':
-      case 'returned':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'in_transit':
-      case 'processing':
-        return <Package className="h-5 w-5 text-blue-500" />;
-      case 'draft':
-      case 'pending_payment':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <Mail className="h-5 w-5 text-gray-500" />;
+  const handlePayNow = async () => {
+    if (!mailPiece) return;
+    
+    try {
+      setIsProcessingPayment(true);
+      setActionError(null);
+      
+      // Create Stripe Checkout Session
+      const checkoutData = await createMailCheckoutSession({
+        mailPieceId: mailPiece.id
+      });
+      
+      // Redirect to Stripe Checkout
+      window.location.href = checkoutData.sessionUrl;
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      setActionError(error.message || 'Failed to start payment process. Please try again.');
+      setIsProcessingPayment(false);
     }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'delivered':
-        return 'default';
-      case 'failed':
-      case 'returned':
-        return 'destructive';
-      case 'in_transit':
-      case 'processing':
-        return 'secondary';
-      case 'draft':
-      case 'pending_payment':
-        return 'outline';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusProgress = (status: string) => {
-    const statusProgress = {
-      'draft': 10,
-      'pending_payment': 20,
-      'paid': 30,
-      'submitted': 40,
-      'processing': 60,
-      'in_transit': 80,
-      'delivered': 100,
-      'failed': 0,
-      'returned': 0
-    };
-    return statusProgress[status as keyof typeof statusProgress] || 0;
-  };
-
-  const getStatusDescription = (status: string) => {
-    const descriptions = {
-      'draft': 'Mail piece is in draft status and ready for payment',
-      'pending_payment': 'Payment is required before processing can begin',
-      'paid': 'Payment confirmed, preparing for submission',
-      'submitted': 'Submitted to Lob for processing',
-      'processing': 'Lob is processing your mail piece',
-      'in_transit': 'Your mail piece is in transit to the destination',
-      'delivered': 'Mail piece has been successfully delivered',
-      'failed': 'Processing failed - please contact support',
-      'returned': 'Mail piece was returned to sender'
-    };
-    return descriptions[status as keyof typeof descriptions] || 'Unknown status';
-  };
-
-  const formatDate = (date: string | Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatCurrency = (amount: number | null | undefined) => {
-    if (!amount) return 'N/A';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
   };
 
   if (isLoading) {
@@ -250,6 +192,8 @@ export default function MailDetailsPage() {
     );
   }
 
+  const orderNumber = generateOrderNumber(mailPiece.paymentIntentId, mailPiece.id);
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -265,11 +209,14 @@ export default function MailDetailsPage() {
                 Back to History
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {mailPiece.description || 'Mail Piece Details'}
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Order #{orderNumber}
                 </h1>
-                <p className="text-gray-600 mt-1">
-                  Created on {formatDate(mailPiece.createdAt)}
+                <p className="text-sm text-gray-600 mt-1">
+                  {mailPiece.description || 'Mail Piece Details'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {formatDate(mailPiece.createdAt)}
                 </p>
               </div>
             </div>
@@ -277,6 +224,7 @@ export default function MailDetailsPage() {
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
               >
@@ -294,7 +242,7 @@ export default function MailDetailsPage() {
                   {mailPiece.status === 'draft' && (
                     <DropdownMenuItem onClick={handleEditMailPiece}>
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      Edit Draft
                     </DropdownMenuItem>
                   )}
                   {mailPiece.file && (
@@ -303,7 +251,7 @@ export default function MailDetailsPage() {
                       disabled={isDownloading}
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      {isDownloading ? 'Downloading...' : 'Download File'}
+                      {isDownloading ? 'Downloading...' : 'Download PDF'}
                     </DropdownMenuItem>
                   )}
                   {mailPiece.lobId && (
@@ -319,7 +267,7 @@ export default function MailDetailsPage() {
                       disabled={isDeleting}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      {isDeleting ? 'Deleting...' : 'Delete'}
+                      {isDeleting ? 'Deleting...' : 'Delete Draft'}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -334,210 +282,50 @@ export default function MailDetailsPage() {
               <AlertDescription>{actionError}</AlertDescription>
             </Alert>
           )}
-
-          {/* Simplified Implementation Notice */}
-          <Alert className="mb-6">
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Simplified Mode:</strong> Basic mail tracking and status display for testing.
-            </AlertDescription>
-          </Alert>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Status Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  {getStatusIcon(mailPiece.status)}
-                  <span className="ml-2">Status Overview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Badge variant={getStatusBadgeVariant(mailPiece.status)} className="text-sm">
-                      {mailPiece.status.replace('_', ' ').toUpperCase()}
-                    </Badge>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600">
-                    {getStatusDescription(mailPiece.status)}
+        {/* Main Content - Receipt-Focused Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column: PDF Preview */}
+          <div className="space-y-6">
+            {/* PDF Viewer for uploaded file */}
+            {mailPiece.file?.key ? (
+              <PDFViewer 
+                fileKey={mailPiece.file.key}
+                className="sticky top-8"
+              />
+            ) : (
+              <Card>
+                <CardContent className="flex flex-col items-center justify-center h-96 p-8">
+                  <FileText className="h-16 w-16 text-gray-300 mb-4" />
+                  <p className="text-gray-500 text-center">
+                    No PDF file attached to this mail piece
                   </p>
-                  
-                  {mailPiece.lobTrackingNumber && (
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <div className="flex items-center">
-                        <Package className="h-4 w-4 text-blue-500 mr-2" />
-                        <span className="text-sm font-medium text-blue-900">
-                          Tracking Number: {mailPiece.lobTrackingNumber}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Mail Preview */}
+            {/* Lob Preview (show when available) */}
             <MailPreview 
               thumbnails={mailPiece.lobThumbnails as any}
               lobPreviewUrl={mailPiece.lobPreviewUrl}
               mailType={mailPiece.mailType}
               lobId={mailPiece.lobId}
             />
-
-            {/* Mail Specifications */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Mail Specifications</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Mail Type</label>
-                    <p className="text-sm text-gray-900 capitalize">{mailPiece.mailType}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Mail Class</label>
-                    <p className="text-sm text-gray-900 capitalize">{mailPiece.mailClass}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Size</label>
-                    <p className="text-sm text-gray-900">{mailPiece.mailSize}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">Cost</label>
-                    <p className="text-sm text-gray-900">{formatCurrency(mailPiece.cost)}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Addresses */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Sender Address */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <User className="h-5 w-5 mr-2" />
-                    Sender Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {mailPiece.senderAddress ? (
-                    <div className="space-y-2">
-                      <p className="font-medium">{mailPiece.senderAddress.contactName}</p>
-                      <p className="text-sm text-gray-600">{mailPiece.senderAddress.address_line1}</p>
-                      {mailPiece.senderAddress.address_line2 && (
-                        <p className="text-sm text-gray-600">{mailPiece.senderAddress.address_line2}</p>
-                      )}
-                      <p className="text-sm text-gray-600">
-                        {mailPiece.senderAddress.address_city}, {mailPiece.senderAddress.address_state} {mailPiece.senderAddress.address_zip}
-                      </p>
-                      <p className="text-sm text-gray-600">{mailPiece.senderAddress.address_country}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No sender address</p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Recipient Address */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <MapPin className="h-5 w-5 mr-2" />
-                    Recipient Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {mailPiece.recipientAddress ? (
-                    <div className="space-y-2">
-                      <p className="font-medium">{mailPiece.recipientAddress.contactName}</p>
-                      <p className="text-sm text-gray-600">{mailPiece.recipientAddress.address_line1}</p>
-                      {mailPiece.recipientAddress.address_line2 && (
-                        <p className="text-sm text-gray-600">{mailPiece.recipientAddress.address_line2}</p>
-                      )}
-                      <p className="text-sm text-gray-600">
-                        {mailPiece.recipientAddress.address_city}, {mailPiece.recipientAddress.address_state} {mailPiece.recipientAddress.address_zip}
-                      </p>
-                      <p className="text-sm text-gray-600">{mailPiece.recipientAddress.address_country}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No recipient address</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* File Information */}
-            {mailPiece.file && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <FileText className="h-5 w-5 mr-2" />
-                    File Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <p className="font-medium">{mailPiece.file.name}</p>
-                    <p className="text-sm text-gray-600">
-                      Size: {mailPiece.file.size ? (mailPiece.file.size / 1024 / 1024).toFixed(2) : 'Unknown'} MB
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Type: {mailPiece.file.type}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Uploaded: {formatDate(mailPiece.file.createdAt)}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
 
-          {/* Sidebar */}
+          {/* Right Column: Order Receipt */}
           <div className="space-y-6">
-            {/* Payment Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Payment Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Status</span>
-                    <Badge variant={mailPiece.paymentStatus === 'paid' ? 'default' : 'outline'}>
-                      {mailPiece.paymentStatus.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Amount</span>
-                    <span className="text-sm font-medium">{formatCurrency(mailPiece.cost)}</span>
-                  </div>
-                  {mailPiece.paymentIntentId && (
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Payment ID</span>
-                      <span className="text-xs text-gray-400 font-mono">
-                        {mailPiece.paymentIntentId.slice(-8)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <OrderReceipt 
+              mailPiece={mailPiece}
+              onPayNow={mailPiece.status === 'pending_payment' ? handlePayNow : undefined}
+              isProcessingPayment={isProcessingPayment}
+            />
 
-            {/* Timeline */}
+            {/* Status Timeline */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
+                <CardTitle className="flex items-center text-base">
                   <Clock className="h-5 w-5 mr-2" />
                   Status Timeline
                 </CardTitle>
@@ -571,42 +359,6 @@ export default function MailDetailsPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Lob Integration */}
-            {mailPiece.lobId && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <ExternalLink className="h-5 w-5 mr-2" />
-                    Lob Integration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Lob ID</span>
-                      <span className="text-xs text-gray-400 font-mono">
-                        {mailPiece.lobId.slice(-8)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500">Lob Status</span>
-                      <Badge variant="outline">
-                        {mailPiece.lobStatus || 'Unknown'}
-                      </Badge>
-                    </div>
-                    {mailPiece.lobTrackingNumber && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500">Tracking</span>
-                        <span className="text-xs text-gray-400 font-mono">
-                          {mailPiece.lobTrackingNumber}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>

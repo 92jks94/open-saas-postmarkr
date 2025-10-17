@@ -12,7 +12,7 @@ export async function testSentryError(args: any, context: any) {
     if (context.user) {
       setUserContext({
         id: context.user.id,
-        email: context.user.email ?? undefined,
+        email: context.user.identities?.email?.id ?? undefined,
       });
     }
 
@@ -54,7 +54,7 @@ export async function testSentryMessage(args: any, context: any) {
     if (context.user) {
       setUserContext({
         id: context.user.id,
-        email: context.user.email ?? undefined,
+        email: context.user.identities?.email?.id ?? undefined,
       });
     }
 

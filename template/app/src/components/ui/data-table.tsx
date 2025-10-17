@@ -48,6 +48,11 @@ interface DataTableProps<TData, TValue> {
   cardClassName?: string
   cardGridClassName?: string
   enableViewToggle?: boolean
+  // TanStack Table filtering props
+  globalFilter?: string
+  onGlobalFilterChange?: (value: string) => void
+  columnFilters?: ColumnFiltersState
+  onColumnFiltersChange?: (filters: ColumnFiltersState) => void
 }
 
 export function DataTable<TData, TValue>({
@@ -63,12 +68,17 @@ export function DataTable<TData, TValue>({
   cardClassName,
   cardGridClassName = "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3",
   enableViewToggle = false,
+  globalFilter,
+  onGlobalFilterChange,
+  columnFilters,
+  onColumnFiltersChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [internalColumnFilters, setInternalColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [internalViewMode, setInternalViewMode] = React.useState<ViewMode>('table')
+  const [internalGlobalFilter, setInternalGlobalFilter] = React.useState('')
   
   // Use external view mode if provided, otherwise use internal state
   const currentViewMode = externalViewMode ?? internalViewMode
@@ -80,11 +90,16 @@ export function DataTable<TData, TValue>({
     }
   }
 
+  // Use external state if provided, otherwise use internal state
+  const currentColumnFilters = columnFilters ?? internalColumnFilters
+  const currentGlobalFilter = globalFilter ?? internalGlobalFilter
+
   const table = useReactTable({
     data,
     columns,
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: onColumnFiltersChange ?? setInternalColumnFilters as any,
+    onGlobalFilterChange: onGlobalFilterChange ?? setInternalGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -93,7 +108,8 @@ export function DataTable<TData, TValue>({
     onRowSelectionChange: setRowSelection,
     state: {
       sorting,
-      columnFilters,
+      columnFilters: currentColumnFilters,
+      globalFilter: currentGlobalFilter,
       columnVisibility,
       rowSelection,
     },
@@ -101,18 +117,51 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="w-full">
-      <div className="flex items-center py-4 gap-4">
-        {searchable && searchColumn && (
+      <div className="flex flex-col sm:flex-row sm:items-center py-4 gap-4">
+        {/* Left side: Global Search and Faceted Filters */}
+        <div className="flex flex-col sm:flex-row gap-4 flex-1">
+          {/* Global Search */}
           <Input
             placeholder={searchPlaceholder}
-            value={(table.getColumn(searchColumn)?.getFilterValue() as string) ?? ""}
-            onChange={(event) =>
-              table.getColumn(searchColumn)?.setFilterValue(event.target.value)
-            }
+            value={currentGlobalFilter ?? ""}
+            onChange={(event) => table.setGlobalFilter(event.target.value)}
             className="max-w-sm"
           />
-        )}
-        <div className="ml-auto flex items-center gap-2">
+          
+          {/* Faceted Status Filters */}
+          {(() => {
+            const statusColumn = table.getColumn('status');
+            if (!statusColumn) return null;
+            
+            const statusFacets = statusColumn.getFacetedUniqueValues();
+            const currentStatusFilter = statusColumn.getFilterValue();
+            
+            return (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={!currentStatusFilter ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => statusColumn.setFilterValue(undefined)}
+                >
+                  All ({table.getFilteredRowModel().rows.length})
+                </Button>
+                {Array.from(statusFacets.entries()).map(([status, count]) => (
+                  <Button
+                    key={status}
+                    variant={currentStatusFilter === status ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => statusColumn.setFilterValue(status === currentStatusFilter ? undefined : status)}
+                  >
+                    {status} ({count})
+                  </Button>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+        
+        {/* Right side: View Toggles */}
+        <div className="flex items-center gap-2">
           {enableViewToggle && (
             <ViewModeToggle 
               value={currentViewMode} 

@@ -23,18 +23,18 @@ export function EmptyState({
   className 
 }: EmptyStateProps) {
   return (
-    <Card className={cn('border-dashed', className)}>
+    <Card className={cn('border-dashed transition-all duration-300', className)}>
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
         {icon && (
-          <div className="mb-4 text-muted-foreground">
+          <div className="mb-4 text-muted-foreground transition-all duration-300">
             {icon}
           </div>
         )}
-        <h3 className="text-lg font-semibold text-foreground mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2 transition-all duration-300">
           {title}
         </h3>
         {description && (
-          <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+          <p className="text-sm text-muted-foreground mb-6 max-w-sm transition-all duration-300">
             {description}
           </p>
         )}
@@ -42,6 +42,7 @@ export function EmptyState({
           <Button 
             onClick={action.onClick}
             variant={action.variant || 'default'}
+            className="transition-all duration-300"
           >
             {action.label}
           </Button>
@@ -74,6 +75,7 @@ export function EmptyMailState({ onCreate }: { onCreate: () => void }) {
         label: 'Create Mail Piece',
         onClick: onCreate,
       }}
+      className="animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
     />
   );
 }

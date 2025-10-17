@@ -15,7 +15,7 @@ export async function exampleOperationWithSentry(args: any, context: any) {
     if (context.user) {
       setUserContext({
         id: context.user.id,
-        email: context.user.email ?? undefined,
+        email: context.user.identities?.email?.id ?? undefined,
       });
     }
 
@@ -86,7 +86,7 @@ export const createTask: CreateTask<CreateTaskInput, Task> = async (args, contex
     // Set user context for better error tracking
     setUserContext({
       id: context.user.id,
-      email: context.user.email,
+      email: context.user.identities?.email?.id,
     });
 
     const task = await context.entities.Task.create({

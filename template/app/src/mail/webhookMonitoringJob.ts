@@ -36,7 +36,7 @@ export async function monitorWebhookHealth(
       
       // Log details for debugging
       for (const mailPiece of stuckMailPieces) {
-        console.warn(`⚠️ Stuck mail piece: ${mailPiece.id}, Payment ID: ${mailPiece.paymentIntentId}, User: ${mailPiece.user.email}, Created: ${mailPiece.createdAt}`);
+        console.warn(`⚠️ Stuck mail piece: ${mailPiece.id}, Payment ID: ${mailPiece.paymentIntentId}, User: ${mailPiece.user.email || 'No email'}, Created: ${mailPiece.createdAt}`);
       }
       
       // In production, you would send alerts here (email, Slack, etc.)
@@ -66,7 +66,7 @@ export async function monitorWebhookHealth(
       
       // Log details for debugging
       for (const mailPiece of paidButNotSubmitted) {
-        console.warn(`⚠️ Paid but not submitted: ${mailPiece.id}, User: ${mailPiece.user.email}, Paid: ${mailPiece.updatedAt}`);
+        console.warn(`⚠️ Paid but not submitted: ${mailPiece.id}, User: ${mailPiece.user.email || 'No email'}, Paid: ${mailPiece.updatedAt}`);
       }
     }
 

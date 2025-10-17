@@ -20,7 +20,7 @@ import {
   type PaymentIntentFailedData,
 } from './webhookPayload';
 import { UnhandledWebhookEventError } from '../errors';
-import { sendPaymentConfirmationEmail, fetchMailPieceForEmail, sendPaymentFailedEmail } from '../../server/email/mailNotifications';
+import { sendPaymentConfirmationEmailWithReceipt, fetchMailPieceForEmail, sendPaymentFailedEmail } from '../../server/email/mailNotifications';
 
 export const stripeWebhook: PaymentsWebhook = async (request, response, context) => {
   try {
@@ -231,7 +231,7 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
     try {
       const mailPieceForEmail = await fetchMailPieceForEmail(mailPieceId, context);
       if (mailPieceForEmail) {
-        await sendPaymentConfirmationEmail(mailPieceForEmail);
+        await sendPaymentConfirmationEmailWithReceipt(mailPieceForEmail);
       }
     } catch (emailError) {
       console.error(`❌ Error sending payment confirmation email for ${mailPieceId}:`, emailError);
@@ -321,9 +321,10 @@ async function handleCustomerSubscriptionUpdated(
       prismaUserDelegate
     );
     if (subscription.cancel_at_period_end) {
-      if (user.email) {
+      const userEmail = user.email;
+      if (userEmail) {
         await emailSender.send({
-          to: user.email,
+          to: userEmail,
           subject: 'We hate to see you go :(',
           text: 'We hate to see you go. Here is a sweet offer...',
           html: 'We hate to see you go. Here is a sweet offer...',
@@ -498,7 +499,7 @@ async function handlePaymentIntentFailed(
       // Send payment failed email
       if (mailPieceForEmail) {
         try {
-          const userEmail = mailPieceForEmail.user.email;
+          const userEmail = mailPieceForEmail.user.email || '';
           const userName = mailPieceForEmail.user.username || userEmail?.split('@')[0] || 'Valued Customer';
           
           if (userEmail) {
