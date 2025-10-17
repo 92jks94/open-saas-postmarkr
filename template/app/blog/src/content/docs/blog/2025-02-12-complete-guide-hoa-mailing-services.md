@@ -1,9 +1,24 @@
 ---
-title: "The Complete Guide to HOA Mailing Services"
-date: 2025-02-12
-description: "How Modern HOAs Save Time, Stay Compliant, and Cut Costs—With the Full Costs Revealed. Learn why physical mail remains essential and how professional services save 25-40% over DIY mailings."
-authors: ["Postmarkr Team"]
-tags: ["HOA mailing services", "HOA compliance", "DIY mailing costs", "HOA legal requirements", "mailing cost comparison", "HOA board efficiency"]
+title: The Complete Guide to HOA Mailing Services
+date: 2025-02-12T00:00:00.000Z
+description: >-
+  How Modern HOAs Save Time, Stay Compliant, and Cut Costs—With the Full Costs
+  Revealed. Learn why physical mail remains essential and how professional
+  services save 25-40% over DIY mailings.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA mailing services
+  - HOA compliance
+  - DIY mailing costs
+  - HOA legal requirements
+  - mailing cost comparison
+  - HOA board efficiency
+image:
+  url: /banner-images/2025-02-12-complete-guide-hoa-mailing-services.webp
+  alt: >-
+    The Complete Guide to HOA Mailing Services - HOA mailing services, HOA
+    compliance, DIY mailing costs
 ---
 
 ## Why HOAs Must Still Use Physical Mail in 2025

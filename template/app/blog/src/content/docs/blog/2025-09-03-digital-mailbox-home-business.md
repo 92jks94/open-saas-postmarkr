@@ -1,9 +1,19 @@
 ---
-title: "Your Digital Mailbox: A Virtual Address for Home-Based Business"
-date: 2025-09-03
-description: Protect your privacy, boost credibility, and simplify mail handling.
-authors: ["Postmarkr Team"]
-tags: ["virtual mailbox", "home business", "privacy", "mail management"]
+title: 'Your Digital Mailbox: A Virtual Address for Home-Based Business'
+date: 2025-09-03T00:00:00.000Z
+description: 'Protect your privacy, boost credibility, and simplify mail handling.'
+authors:
+  - Postmarkr Team
+tags:
+  - virtual mailbox
+  - home business
+  - privacy
+  - mail management
+image:
+  url: /banner-images/2025-09-03-digital-mailbox-home-business.webp
+  alt: >-
+    Your Digital Mailbox: A Virtual Address for Home-Based Business - virtual
+    mailbox, home business, privacy
 ---
 
 ## Introduction

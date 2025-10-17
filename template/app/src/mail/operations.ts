@@ -25,6 +25,7 @@ import type {
   DeleteMailPiece,
   CreateMailPaymentIntent,
   CreateMailCheckoutSession,
+  CreateBulkMailCheckoutSession,
   ConfirmMailPayment,
   RefundMailPayment,
   SubmitMailPieceToLob,
@@ -1072,6 +1073,179 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
     // Log unexpected errors
     console.error('Failed to create mail checkout session:', error);
     throw new HttpError(500, 'Failed to create checkout session due to an internal error.');
+  }
+};
+
+/**
+ * Create Stripe Checkout Session for multiple mail pieces (bulk payment)
+ * 
+ * Creates a single Stripe Checkout Session that processes payment for multiple mail pieces.
+ * Only works for mail pieces in 'draft' or 'pending_payment' status. Updates all mail pieces
+ * to 'pending_payment' status and creates a single checkout session for the total amount.
+ * 
+ * @param args - Bulk checkout session creation data
+ * @param args.mailPieceIds - Array of UUIDs of mail pieces to create checkout for
+ * @param context - Wasp context with user authentication and entity access
+ * @returns Checkout session URL for redirect and total cost
+ * 
+ * @throws {HttpError} 401 - If user is not authenticated
+ * @throws {HttpError} 404 - If any mail piece not found or not owned by user
+ * @throws {HttpError} 400 - If any mail piece not in 'draft' or 'pending_payment' status
+ * @throws {HttpError} 500 - If Stripe API or cost calculation fails
+ */
+type CreateBulkMailCheckoutSessionInput = {
+  mailPieceIds: string[];
+};
+
+export const createBulkMailCheckoutSession: CreateBulkMailCheckoutSession<CreateBulkMailCheckoutSessionInput, { 
+  sessionUrl: string; 
+  sessionId: string; 
+  totalCost: number;
+  mailPieceCount: number;
+}> = async (args, context) => {
+  try {
+    // Authentication check
+    if (!context.user) {
+      throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    }
+
+    // Validate input
+    if (!args.mailPieceIds || args.mailPieceIds.length === 0) {
+      throw new HttpError(400, 'No mail piece IDs provided');
+    }
+
+    if (args.mailPieceIds.length > 10) {
+      throw new HttpError(400, 'Cannot process more than 10 mail pieces at once');
+    }
+
+    // Find all mail pieces and verify ownership
+    const mailPieces = await context.entities.MailPiece.findMany({
+      where: { 
+        id: { in: args.mailPieceIds },
+        userId: context.user.id 
+      },
+      include: {
+        senderAddress: true,
+        recipientAddress: true,
+        file: true,
+      },
+    });
+
+    if (mailPieces.length !== args.mailPieceIds.length) {
+      throw new HttpError(404, 'One or more mail pieces not found or not owned by user');
+    }
+
+    // Validate all mail pieces are in correct status
+    const invalidStatusPieces = mailPieces.filter(piece => 
+      piece.status !== 'draft' && piece.status !== 'pending_payment'
+    );
+    
+    if (invalidStatusPieces.length > 0) {
+      throw new HttpError(400, 'All mail pieces must be in draft or pending payment status');
+    }
+
+    // Validate all mail pieces have page count
+    const missingPageCount = mailPieces.filter(piece => !piece.pageCount);
+    if (missingPageCount.length > 0) {
+      throw new HttpError(400, 'All mail pieces must have page count for pricing calculation');
+    }
+
+    // Calculate total cost for all mail pieces
+    let totalCost = 0;
+    const lineItems: any[] = [];
+
+    for (const mailPiece of mailPieces) {
+      const costData = await calculateCost({
+        mailType: mailPiece.mailType,
+        mailClass: mailPiece.mailClass,
+        mailSize: mailPiece.mailSize,
+        toAddress: mailPiece.recipientAddress,
+        fromAddress: mailPiece.senderAddress,
+        pageCount: mailPiece.pageCount!,
+      });
+
+      totalCost += costData.cost;
+      
+      // Create line item for this mail piece
+      const recipientName = mailPiece.recipientAddress.contactName || 'Recipient';
+      const fileName = mailPiece.file?.name || 'document';
+      const displayFileName = fileName.length > 50 ? fileName.substring(0, 50) + '...' : fileName;
+      
+      lineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Mail to ${recipientName}`,
+            description: `${mailPiece.pageCount} page${mailPiece.pageCount! > 1 ? 's' : ''} (${displayFileName}) via ${getMailClassDisplay(mailPiece.mailClass)}`,
+          },
+          unit_amount: costData.cost,
+        },
+        quantity: 1,
+      });
+    }
+
+    // Create Stripe Checkout Session
+    const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: lineItems,
+      mode: 'payment',
+      success_url: `${DOMAIN}/mail/checkout?status=success&bulk=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${DOMAIN}/mail/checkout?status=canceled&bulk=true`,
+      metadata: {
+        type: 'bulk_mail_payment',
+        userId: context.user.id,
+        mailPieceIds: args.mailPieceIds.join(','),
+        mailPieceCount: args.mailPieceIds.length.toString(),
+        totalCost: (totalCost / 100).toFixed(2),
+      },
+      customer_email: context.user.identities?.email?.id ?? undefined,
+    });
+
+    if (!session.url) {
+      throw new HttpError(500, 'Failed to create checkout session URL');
+    }
+
+    // Update all mail pieces to pending_payment status
+    await context.entities.MailPiece.updateMany({
+      where: { 
+        id: { in: args.mailPieceIds },
+        userId: context.user.id,
+        status: { in: ['draft', 'pending_payment'] }
+      },
+      data: {
+        paymentIntentId: session.id,
+        status: 'pending_payment',
+      },
+    });
+
+    // Create status history entries for all mail pieces
+    for (const mailPieceId of args.mailPieceIds) {
+      await context.entities.MailPieceStatusHistory.create({
+        data: {
+          mailPieceId,
+          status: 'pending_payment',
+          description: 'Bulk checkout session created',
+          source: 'system',
+        },
+      });
+    }
+
+    return {
+      sessionUrl: session.url,
+      sessionId: session.id,
+      totalCost: totalCost / 100, // Convert to dollars
+      mailPieceCount: args.mailPieceIds.length,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    
+    // Log unexpected errors
+    console.error('Failed to create bulk mail checkout session:', error);
+    throw new HttpError(500, 'Failed to create bulk checkout session due to an internal error.');
   }
 };
 

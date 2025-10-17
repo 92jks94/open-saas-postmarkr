@@ -1,9 +1,24 @@
 ---
-title: "Annual Meeting Packets: The HOA Mailing Challenge That Breaks DIY Operations"
-date: 2025-02-05
-description: "Annual meeting packets are the most complex HOA mailings—requiring 90-150 volunteer hours for a single mailing. Discover why professional services are essential for this high-stakes, once-annual challenge."
-authors: ["Postmarkr Team"]
-tags: ["HOA annual meeting packets", "HOA election mailings", "HOA meeting compliance", "HOA mailing complexity", "HOA board efficiency", "HOA management company"]
+title: 'Annual Meeting Packets: The HOA Mailing Challenge That Breaks DIY Operations'
+date: 2025-02-05T00:00:00.000Z
+description: >-
+  Annual meeting packets are the most complex HOA mailings—requiring 90-150
+  volunteer hours for a single mailing. Discover why professional services are
+  essential for this high-stakes, once-annual challenge.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA annual meeting packets
+  - HOA election mailings
+  - HOA meeting compliance
+  - HOA mailing complexity
+  - HOA board efficiency
+  - HOA management company
+image:
+  url: /banner-images/2025-02-05-annual-meeting-packet-complexity.webp
+  alt: >-
+    Annual Meeting Packets: The HOA Mailing Challenge That Breaks DIY Operations
+    - HOA annual meeting packets, HOA election
 ---
 
 ## The Annual Meeting Packet Complexity Crisis

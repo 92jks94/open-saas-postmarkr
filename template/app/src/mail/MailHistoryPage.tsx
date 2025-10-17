@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useQuery } from 'wasp/client/operations';
-import { getMailPieces, deleteMailPiece } from 'wasp/client/operations';
+import { getMailPieces, deleteMailPiece /* createBulkMailCheckoutSession */ } from 'wasp/client/operations';
 import { useNavigate } from 'react-router-dom';
-import { ColumnFiltersState } from '@tanstack/react-table';
-import { Plus, AlertCircle } from 'lucide-react';
+import { ColumnFiltersState, RowSelectionState } from '@tanstack/react-table';
+import { AlertCircle /* CreditCard */ } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { PageLoadingSpinner, MailPieceSkeletonGrid } from '../components/ui/loading-spinner';
@@ -15,6 +15,7 @@ import { ViewMode } from '../components/ui/view-mode-toggle';
 import { createMailPieceColumns, MailPieceWithRelations } from './columns';
 import { MailPieceCard } from './components/MailPieceCard';
 import { cn } from '../lib/utils';
+import { getButtonTextClasses } from '../components/ui/selection-utils';
 
 /**
  * Enhanced mail history page using TanStack Table with server-side pagination
@@ -32,6 +33,10 @@ export default function MailHistoryPage() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('cards');
+  // Row selection state (kept for potential future use)
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  // Bulk payment functionality commented out - cards now navigate to detail page
+  // const [isProcessingBulkPayment, setIsProcessingBulkPayment] = useState(false);
   
   // Server-side pagination and sorting state
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,6 +79,50 @@ export default function MailHistoryPage() {
     }
   };
 
+  // Bulk payment handler commented out - cards now navigate to detail page
+  // const handleBulkPayment = async () => {
+  //   const selectedMailPieceIds = Object.keys(rowSelection).filter(key => rowSelection[key]);
+  //   
+  //   if (selectedMailPieceIds.length === 0) {
+  //     alert('Please select mail pieces to pay for');
+  //     return;
+  //   }
+
+  //   // Filter to only include mail pieces that are in draft or pending_payment status
+  //   const payableMailPieces = mailPieces.filter(piece => 
+  //     selectedMailPieceIds.includes(piece.id) && 
+  //     (piece.status === 'draft' || piece.status === 'pending_payment')
+  //   );
+
+  //   if (payableMailPieces.length === 0) {
+  //     alert('Selected mail pieces are not eligible for payment');
+  //     return;
+  //   }
+
+  //   if (payableMailPieces.length !== selectedMailPieceIds.length) {
+  //     const nonPayableCount = selectedMailPieceIds.length - payableMailPieces.length;
+  //     if (!confirm(`${nonPayableCount} selected mail pieces are not eligible for payment. Continue with ${payableMailPieces.length} eligible pieces?`)) {
+  //       return;
+  //     }
+  //   }
+
+  //   try {
+  //     setIsProcessingBulkPayment(true);
+  //     
+  //     const checkoutData = await createBulkMailCheckoutSession({
+  //       mailPieceIds: payableMailPieces.map(piece => piece.id)
+  //     });
+  //     
+  //     // Redirect to Stripe Checkout
+  //     window.location.href = checkoutData.sessionUrl;
+  //   } catch (error: any) {
+  //     console.error('Bulk payment error:', error);
+  //     alert(error.message || 'Failed to start bulk payment process. Please try again.');
+  //   } finally {
+  //     setIsProcessingBulkPayment(false);
+  //   }
+  // };
+
   // Server-side sorting handler
   const handleSort = (field: string) => {
     setServerSort(prev => ({
@@ -90,6 +139,13 @@ export default function MailHistoryPage() {
     setCurrentPage(1); // Reset to first page when page size changes
   };
 
+  const handleCardClick = (rowId: string) => {
+    // Navigate to detail page instead of toggling selection
+    navigate(`/mail/${rowId}`);
+  };
+
+  // Selected count calculation (kept for potential future use)
+  // const selectedCount = getSelectedCount(rowSelection);
   const columns = createMailPieceColumns(handleSort);
 
   if (isLoading) {
@@ -99,12 +155,6 @@ export default function MailHistoryPage() {
           <PageHeader
             title="Mail History"
             description="View your physical mail pieces"
-            actions={
-              <Button onClick={() => navigate('/mail/create')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Mail Piece
-              </Button>
-            }
           />
           
           {/* Search and Filters - Skeleton state */}
@@ -154,10 +204,18 @@ export default function MailHistoryPage() {
           title="Mail History"
           description="View your physical mail pieces"
           actions={
-            <Button onClick={() => navigate('/mail/create')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Mail Piece
-            </Button>
+            // Pay Selected functionality commented out - cards now navigate to detail page
+            // {hasSelectedRows(rowSelection) ? (
+            //   <Button 
+            //     onClick={handleBulkPayment}
+            //     disabled={isProcessingBulkPayment}
+            //     variant="default"
+            //   >
+            //     <CreditCard className="h-4 w-4 mr-2" />
+            //     {isProcessingBulkPayment ? 'Processing...' : `Pay Selected (${selectedCount})`}
+            //   </Button>
+            // ) : undefined}
+            undefined
           }
         />
 
@@ -188,11 +246,15 @@ export default function MailHistoryPage() {
                 onGlobalFilterChange={setGlobalFilter}
                 columnFilters={columnFilters}
                 onColumnFiltersChange={setColumnFilters}
+                enableRowSelection={false}
+                rowSelection={{}}
+                onRowSelectionChange={() => {}}
                 cardRenderer={(row) => (
                   <MailPieceCard
                     row={row}
                     onDelete={handleDeleteMailPiece}
                     isDeleting={isDeleting === row.original.id}
+                    onCardClick={() => handleCardClick(row.original.id)}
                   />
                 )}
                 cardGridClassName="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3 animate-in fade-in-0 slide-in-from-bottom-4 duration-300"
@@ -202,52 +264,45 @@ export default function MailHistoryPage() {
               {/* Server-Side Pagination Controls */}
               {mailData && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300 delay-100">
-                  {/* Items per page selector */}
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">Show:</span>
-                    <div className="flex gap-1">
+                  {/* Items per page selector - simplified */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">Show:</span>
+                    <div className="flex gap-0.5">
                       {[10, 20, 50].map((size) => (
                         <Button
                           key={size}
-                          variant={pageSize === size ? 'default' : 'outline'}
+                          variant={pageSize === size ? 'secondary' : 'ghost'}
                           size="sm"
                           onClick={() => handlePageSizeChange(size)}
+                          className={`text-xs px-2 py-1 h-6 ${getButtonTextClasses(pageSize === size)}`}
                         >
                           {size}
                         </Button>
                       ))}
                     </div>
-                    <span className="text-muted-foreground">per page</span>
                   </div>
 
-                  {/* Page info and navigation */}
-                  <div className="flex items-center gap-4">
-                    <div className="text-sm text-muted-foreground">
-                      Page {mailData.page} of {mailData.totalPages} ({mailData.total} total items)
+                  {/* Page info and navigation - simplified */}
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-muted-foreground">
+                      {mailData.page} / {mailData.totalPages} ({mailData.total})
                     </div>
                     
-                    <div className="flex gap-1">
+                    <div className="flex items-center gap-0.5">
                       <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(1)}
-                        disabled={!mailData.hasPrev}
-                      >
-                        First
-                      </Button>
-                      <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={!mailData.hasPrev}
+                        className={`text-xs px-2 py-1 h-6 ${getButtonTextClasses(false)}`}
                       >
-                        Previous
+                        Prev
                       </Button>
                       
-                      {/* Page numbers */}
+                      {/* Page numbers - simplified to show only current and adjacent pages */}
                       {(() => {
                         const pages: React.ReactNode[] = [];
-                        const maxPages = 5;
+                        const maxPages = 3;
                         let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
                         let endPage = Math.min(mailData.totalPages, startPage + maxPages - 1);
                         
@@ -259,9 +314,10 @@ export default function MailHistoryPage() {
                           pages.push(
                             <Button
                               key={i}
-                              variant={currentPage === i ? 'default' : 'outline'}
+                              variant={currentPage === i ? 'default' : 'ghost'}
                               size="sm"
                               onClick={() => setCurrentPage(i)}
+                              className={`text-xs px-2 py-1 h-6 ${getButtonTextClasses(currentPage === i)}`}
                             >
                               {i}
                             </Button>
@@ -271,20 +327,13 @@ export default function MailHistoryPage() {
                       })()}
                       
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
                         onClick={() => setCurrentPage(prev => prev + 1)}
                         disabled={!mailData.hasNext}
+                        className={`text-xs px-2 py-1 h-6 ${getButtonTextClasses(false)}`}
                       >
                         Next
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(mailData.totalPages)}
-                        disabled={!mailData.hasNext}
-                      >
-                        Last
                       </Button>
                     </div>
                   </div>

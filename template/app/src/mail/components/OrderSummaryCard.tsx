@@ -102,10 +102,10 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         <CardContent className="space-y-4">
           {/* File Information - Scannable Box */}
           {selectedFile ? (
-            <div className="flex items-center gap-2 p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded border border-blue-100">
-              <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+              <FileText className="h-4 w-4 text-gray-600 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-blue-600 font-medium">Document</p>
+                <p className="text-xs text-gray-600 font-medium">Document</p>
                 <p className="text-xs text-gray-900 truncate" title={selectedFile.name}>
                   {selectedFile.name}
                 </p>
@@ -124,10 +124,10 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
           {/* Delivery Route - Scannable */}
           <div className="space-y-2">
             {senderAddress ? (
-              <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-100">
-                <MapPin className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                <MapPin className="h-4 w-4 text-gray-600 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-blue-600 font-medium">From</p>
+                  <p className="text-xs text-gray-600 font-medium">From</p>
                   <p className="text-xs text-gray-900 truncate" title={senderAddress.contactName}>
                     {senderAddress.contactName}
                   </p>
@@ -141,10 +141,10 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
             )}
             
             {recipientAddress ? (
-              <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-100">
-                <MapPin className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+                <MapPin className="h-4 w-4 text-gray-600 flex-shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-green-600 font-medium">To</p>
+                  <p className="text-xs text-gray-600 font-medium">To</p>
                   <p className="text-xs text-gray-900 truncate" title={recipientAddress.contactName}>
                     {recipientAddress.contactName}
                   </p>
@@ -160,11 +160,11 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
 
           {/* Mail Configuration - Single Line */}
           {pricingInfo && (
-            <div className="flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-100">
-              <Mail className="h-4 w-4 text-purple-600 flex-shrink-0" />
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+              <Mail className="h-4 w-4 text-gray-600 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-900 truncate">
-                  <span className="text-purple-600 font-medium">Config</span>
+                  <span className="text-gray-600 font-medium">Config</span>
                   <span className="text-gray-400 mx-1">•</span>
                   <span className="capitalize">{mailConfig.mailType}</span>
                   <span className="text-gray-400 mx-1">•</span>

@@ -1,9 +1,26 @@
 ---
-title: "HOA Election Mailing Mastery: The Complete Guide to Compliant Annual Meeting Packets"
-date: 2025-01-15
-description: "Master HOA election mailings with this comprehensive guide. Learn state-specific requirements, avoid costly mistakes, and ensure your annual meeting packets are legally compliant."
-authors: ["Postmarkr Team"]
-tags: ["HOA elections", "HOA annual meetings", "HOA election mailings", "HOA compliance", "HOA board elections", "HOA meeting packets"]
+title: >-
+  HOA Election Mailing Mastery: The Complete Guide to Compliant Annual Meeting
+  Packets
+date: 2025-01-15T00:00:00.000Z
+description: >-
+  Master HOA election mailings with this comprehensive guide. Learn
+  state-specific requirements, avoid costly mistakes, and ensure your annual
+  meeting packets are legally compliant.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA elections
+  - HOA annual meetings
+  - HOA election mailings
+  - HOA compliance
+  - HOA board elections
+  - HOA meeting packets
+image:
+  url: /banner-images/2025-01-15-hoa-election-mailing-mastery.webp
+  alt: >-
+    HOA Election Mailing Mastery: The Complete Guide to Compliant Annual Meeting
+    Packets - HOA elections, HOA annual meeting
 ---
 
 ## The Election Mailing Challenge

@@ -1,9 +1,19 @@
 ---
-title: "Why a Professional Business Address Matters (Even if You Work from Home)"
-date: 2025-07-30
-description: "The hidden risks of using your home address and the benefits of going virtual."
-authors: ["Postmarkr Team"]
-tags: ["business address", "virtual mailbox", "professional credibility", "remote business"]
+title: Why a Professional Business Address Matters (Even if You Work from Home)
+date: 2025-07-30T00:00:00.000Z
+description: The hidden risks of using your home address and the benefits of going virtual.
+authors:
+  - Postmarkr Team
+tags:
+  - business address
+  - virtual mailbox
+  - professional credibility
+  - remote business
+image:
+  url: /banner-images/2025-07-30-professional-business-address.webp
+  alt: >-
+    Why a Professional Business Address Matters (Even if You Work from Home) -
+    business address, virtual mailbox, profession
 ---
 
 ## Introduction

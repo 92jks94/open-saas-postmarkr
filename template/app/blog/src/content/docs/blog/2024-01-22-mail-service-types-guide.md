@@ -1,9 +1,17 @@
 ---
-title: 'Understanding Mail Service Types'
-date: 2024-01-22
-description: 'Choose the right mail service for your business needs'
-authors: ["Postmarkr Team"]
-tags: ["mail-types", "business-guide", "shipping", "logistics"]
+title: Understanding Mail Service Types
+date: 2024-01-22T00:00:00.000Z
+description: Choose the right mail service for your business needs
+authors:
+  - Postmarkr Team
+tags:
+  - mail-types
+  - business-guide
+  - shipping
+  - logistics
+image:
+  url: /banner-images/2024-01-22-mail-service-types-guide.webp
+  alt: 'Understanding Mail Service Types - mail-types, business-guide, shipping'
 ---
 
 ## Introduction

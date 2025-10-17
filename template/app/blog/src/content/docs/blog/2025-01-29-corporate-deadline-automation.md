@@ -1,9 +1,24 @@
 ---
-title: "The Corporate Deadline: Automating State Annual Reports and Agency Forms with Printed Digital Signatures"
-date: 2025-01-29
-description: "Streamline corporate compliance with automated print and mail services for state annual reports and agency forms."
-authors: ["Postmarkr Team"]
-tags: ["corporate compliance", "annual reports", "state filings", "digital signatures", "automation"]
+title: >-
+  The Corporate Deadline: Automating State Annual Reports and Agency Forms with
+  Printed Digital Signatures
+date: 2025-01-29T00:00:00.000Z
+description: >-
+  Streamline corporate compliance with automated print and mail services for
+  state annual reports and agency forms.
+authors:
+  - Postmarkr Team
+tags:
+  - corporate compliance
+  - annual reports
+  - state filings
+  - digital signatures
+  - automation
+image:
+  url: /banner-images/2025-01-29-corporate-deadline-automation.webp
+  alt: >-
+    The Corporate Deadline: Automating State Annual Reports and Agency Forms
+    with Printed Digital Signatures - corporate com
 ---
 
 ## Introduction

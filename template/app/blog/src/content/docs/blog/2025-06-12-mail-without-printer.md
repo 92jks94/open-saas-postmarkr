@@ -1,9 +1,21 @@
 ---
-title: "The Ultimate Guide: How to Mail a Document When You Don't Have a Printer"
-date: 2025-06-12
-description: "Smart alternatives to printing, stamping, and waiting in line at the post office."
-authors: ["Postmarkr Team"]
-tags: ["no printer", "digital mail", "remote work", "virtual print room"]
+title: 'The Ultimate Guide: How to Mail a Document When You Don''t Have a Printer'
+date: 2025-06-12T00:00:00.000Z
+description: >-
+  Smart alternatives to printing, stamping, and waiting in line at the post
+  office.
+authors:
+  - Postmarkr Team
+tags:
+  - no printer
+  - digital mail
+  - remote work
+  - virtual print room
+image:
+  url: /banner-images/2025-06-12-mail-without-printer.webp
+  alt: >-
+    The Ultimate Guide: How to Mail a Document When You Don't Have a Printer -
+    no printer, digital mail, remote work
 ---
 
 ## Introduction

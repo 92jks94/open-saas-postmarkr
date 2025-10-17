@@ -1,9 +1,24 @@
 ---
-title: "Fleet & Records Fulfillment: Outsourcing the Print and Mail of Bulk DMV Record and Title Requests"
-date: 2025-01-22
-description: "Streamline bulk DMV record requests with automated print and mail services. Reduce manual labor and ensure compliance."
-authors: ["Postmarkr Team"]
-tags: ["DMV records", "bulk requests", "PII compliance", "automation", "fleet management"]
+title: >-
+  Fleet & Records Fulfillment: Outsourcing the Print and Mail of Bulk DMV Record
+  and Title Requests
+date: 2025-01-22T00:00:00.000Z
+description: >-
+  Streamline bulk DMV record requests with automated print and mail services.
+  Reduce manual labor and ensure compliance.
+authors:
+  - Postmarkr Team
+tags:
+  - DMV records
+  - bulk requests
+  - PII compliance
+  - automation
+  - fleet management
+image:
+  url: /banner-images/2025-01-22-fleet-records-fulfillment.webp
+  alt: >-
+    Fleet & Records Fulfillment: Outsourcing the Print and Mail of Bulk DMV
+    Record and Title Requests - DMV records, bulk re
 ---
 
 ## Introduction

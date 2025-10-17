@@ -1,9 +1,26 @@
 ---
-title: "Stop Hemorrhaging Money: The HOA Management Company's Guide to Reducing Mailing Costs by 40%"
-date: 2025-02-12
-description: "Most property management companies are leaking profits through inefficient mailing operations. Learn how to reduce mailing costs by 40% and recover $20,000+ annually through bulk mail optimization and professional services."
-authors: ["Postmarkr Team"]
-tags: ["HOA management company", "mailing cost reduction", "bulk mail discounts", "property management efficiency", "HOA mailing services", "management company ROI"]
+title: >-
+  Stop Hemorrhaging Money: The HOA Management Company's Guide to Reducing
+  Mailing Costs by 40%
+date: 2025-02-12T00:00:00.000Z
+description: >-
+  Most property management companies are leaking profits through inefficient
+  mailing operations. Learn how to reduce mailing costs by 40% and recover
+  $20,000+ annually through bulk mail optimization and professional services.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA management company
+  - mailing cost reduction
+  - bulk mail discounts
+  - property management efficiency
+  - HOA mailing services
+  - management company ROI
+image:
+  url: /banner-images/2025-02-12-stop-hemorrhaging-money-hoa-management-guide.webp
+  alt: >-
+    Stop Hemorrhaging Money: The HOA Management Company's Guide to Reducing
+    Mailing Costs by 40% - HOA management company, m
 ---
 
 ## The Profit Leak Management Companies Ignore

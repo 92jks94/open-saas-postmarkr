@@ -11,10 +11,12 @@ import {
   getSortedRowModel,
   useReactTable,
   Row,
+  RowSelectionState,
 } from "@tanstack/react-table"
 import { ChevronDown } from "lucide-react"
 
 import { Button } from "./button"
+import { Checkbox } from "./checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -53,6 +55,11 @@ interface DataTableProps<TData, TValue> {
   onGlobalFilterChange?: (value: string) => void
   columnFilters?: ColumnFiltersState
   onColumnFiltersChange?: (filters: ColumnFiltersState) => void
+  // Row selection props
+  enableRowSelection?: boolean
+  rowSelection?: RowSelectionState
+  onRowSelectionChange?: (selection: RowSelectionState) => void
+  selectedRows?: TData[]
 }
 
 export function DataTable<TData, TValue>({
@@ -72,11 +79,15 @@ export function DataTable<TData, TValue>({
   onGlobalFilterChange,
   columnFilters,
   onColumnFiltersChange,
+  enableRowSelection = false,
+  rowSelection: externalRowSelection,
+  onRowSelectionChange,
+  selectedRows,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [internalColumnFilters, setInternalColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [internalRowSelection, setInternalRowSelection] = React.useState<RowSelectionState>({})
   const [internalViewMode, setInternalViewMode] = React.useState<ViewMode>('table')
   const [internalGlobalFilter, setInternalGlobalFilter] = React.useState('')
   
@@ -93,10 +104,50 @@ export function DataTable<TData, TValue>({
   // Use external state if provided, otherwise use internal state
   const currentColumnFilters = columnFilters ?? internalColumnFilters
   const currentGlobalFilter = globalFilter ?? internalGlobalFilter
+  const currentRowSelection = externalRowSelection ?? internalRowSelection
+
+  const handleRowSelectionChange = (updaterOrValue: any) => {
+    const newSelection = typeof updaterOrValue === 'function' 
+      ? updaterOrValue(currentRowSelection) 
+      : updaterOrValue;
+    
+    if (onRowSelectionChange) {
+      onRowSelectionChange(newSelection)
+    } else {
+      setInternalRowSelection(newSelection)
+    }
+  }
+
+  // Add selection column if row selection is enabled (only for table view)
+  const columnsWithSelection = React.useMemo(() => {
+    if (!enableRowSelection || currentViewMode === 'cards') return columns;
+    
+    const selectionColumn: ColumnDef<TData, TValue> = {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    };
+    
+    return [selectionColumn, ...columns];
+  }, [columns, enableRowSelection, currentViewMode]);
 
   const table = useReactTable({
     data,
-    columns,
+    columns: columnsWithSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: onColumnFiltersChange ?? setInternalColumnFilters as any,
     onGlobalFilterChange: onGlobalFilterChange ?? setInternalGlobalFilter,
@@ -105,13 +156,14 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: handleRowSelectionChange,
+    enableRowSelection: enableRowSelection,
     state: {
       sorting,
       columnFilters: currentColumnFilters,
       globalFilter: currentGlobalFilter,
       columnVisibility,
-      rowSelection,
+      rowSelection: currentRowSelection,
     },
   })
 
@@ -139,9 +191,10 @@ export function DataTable<TData, TValue>({
             return (
               <div className="flex flex-wrap gap-2">
                 <Button
-                  variant={!currentStatusFilter ? 'default' : 'outline'}
+                  variant={!currentStatusFilter ? 'outline' : 'ghost'}
                   size="sm"
                   onClick={() => statusColumn.setFilterValue(undefined)}
+                  className={!currentStatusFilter ? 'bg-white text-foreground border-border' : ''}
                 >
                   All ({table.getFilteredRowModel().rows.length})
                 </Button>
@@ -280,30 +333,12 @@ export function DataTable<TData, TValue>({
 
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length > 0 && (
+          {enableRowSelection && table.getFilteredSelectedRowModel().rows.length > 0 && (
             <span>
               {table.getFilteredSelectedRowModel().rows.length} of{" "}
               {table.getFilteredRowModel().rows.length} row(s) selected.
             </span>
           )}
-        </div>
-        <div className="space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Next
-          </Button>
         </div>
       </div>
     </div>

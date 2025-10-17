@@ -1,9 +1,27 @@
 ---
-title: "The Digital Exclusion Dilemma: Why 'Email-Only' is an HOA Policy Fail"
-date: 2025-01-29
-description: "Over-reliance on digital communication for official business violates the legal rights of residents entitled to physical mail, fueling resentment, leading to valid legal challenges, and creating an unnecessary compliance risk."
-authors: ["Postmarkr Team"]
-tags: ["HOA communication", "HOA statement printing", "Automate HOA communications", "Professional HOA mailing service", "HOA welcome packet printing", "HOA mailing compliance", "Digital exclusion"]
+title: 'The Digital Exclusion Dilemma: Why ''Email-Only'' is an HOA Policy Fail'
+date: 2025-01-29T00:00:00.000Z
+description: >-
+  Over-reliance on digital communication for official business violates the
+  legal rights of residents entitled to physical mail, fueling resentment,
+  leading to valid legal challenges, and creating an unnecessary compliance
+  risk.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA communication
+  - HOA statement printing
+  - Automate HOA communications
+  - Professional HOA mailing service
+  - HOA welcome packet printing
+  - HOA mailing compliance
+  - Digital exclusion
+image:
+  url: >-
+    /banner-images/2025-01-29-digital-exclusion-dilemma-hoa-email-only-policy.webp
+  alt: >-
+    The Digital Exclusion Dilemma: Why 'Email-Only' is an HOA Policy Fail - HOA
+    communication, HOA statement printing, Autom
 ---
 
 ## The Legal Right to Be Served Physically

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Row } from "@tanstack/react-table";
 import { useNavigate } from 'react-router-dom';
-import { Eye, Trash2, MoreHorizontal, Package, CreditCard, Edit2, Copy } from 'lucide-react';
+import { Eye, Trash2, MoreHorizontal, Edit2, Copy, Download, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import {
@@ -11,20 +11,22 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
-import { createMailCheckoutSession } from 'wasp/client/operations';
 import type { MailPieceWithRelations } from '../columns';
+import { getSelectionClasses, getCardHoverClasses, openLobDashboard, navigateToDuplicate } from '../../components/ui/selection-utils';
+import { getDownloadFileSignedURL } from 'wasp/client/operations';
 
 interface MailPieceCardProps {
   row: Row<MailPieceWithRelations>;
   onDelete?: (id: string) => void;
   isDeleting?: boolean;
+  onCardClick?: (row: Row<MailPieceWithRelations>) => void;
 }
 
-export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps) {
+export function MailPieceCard({ row, onDelete, isDeleting, onCardClick }: MailPieceCardProps) {
   const navigate = useNavigate();
   const mailPiece = row.original;
   const visibleCells = row.getVisibleCells();
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Debug logging for mail piece data
   if (process.env.NODE_ENV === 'development') {
@@ -47,29 +49,57 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
     }
   };
 
-  const handlePayNow = async () => {
-    try {
-      setIsProcessingPayment(true);
-      // Create Stripe Checkout Session
-      const checkoutData = await createMailCheckoutSession({
-        mailPieceId: mailPiece.id
-      });
-      // Redirect to Stripe Checkout
-      window.location.href = checkoutData.sessionUrl;
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      alert(error.message || 'Failed to start payment process. Please try again.');
-      setIsProcessingPayment(false);
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger card click if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="menuitem"]') || target.closest('a')) {
+      return;
     }
+    onCardClick?.(row);
+  };
+
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/mail/${mailPiece.id}`);
   };
 
   const handleDuplicate = () => {
-    // Navigate to create page with data from this mail piece
-    navigate(`/mail/create?duplicate=${mailPiece.id}`);
+    navigateToDuplicate(navigate, mailPiece.id);
+  };
+
+  const handleDownloadFile = async () => {
+    if (!mailPiece?.file) return;
+
+    try {
+      setIsDownloading(true);
+      
+      const result = await getDownloadFileSignedURL({ key: mailPiece.file.key });
+      
+      if (result) {
+        window.open(result, '_blank');
+      } else {
+        throw new Error('Failed to get download URL');
+      }
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      alert('Failed to download file. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleViewInLobDashboard = () => {
+    if (mailPiece.lobId) {
+      openLobDashboard(mailPiece.lobId);
+    }
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card 
+      className={`${getCardHoverClasses()} ${getSelectionClasses(row.getIsSelected())}`}
+      onClick={handleCardClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -87,45 +117,18 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Primary action based on status */}
-            {mailPiece.status === 'pending_payment' ? (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handlePayNow}
-                disabled={isProcessingPayment}
-              >
-                <CreditCard className="h-4 w-4 mr-1" />
-                {isProcessingPayment ? 'Processing...' : 'Pay Now'}
-              </Button>
-            ) : mailPiece.status === 'draft' ? (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleEdit}
-              >
-                <Edit2 className="h-4 w-4 mr-1" />
-                Complete
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/mail/${mailPiece.id}`)}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                View
-              </Button>
-            )}
-            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/mail/${mailPiece.id}`)}>
+                <DropdownMenuItem onClick={handleViewDetails}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
@@ -135,20 +138,29 @@ export function MailPieceCard({ row, onDelete, isDeleting }: MailPieceCardProps)
                   <>
                     <DropdownMenuItem onClick={handleEdit}>
                       <Edit2 className="h-4 w-4 mr-2" />
-                      Edit Draft
+                      Complete
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
                 
-                {mailPiece.status === 'pending_payment' && (
-                  <>
-                    <DropdownMenuItem onClick={handlePayNow} disabled={isProcessingPayment}>
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      {isProcessingPayment ? 'Processing...' : 'Complete Payment'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
+                {/* File actions */}
+                {mailPiece.file && (
+                  <DropdownMenuItem 
+                    onClick={handleDownloadFile}
+                    disabled={isDownloading}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {isDownloading ? 'Downloading...' : 'Download PDF'}
+                  </DropdownMenuItem>
+                )}
+                
+                {/* Lob dashboard link */}
+                {mailPiece.lobId && (
+                  <DropdownMenuItem onClick={handleViewInLobDashboard}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    View in Lob Dashboard
+                  </DropdownMenuItem>
                 )}
                 
                 {/* Common actions */}

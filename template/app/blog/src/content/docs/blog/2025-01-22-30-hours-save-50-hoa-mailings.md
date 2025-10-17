@@ -1,9 +1,24 @@
 ---
-title: "30 Hours to Save $50: Why Smart HOA Boards Stop Doing Their Own Mailings"
-date: 2025-01-22
-description: "A 1,649-property HOA spent 30 volunteer hours to save $50 on mailings—then switched to professional services. Discover the true cost of DIY HOA mailings and why outsourcing makes financial sense."
-authors: ["Postmarkr Team"]
-tags: ["HOA mailing costs", "DIY HOA mailings", "HOA time management", "HOA mailing services", "HOA board efficiency", "HOA management company"]
+title: '30 Hours to Save $50: Why Smart HOA Boards Stop Doing Their Own Mailings'
+date: 2025-01-22T00:00:00.000Z
+description: >-
+  A 1,649-property HOA spent 30 volunteer hours to save $50 on mailings—then
+  switched to professional services. Discover the true cost of DIY HOA mailings
+  and why outsourcing makes financial sense.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA mailing costs
+  - DIY HOA mailings
+  - HOA time management
+  - HOA mailing services
+  - HOA board efficiency
+  - HOA management company
+image:
+  url: /banner-images/2025-01-22-30-hours-save-50-hoa-mailings.webp
+  alt: >-
+    30 Hours to Save $50: Why Smart HOA Boards Stop Doing Their Own Mailings -
+    HOA mailing costs, DIY HOA mailings, HOA time
 ---
 
 ## The Ramapo Mountain Lakes Reality Check

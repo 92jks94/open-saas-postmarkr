@@ -1,9 +1,28 @@
 ---
-title: "The Litigation Trap: Why In-House Certified Mail is Your HOA's Biggest Legal Risk"
-date: 2025-01-15
-description: "Outsourcing your compliance mail isn't an expense; it's litigation insurance. The administrative complexity of executing high-stakes notices internally is a direct liability risk that can void enforcement actions and compromise financial stability."
-authors: ["Postmarkr Team"]
-tags: ["HOA certified mail", "HOA mailing compliance", "HOA violation letters", "HOA mail tracking", "HOA collection letter printing", "Reduce HOA costs", "HOA management company mailing"]
+title: >-
+  The Litigation Trap: Why In-House Certified Mail is Your HOA's Biggest Legal
+  Risk
+date: 2025-01-15T00:00:00.000Z
+description: >-
+  Outsourcing your compliance mail isn't an expense; it's litigation insurance.
+  The administrative complexity of executing high-stakes notices internally is a
+  direct liability risk that can void enforcement actions and compromise
+  financial stability.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA certified mail
+  - HOA mailing compliance
+  - HOA violation letters
+  - HOA mail tracking
+  - HOA collection letter printing
+  - Reduce HOA costs
+  - HOA management company mailing
+image:
+  url: /banner-images/2025-01-15-litigation-trap-hoa-certified-mail.webp
+  alt: >-
+    The Litigation Trap: Why In-House Certified Mail is Your HOA's Biggest Legal
+    Risk - HOA certified mail, HOA mailing comp
 ---
 
 ## The Non-Negotiable Law of Due Process

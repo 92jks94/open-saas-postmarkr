@@ -1,9 +1,19 @@
 ---
-title: "How to Send Mail Without Revealing Your Home Address"
-date: 2025-05-07
-description: "Protect your personal information while running a professional business."
-authors: ["Postmarkr Team"]
-tags: ["privacy", "virtual mailbox", "remote work", "digital mail"]
+title: How to Send Mail Without Revealing Your Home Address
+date: 2025-05-07T00:00:00.000Z
+description: Protect your personal information while running a professional business.
+authors:
+  - Postmarkr Team
+tags:
+  - privacy
+  - virtual mailbox
+  - remote work
+  - digital mail
+image:
+  url: /banner-images/2025-05-07-send-mail-without-home-address.webp
+  alt: >-
+    How to Send Mail Without Revealing Your Home Address - privacy, virtual
+    mailbox, remote work
 ---
 
 ## Introduction

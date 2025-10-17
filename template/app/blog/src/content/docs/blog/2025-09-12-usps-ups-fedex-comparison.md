@@ -1,9 +1,25 @@
 ---
-title: "USPS vs UPS vs FedEx: Understanding Physical Access Networks and Hidden Limitations"
-date: 2025-09-12
-description: "A comprehensive comparison of carrier infrastructure, revealing critical weight restrictions and service limitations that impact shipping decisions."
-authors: ["Postmarkr Team"]
-tags: ["USPS", "UPS", "FedEx", "shipping comparison", "carrier networks", "logistics"]
+title: >-
+  USPS vs UPS vs FedEx: Understanding Physical Access Networks and Hidden
+  Limitations
+date: 2025-09-12T00:00:00.000Z
+description: >-
+  A comprehensive comparison of carrier infrastructure, revealing critical
+  weight restrictions and service limitations that impact shipping decisions.
+authors:
+  - Postmarkr Team
+tags:
+  - USPS
+  - UPS
+  - FedEx
+  - shipping comparison
+  - carrier networks
+  - logistics
+image:
+  url: /banner-images/2025-09-12-usps-ups-fedex-comparison.webp
+  alt: >-
+    USPS vs UPS vs FedEx: Understanding Physical Access Networks and Hidden
+    Limitations - USPS, UPS, FedEx
 ---
 
 ## Introduction

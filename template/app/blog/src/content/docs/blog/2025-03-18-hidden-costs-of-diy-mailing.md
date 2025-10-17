@@ -1,9 +1,21 @@
 ---
-title: "The Hidden Costs of DIY Mailing (and How to Eliminate Them)"
-date: 2025-03-18
-description: "Why printing, stuffing, and stamping at home is costing you more than you think."
-authors: ["Postmarkr Team"]
-tags: ["mailing costs", "virtual print room", "digital mail", "small business"]
+title: The Hidden Costs of DIY Mailing (and How to Eliminate Them)
+date: 2025-03-18T00:00:00.000Z
+description: >-
+  Why printing, stuffing, and stamping at home is costing you more than you
+  think.
+authors:
+  - Postmarkr Team
+tags:
+  - mailing costs
+  - virtual print room
+  - digital mail
+  - small business
+image:
+  url: /banner-images/2025-03-18-hidden-costs-of-diy-mailing.webp
+  alt: >-
+    The Hidden Costs of DIY Mailing (and How to Eliminate Them) - mailing costs,
+    virtual print room, digital mail
 ---
 
 ## Introduction

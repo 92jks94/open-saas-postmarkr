@@ -1,9 +1,24 @@
 ---
-title: "Find Your Nearest Post Office: Complete Guide with Pro Tips and Fun Facts"
-date: 2025-09-02
-description: "Discover the fastest ways to locate USPS branches, understand what services each location offers, and learn surprising facts about America's largest retail network."
-authors: ["Postmarkr Team"]
-tags: ["nearest post office", "USPS locator", "post office finder", "postal services", "ZIP Code search", "USPS facts"]
+title: 'Find Your Nearest Post Office: Complete Guide with Pro Tips and Fun Facts'
+date: 2025-09-02T00:00:00.000Z
+description: >-
+  Discover the fastest ways to locate USPS branches, understand what services
+  each location offers, and learn surprising facts about America's largest
+  retail network.
+authors:
+  - Postmarkr Team
+tags:
+  - nearest post office
+  - USPS locator
+  - post office finder
+  - postal services
+  - ZIP Code search
+  - USPS facts
+image:
+  url: /banner-images/2025-09-02-find-nearest-post-office-guide.webp
+  alt: >-
+    Find Your Nearest Post Office: Complete Guide with Pro Tips and Fun Facts -
+    nearest post office, USPS locator, post offi
 ---
 
 ## Introduction

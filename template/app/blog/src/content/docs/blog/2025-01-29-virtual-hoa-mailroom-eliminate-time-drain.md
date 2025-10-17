@@ -1,9 +1,24 @@
 ---
-title: "Virtual HOA Mailroom: How to Eliminate Your Biggest Administrative Time Drain"
-date: 2025-01-29
-description: "Management companies spend hours weekly on HOA mailings. Learn how virtual mailroom technology and professional services eliminate this administrative burden while reducing costs 60-70%."
-authors: ["Postmarkr Team"]
-tags: ["virtual HOA mailroom", "HOA management company", "HOA mailing automation", "HOA administrative efficiency", "HOA mailing technology", "HOA staff productivity"]
+title: 'Virtual HOA Mailroom: How to Eliminate Your Biggest Administrative Time Drain'
+date: 2025-01-29T00:00:00.000Z
+description: >-
+  Management companies spend hours weekly on HOA mailings. Learn how virtual
+  mailroom technology and professional services eliminate this administrative
+  burden while reducing costs 60-70%.
+authors:
+  - Postmarkr Team
+tags:
+  - virtual HOA mailroom
+  - HOA management company
+  - HOA mailing automation
+  - HOA administrative efficiency
+  - HOA mailing technology
+  - HOA staff productivity
+image:
+  url: /banner-images/2025-01-29-virtual-hoa-mailroom-eliminate-time-drain.webp
+  alt: >-
+    Virtual HOA Mailroom: How to Eliminate Your Biggest Administrative Time
+    Drain - virtual HOA mailroom, HOA management com
 ---
 
 ## Your Official Title Is Community Manager, Not Community Mailer

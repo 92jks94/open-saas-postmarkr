@@ -1,9 +1,26 @@
 ---
-title: "HOA Legal Compliance Crisis: How Improper Mailing Practices Cost Associations Thousands (And How to Fix It)"
-date: 2025-01-15
-description: "When a $500 fine costs you $50,000. Learn how improper HOA mailing practices are voiding board decisions and costing associations thousands in legal fees and invalidated actions."
-authors: ["Postmarkr Team"]
-tags: ["HOA legal compliance", "HOA mailing requirements", "HOA notice violations", "HOA legal costs", "HOA compliance failure", "HOA certified mail"]
+title: >-
+  HOA Legal Compliance Crisis: How Improper Mailing Practices Cost Associations
+  Thousands (And How to Fix It)
+date: 2025-01-15T00:00:00.000Z
+description: >-
+  When a $500 fine costs you $50,000. Learn how improper HOA mailing practices
+  are voiding board decisions and costing associations thousands in legal fees
+  and invalidated actions.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA legal compliance
+  - HOA mailing requirements
+  - HOA notice violations
+  - HOA legal costs
+  - HOA compliance failure
+  - HOA certified mail
+image:
+  url: /banner-images/2025-01-15-hoa-legal-compliance-crisis.webp
+  alt: >-
+    HOA Legal Compliance Crisis: How Improper Mailing Practices Cost
+    Associations Thousands (And How to Fix It) - HOA legal
 ---
 
 ## When a $500 Fine Costs You $50,000

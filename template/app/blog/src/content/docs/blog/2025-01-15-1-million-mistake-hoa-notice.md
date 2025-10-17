@@ -1,9 +1,26 @@
 ---
-title: "The $1 Million Mistake: Why One Day of Inadequate HOA Notice Voided an Entire Project"
-date: 2025-01-15
-description: "A single day of inadequate HOA meeting notice cost one community over $1 million. Learn why professional HOA mailing services protect your board from costly legal disasters."
-authors: ["Postmarkr Team"]
-tags: ["HOA mailing compliance", "HOA meeting notices", "HOA legal requirements", "HOA mailing services", "HOA board liability", "HOA compliance failure"]
+title: >-
+  The $1 Million Mistake: Why One Day of Inadequate HOA Notice Voided an Entire
+  Project
+date: 2025-01-15T00:00:00.000Z
+description: >-
+  A single day of inadequate HOA meeting notice cost one community over $1
+  million. Learn why professional HOA mailing services protect your board from
+  costly legal disasters.
+authors:
+  - Postmarkr Team
+tags:
+  - HOA mailing compliance
+  - HOA meeting notices
+  - HOA legal requirements
+  - HOA mailing services
+  - HOA board liability
+  - HOA compliance failure
+image:
+  url: /banner-images/2025-01-15-1-million-mistake-hoa-notice.webp
+  alt: >-
+    The $1 Million Mistake: Why One Day of Inadequate HOA Notice Voided an
+    Entire Project - HOA mailing compliance, HOA meet
 ---
 
 ## The Willoughby Condominium Disaster
