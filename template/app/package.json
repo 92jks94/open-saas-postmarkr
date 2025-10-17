@@ -98,10 +98,12 @@
     "deploy:fixed": "./deploy-fixed.sh",
     "sync:secrets": "./scripts/sync-env-secrets.sh"
   },
-  "overrides": {
+  "resolutions": {
     "form-data": "^4.0.0",
     "tough-cookie": "^4.1.3",
     "cookie": "^0.7.0",
-    "axios": "^1.7.0"
+    "axios": "^1.7.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
   }
 }

@@ -7,14 +7,14 @@ import {
   FileText, 
   MapPin, 
   Mail, 
-  DollarSign, 
-  Package,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  Shield,
+  Package
 } from 'lucide-react';
 import type { File, MailAddress } from 'wasp/entities';
 import { getPricingTierForPageCount } from '../../shared/constants/pricing';
-import ExpandablePDFViewer from './ExpandablePDFViewer';
 import { cn } from '../../lib/utils';
 
 /**
@@ -48,10 +48,10 @@ interface OrderSummaryCardProps {
  * OrderSummaryCard - Sticky sidebar showing order details
  * 
  * Features:
- * - PDF preview with expand capability
+ * - File information (name and page count only)
  * - Sender/Recipient delivery route
  * - Mail configuration summary
- * - Cost breakdown
+ * - Cost breakdown with trust signals
  * - Prominent CTA button
  */
 export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
@@ -100,104 +100,96 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* PDF Preview - Compact */}
-          {selectedFile && selectedFile.key ? (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Document
-                </h4>
-                <Badge variant="outline" className="text-xs">
-                  {selectedFile.pageCount} pages
-                </Badge>
+          {/* File Information - Scannable Box */}
+          {selectedFile ? (
+            <div className="flex items-center gap-2 p-2 bg-gradient-to-br from-blue-50 to-indigo-50 rounded border border-blue-100">
+              <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs text-blue-600 font-medium">Document</p>
+                <p className="text-xs text-gray-900 truncate" title={selectedFile.name}>
+                  {selectedFile.name}
+                </p>
               </div>
-              <div className="text-xs text-gray-600 truncate">{selectedFile.name}</div>
+              <Badge variant="secondary" className="text-xs font-bold flex-shrink-0">
+                {selectedFile.pageCount}p
+              </Badge>
             </div>
           ) : (
-            <div className="text-center py-6 px-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-              <FileText className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No file selected</p>
+            <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-dashed border-gray-200">
+              <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              <p className="text-xs text-gray-500">No file</p>
             </div>
           )}
 
-          {/* Delivery Route - Compact */}
-          {(senderAddress || recipientAddress) && (
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Addresses
-              </h4>
-              
-              <div className="space-y-1.5 text-xs">
-                {senderAddress && (
-                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded">
-                    <span className="text-blue-600 font-medium">From:</span>
-                    <span className="text-gray-900 truncate">{senderAddress.contactName}</span>
-                  </div>
-                )}
-                {recipientAddress && (
-                  <div className="flex items-center gap-2 p-2 bg-green-50 rounded">
-                    <span className="text-green-600 font-medium">To:</span>
-                    <span className="text-gray-900 truncate">{recipientAddress.contactName}</span>
-                  </div>
-                )}
+          {/* Delivery Route - Scannable */}
+          <div className="space-y-2">
+            {senderAddress ? (
+              <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-100">
+                <MapPin className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-blue-600 font-medium">From</p>
+                  <p className="text-xs text-gray-900 truncate" title={senderAddress.contactName}>
+                    {senderAddress.contactName}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
-
-          {/* Mail Configuration - Compact */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Configuration
-            </h4>
+            ) : (
+              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-dashed border-gray-200">
+                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <p className="text-xs text-gray-500">No sender</p>
+              </div>
+            )}
             
-            <div className="text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Type:</span>
-                <span className="font-medium text-gray-900 capitalize">{mailConfig.mailType} • {formatMailClass(mailConfig.mailClass)}</span>
+            {recipientAddress ? (
+              <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-100">
+                <MapPin className="h-4 w-4 text-green-600 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-green-600 font-medium">To</p>
+                  <p className="text-xs text-gray-900 truncate" title={recipientAddress.contactName}>
+                    {recipientAddress.contactName}
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Size:</span>
-                <span className="font-medium text-gray-900">{mailConfig.mailSize}</span>
+            ) : (
+              <div className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-dashed border-gray-200">
+                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <p className="text-xs text-gray-500">No recipient</p>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Cost Breakdown - Compact */}
+          {/* Mail Configuration - Single Line */}
           {pricingInfo && (
-            <div>
-              <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Pricing
-              </h4>
-
-              <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between text-gray-600">
-                  <span>Pages:</span>
-                  <span className="font-medium">{pricingInfo.documentPages}{pricingInfo.addressPages > 0 ? ` + ${pricingInfo.addressPages}` : ''} = {pricingInfo.totalPages}</span>
-                </div>
-
-                {pricingInfo.pricingTier && (
-                  <>
-                    <div className="flex justify-between text-gray-600">
-                      <span>Envelope:</span>
-                      <span className="font-medium text-gray-900">{pricingInfo.pricingTier.description.split(' - ')[0]}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-2 border-t-2 border-gray-300 mt-2">
-                      <span className="font-semibold text-gray-900">Total:</span>
-                      <span className="text-2xl font-bold text-green-600">
-                        ${pricingInfo.pricingTier.priceInDollars.toFixed(2)}
-                      </span>
-                    </div>
-                  </>
-                )}
+            <div className="flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-100">
+              <Mail className="h-4 w-4 text-purple-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-900 truncate">
+                  <span className="text-purple-600 font-medium">Config</span>
+                  <span className="text-gray-400 mx-1">•</span>
+                  <span className="capitalize">{mailConfig.mailType}</span>
+                  <span className="text-gray-400 mx-1">•</span>
+                  <span>{formatMailClass(mailConfig.mailClass)}</span>
+                  <span className="text-gray-400 mx-1">•</span>
+                  <span>{pricingInfo.totalPages}p</span>
+                  <span className="text-gray-400 mx-1">•</span>
+                  <span>{pricingInfo.pricingTier?.description.split(' - ')[0]}</span>
+                </p>
               </div>
+            </div>
+          )}
 
-              <p className="text-xs text-gray-500 mt-2">
-                Includes printing, envelope, postage & tracking.
+          {/* Cost Breakdown */}
+          {pricingInfo && pricingInfo.pricingTier && (
+            <div className="border-t-2 border-gray-200 pt-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-semibold text-gray-900">Total:</span>
+                <span className="text-3xl font-bold text-green-600">
+                  ${pricingInfo.pricingTier.priceInDollars.toFixed(2)}
+                </span>
+              </div>
+              
+              <p className="text-xs text-gray-500 text-center">
+                Includes all: print • envelope • postage • tracking
               </p>
             </div>
           )}
@@ -208,20 +200,39 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="pt-3 border-t space-y-2">
+          {/* Trust Signals - Desktop Only */}
+          {pricingInfo && (
+            <div className="hidden lg:block space-y-2 text-xs bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div className="flex items-center gap-2 text-gray-700">
+                <Clock className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                <span>Mails in 1-3 business days</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <Package className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                <span>USPS tracking included</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <Shield className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                <span>100% satisfaction guarantee</span>
+              </div>
+            </div>
+          )}
+
+          {/* Submit Button - Always visible now */}
+          <div className="pt-3 border-t space-y-3">
             <Button
               onClick={onSubmit}
               disabled={!isValid || isSubmitting}
               isLoading={isSubmitting}
               loadingText="Creating..."
               size="lg"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold shadow-lg hover:shadow-xl transition-all"
             >
               {pricingInfo ? (
                 <>
-                  Continue to Payment
-                  <Badge variant="secondary" className="ml-2 bg-white text-gray-900">
+                  <ArrowRight className="mr-2 h-5 w-5" />
+                  Send My Mail Now
+                  <Badge variant="secondary" className="ml-2 bg-white text-green-700 font-bold">
                     ${pricingInfo.pricingTier?.priceInDollars.toFixed(2)}
                   </Badge>
                 </>
@@ -231,7 +242,7 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({
             </Button>
 
             {!isValid && selectedFile && (
-              <p className="text-xs text-center text-orange-600">
+              <p className="text-xs text-center text-orange-600 font-medium">
                 → {!senderAddress ? 'Add sender address' : !recipientAddress ? 'Add recipient address' : 'Complete all fields'}
               </p>
             )}

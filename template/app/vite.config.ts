@@ -6,6 +6,14 @@ export default defineConfig({
   server: {
     open: true,
   },
+  resolve: {
+    dedupe: ['react', 'react-dom'], // Ensure single React instance
+    alias: {
+      // Force all React imports to use the same instance
+      'react': path.resolve(__dirname, 'node_modules/react'),
+      'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
+    },
+  },
   build: {
     // Enable minification
     minify: 'terser',
@@ -30,6 +38,11 @@ export default defineConfig({
     sourcemap: false, // Set to true if you need source maps in production
     // Optimize asset handling
     assetsInlineLimit: 4096, // Inline assets smaller than 4kb
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom'],
+    exclude: ['@wasp/client'],
+    force: true // Force re-optimization to resolve React conflicts
   },
   plugins: [
     viteStaticCopy({

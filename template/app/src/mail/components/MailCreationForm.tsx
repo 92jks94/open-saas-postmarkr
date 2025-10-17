@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createMailPiece, getMailPiece, getAllFilesByUser, getMailAddressesByUser, useQuery } from 'wasp/client/operations';
 import { Button } from '../../components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { ArrowLeft, FileText, Eye, Save, Check } from 'lucide-react';
 import FileSelector from './FileSelector';
 import AddressSelector from './AddressSelector';
 import PaymentStep from './PaymentStep';
@@ -10,6 +11,7 @@ import CompactStepCard from './CompactStepCard';
 import MailConfigurationSection from './MailConfigurationSection';
 import OrderSummaryCard from './OrderSummaryCard';
 import BottomActionBar from './BottomActionBar';
+import PDFViewer from './PDFViewer';
 import type { MailPiece, MailAddress, File } from 'wasp/entities';
 import { SimpleAddressValidator } from '../../shared/addressValidationSimple';
 
@@ -71,9 +73,17 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   // Wizard expansion state - which steps are expanded
   const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([1])); // Start with step 1 expanded
 
+  // Track which steps have been completed at least once (for smart progression)
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
   // Quick add modal state
   const [showSenderModal, setShowSenderModal] = useState(false);
   const [showRecipientModal, setShowRecipientModal] = useState(false);
+
+  // Auto-save draft state
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const DRAFT_KEY = 'mail_creation_draft';
 
   // Fetch user's files to get selected file details
   const { data: userFiles, isLoading: filesLoading } = useQuery(getAllFilesByUser);
@@ -105,15 +115,45 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   const isStep3Complete = !!formData.recipientAddressId;
   const isStep4Complete = true; // Mail config has defaults
 
-  // Auto-expand next incomplete step
+  // Helper function to determine if we should auto-progress (only on first completion, not when editing)
+  const shouldAutoProgress = (stepNumber: number, isCurrentlyComplete: boolean) => {
+    // Only auto-progress if:
+    // 1. The step just became complete (isCurrentlyComplete is true)
+    // 2. This is the first time this step has been completed (not in completedSteps set)
+    // This prevents auto-progression when users go back to edit existing selections
+    return isCurrentlyComplete && !completedSteps.has(stepNumber);
+  };
+
+  // Update completed steps tracking when steps become complete
   useEffect(() => {
-    if (isStep1Complete && !expandedSteps.has(2) && !isStep2Complete) {
+    const newCompletedSteps = new Set(completedSteps);
+    if (isStep1Complete && !completedSteps.has(1)) {
+      newCompletedSteps.add(1);
+    }
+    if (isStep2Complete && !completedSteps.has(2)) {
+      newCompletedSteps.add(2);
+    }
+    if (isStep3Complete && !completedSteps.has(3)) {
+      newCompletedSteps.add(3);
+    }
+    if (isStep4Complete && !completedSteps.has(4)) {
+      newCompletedSteps.add(4);
+    }
+    
+    if (newCompletedSteps.size !== completedSteps.size) {
+      setCompletedSteps(newCompletedSteps);
+    }
+  }, [isStep1Complete, isStep2Complete, isStep3Complete, isStep4Complete, completedSteps]);
+
+  // Auto-expand next incomplete step (only on first completion)
+  useEffect(() => {
+    if (shouldAutoProgress(1, isStep1Complete) && !expandedSteps.has(2) && !isStep2Complete) {
       setExpandedSteps(prev => new Set([...prev, 2]));
     }
-    if (isStep2Complete && !expandedSteps.has(3) && !isStep3Complete) {
+    if (shouldAutoProgress(2, isStep2Complete) && !expandedSteps.has(3) && !isStep3Complete) {
       setExpandedSteps(prev => new Set([...prev, 3]));
     }
-  }, [isStep1Complete, isStep2Complete, isStep3Complete, expandedSteps]);
+  }, [isStep1Complete, isStep2Complete, isStep3Complete, expandedSteps, completedSteps]);
 
   // Toggle step expansion
   const toggleStep = (stepNumber: number) => {
@@ -190,6 +230,7 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
       if (completeMailPiece) {
         setCreatedMailPiece(completeMailPiece);
         setCurrentStep('payment');
+        clearDraft(); // Clear draft after successful creation
       } else {
         throw new Error('Failed to load mail piece details');
       }
@@ -229,6 +270,48 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
     setCurrentStep('form');
     setCreatedMailPiece(null);
   };
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem(DRAFT_KEY);
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        setFormData(parsed);
+        setLastSaved(new Date(parsed.savedAt));
+      } catch (error) {
+        console.error('Failed to load draft:', error);
+      }
+    }
+  }, []);
+
+  // Auto-save draft to localStorage whenever formData changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setIsSaving(true);
+      const draftData = { ...formData, savedAt: new Date().toISOString() };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+      setLastSaved(new Date());
+      setTimeout(() => setIsSaving(false), 500);
+    }, 1000); // Debounce for 1 second
+
+    return () => clearTimeout(timeoutId);
+  }, [formData]);
+
+  // Manual save draft handler
+  const handleSaveDraft = useCallback(() => {
+    setIsSaving(true);
+    const draftData = { ...formData, savedAt: new Date().toISOString() };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+    setLastSaved(new Date());
+    setTimeout(() => setIsSaving(false), 1000);
+  }, [formData]);
+
+  // Clear draft after successful submission
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    setLastSaved(null);
+  }, []);
 
   // Memoized form update handler
   const handleFormDataChange = useCallback((updates: Partial<FormData>) => {
@@ -283,24 +366,28 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
   // Main form - Single Page Wizard Layout
   return (
     <div className={className}>
-      {/* Two-column layout: Form + Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] xl:grid-cols-[1fr_500px] gap-6">
-        {/* LEFT COLUMN: Wizard Steps */}
-        <div className="space-y-2">
-          {/* Step 1: Select File */}
-          <CompactStepCard
+      {/* Single Row: Two-column layout - Form + Sidebar */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_450px] xl:grid-cols-[1fr_500px] gap-6 mb-24 lg:mb-6">
+        {/* LEFT COLUMN: Wizard Steps + PDF Preview */}
+        <div className="space-y-6">
+          {/* Wizard Steps */}
+          <div className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
+            {/* Step 1: Select File */}
+            <CompactStepCard
             stepNumber={1}
             title="Select File"
             summary={selectedFile ? `${selectedFile.name} (${selectedFile.pageCount} pages)` : undefined}
             isCompleted={isStep1Complete}
             isExpanded={expandedSteps.has(1)}
+            isDisabled={false}
             onClick={() => toggleStep(1)}
           >
             <FileSelector
               selectedFileId={formData.fileId}
               onFileSelect={(fileId) => {
                 setFormData(prev => ({ ...prev, fileId }));
-                if (fileId) {
+                // Only auto-progress on first completion, not when editing
+                if (fileId && shouldAutoProgress(1, true)) {
                   setExpandedSteps(prev => {
                     const newSet = new Set(prev);
                     newSet.delete(1);
@@ -327,13 +414,15 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
             }
             isCompleted={isStep2Complete}
             isExpanded={expandedSteps.has(2)}
+            isDisabled={!isStep1Complete}
             onClick={() => toggleStep(2)}
           >
             <AddressSelector
               selectedAddressId={formData.senderAddressId}
               onAddressSelect={(addressId) => {
                 setFormData(prev => ({ ...prev, senderAddressId: addressId }));
-                if (addressId) {
+                // Only auto-progress on first completion, not when editing
+                if (addressId && shouldAutoProgress(2, true)) {
                   setExpandedSteps(prev => {
                     const newSet = new Set(prev);
                     newSet.delete(2);
@@ -357,13 +446,15 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
             }
             isCompleted={isStep3Complete}
             isExpanded={expandedSteps.has(3)}
+            isDisabled={!isStep2Complete}
             onClick={() => toggleStep(3)}
           >
             <AddressSelector
               selectedAddressId={formData.recipientAddressId}
               onAddressSelect={(addressId) => {
                 setFormData(prev => ({ ...prev, recipientAddressId: addressId }));
-                if (addressId) {
+                // Only auto-progress on first completion, not when editing
+                if (addressId && shouldAutoProgress(3, true)) {
                   setExpandedSteps(prev => {
                     const newSet = new Set(prev);
                     newSet.delete(3);
@@ -383,6 +474,7 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
             summary={`${formData.mailType} • ${formData.mailClass.replace('usps_', '').replace(/_/g, ' ')}`}
             isCompleted={isStep4Complete}
             isExpanded={expandedSteps.has(4)}
+            isDisabled={!isStep3Complete}
             onClick={() => toggleStep(4)}
           >
             <MailConfigurationSection
@@ -398,9 +490,31 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
               errors={errors}
             />
           </CompactStepCard>
+          </div>
+          
+          {/* Document Preview - Below Steps (Desktop) */}
+          {selectedFile && selectedFile.key && (
+            <Card className="hidden lg:block">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Eye className="h-5 w-5 text-blue-600" />
+                  Document Preview
+                  <span className="text-sm font-normal text-gray-500 ml-2">
+                    ({selectedFile.pageCount} {selectedFile.pageCount === 1 ? 'page' : 'pages'})
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PDFViewer 
+                  fileKey={selectedFile.key}
+                  className="border-0"
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* RIGHT COLUMN: Order Summary Sidebar */}
+        {/* RIGHT COLUMN: Order Summary (40%) */}
         <div className="hidden lg:block">
           <OrderSummaryCard
             selectedFile={selectedFile}
@@ -414,21 +528,43 @@ const MailCreationForm: React.FC<MailCreationFormProps> = ({
         </div>
       </div>
 
-      {/* Mobile: Sticky Bottom Action Bar */}
-      <div className="lg:hidden">
-        <BottomActionBar
-          isValid={isFormValid}
-          isSubmitting={isSubmitting}
-          pageCount={selectedFile?.pageCount || 0}
-          mailClass={formData.mailClass}
-          mailType={formData.mailType}
-          addressPlacement={formData.addressPlacement}
-          onSubmit={handleSubmit}
-          errors={errors}
-          fileSelected={!!formData.fileId}
-          addressesSelected={!!(formData.senderAddressId && formData.recipientAddressId)}
-        />
-      </div>
+      {/* Mobile-Only: Document Preview below steps */}
+      {selectedFile && selectedFile.key && (
+        <Card className="lg:hidden w-full mb-24">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Eye className="h-5 w-5 text-blue-600" />
+              Document Preview
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({selectedFile.pageCount} {selectedFile.pageCount === 1 ? 'page' : 'pages'})
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PDFViewer 
+              fileKey={selectedFile.key}
+              className="border-0"
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sticky Bottom Action Bar - Mobile/Tablet Only */}
+      <BottomActionBar
+        isValid={isFormValid}
+        isSubmitting={isSubmitting}
+        pageCount={selectedFile?.pageCount || 0}
+        mailClass={formData.mailClass}
+        mailType={formData.mailType}
+        addressPlacement={formData.addressPlacement}
+        onSubmit={handleSubmit}
+        errors={errors}
+        fileSelected={!!formData.fileId}
+        addressesSelected={!!(formData.senderAddressId && formData.recipientAddressId)}
+        onSaveDraft={handleSaveDraft}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+      />
 
       {/* Quick Add Address Modals */}
       <QuickAddressModal

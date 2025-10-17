@@ -1,7 +1,6 @@
 import React from 'react';
-import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, ChevronUp } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 /**
@@ -20,6 +19,8 @@ export interface CompactStepCardProps {
   isCompleted: boolean;
   /** Whether step is currently expanded */
   isExpanded: boolean;
+  /** Whether step is disabled/grayed out (future step) */
+  isDisabled?: boolean;
   /** Callback when card is clicked to expand/collapse */
   onClick: () => void;
   /** Callback for explicit change button click */
@@ -49,6 +50,7 @@ export const CompactStepCard: React.FC<CompactStepCardProps> = ({
   icon,
   isCompleted,
   isExpanded,
+  isDisabled = false,
   onClick,
   onChangeClick,
   children,
@@ -75,29 +77,30 @@ export const CompactStepCard: React.FC<CompactStepCardProps> = ({
   };
 
   return (
-    <Card
+    <div
       className={cn(
-        'transition-all duration-200',
-        // Expanded state - highlight with blue ring
-        isExpanded && 'ring-2 ring-blue-500 shadow-md',
+        'transition-all duration-200 border-b border-gray-200 last:border-b-0',
+        // Expanded state - highlight with blue left border
+        isExpanded && 'border-l-4 border-l-blue-500 bg-blue-50/30',
         // Collapsed & completed - subtle gray background, clickable
-        !isExpanded && isCompleted && 'bg-gray-50 border-gray-200 hover:bg-gray-100 cursor-pointer',
-        // Collapsed & incomplete - standard appearance
-        !isExpanded && !isCompleted && 'border-gray-300',
+        !isExpanded && isCompleted && 'hover:bg-gray-50 cursor-pointer',
+        // Disabled state - grayed out
+        isDisabled && 'opacity-50 cursor-not-allowed pointer-events-none',
         className
       )}
-      onClick={!isExpanded && isCompleted ? handleClick : undefined}
+      onClick={!isExpanded && isCompleted && !isDisabled ? handleClick : undefined}
       role="button"
-      tabIndex={!isExpanded && isCompleted ? 0 : -1}
+      tabIndex={!isExpanded && isCompleted && !isDisabled ? 0 : -1}
       onKeyPress={(e) => {
-        if (!isExpanded && isCompleted && (e.key === 'Enter' || e.key === ' ')) {
+        if (!isExpanded && isCompleted && !isDisabled && (e.key === 'Enter' || e.key === ' ')) {
           onClick();
         }
       }}
       aria-expanded={isExpanded}
-      aria-label={`Step ${stepNumber}: ${title}${isCompleted ? ' (completed)' : ''}`}
+      aria-disabled={isDisabled}
+      aria-label={`Step ${stepNumber}: ${title}${isCompleted ? ' (completed)' : ''}${isDisabled ? ' (disabled)' : ''}`}
     >
-      <CardContent className="p-4">
+      <div className="p-4">
         {/* ============================================ */}
         {/* COLLAPSED & COMPLETED VIEW - Compact 1-line */}
         {/* ============================================ */}
@@ -134,7 +137,7 @@ export const CompactStepCard: React.FC<CompactStepCardProps> = ({
               </div>
             </div>
 
-            {/* Right: Change Button + Chevron */}
+            {/* Right: Edit Button */}
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 variant="outline"
@@ -142,11 +145,10 @@ export const CompactStepCard: React.FC<CompactStepCardProps> = ({
                 onClick={handleChangeClick}
                 data-change-btn="true"
                 className="min-w-[80px]"
-                aria-label={`Change ${title}`}
+                aria-label={`Edit ${title}`}
               >
-                Change
+                Edit
               </Button>
-              <ChevronDown className="h-4 w-4 text-gray-400" aria-hidden="true" />
             </div>
           </div>
         )}
@@ -223,8 +225,8 @@ export const CompactStepCard: React.FC<CompactStepCardProps> = ({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

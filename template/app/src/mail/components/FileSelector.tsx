@@ -476,11 +476,6 @@ const FileSelector: React.FC<FileSelectorProps> = ({
                   <CheckCircle className="h-5 w-5 text-green-500 ml-1" />
                 )}
               </CardTitle>
-              {!showCompactView && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Choose a PDF file to send. Only validated files are shown.
-                </p>
-              )}
             </div>
             <Button 
               variant="outline" 
@@ -533,7 +528,6 @@ const FileSelector: React.FC<FileSelectorProps> = ({
             {/* Valid Files */}
             {validFiles.length > 0 && (
               <div className="space-y-4">
-                <h4 className="text-sm font-medium text-gray-700">Available Files</h4>
                 {validFiles.map((file: File) => {
                   const validation = validationResults[file.id];
                   const isSelected = selectedFileId === file.id;

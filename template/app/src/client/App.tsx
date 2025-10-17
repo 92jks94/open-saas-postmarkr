@@ -16,6 +16,7 @@ import { demoNavigationitems, marketingNavigationItems, adminNavigationItems } f
 import { initSentry } from './sentry';
 import './chromeExtensionErrorHandler'; // Import error handler
 import Footer from '../landing-page/components/Footer';
+import './react-init-fix'; // Import React initialization fix
 /**
  * Root application component that handles layout and navigation
  * 

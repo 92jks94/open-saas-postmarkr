@@ -202,9 +202,6 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
                 <CheckCircle className="h-5 w-5 text-green-500 ml-1" />
               )}
             </CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
-              Choose a {addressType === 'sender' ? 'sender' : 'recipient'} address from your address book.
-            </p>
           </div>
           {onQuickAdd && (
             <Button 
@@ -236,7 +233,6 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
           {/* Valid Addresses */}
           {validAddresses.length > 0 && (
             <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-700">Verified Addresses</h4>
                 {validAddresses.map(address => {
                   const isSelected = selectedAddressId === address.id;
                   
@@ -266,7 +262,6 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
                               <p>
                                 {address.address_city}, {address.address_state} {address.address_zip}
                               </p>
-                              <p>{address.address_country}</p>
                             </div>
                             {address.label && (
                               <div className="mt-2">
@@ -331,7 +326,6 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({
                               <p>
                                 {address.address_city}, {address.address_state} {address.address_zip}
                               </p>
-                              <p>{address.address_country}</p>
                             </div>
                             {address.label && (
                               <div className="mt-2">
