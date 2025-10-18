@@ -114,3 +114,24 @@ export function getCostBreakdown(totalCost: number, pageCount?: number | null): 
   };
 }
 
+/**
+ * Check if a draft mail piece has all required fields for payment
+ */
+export function isDraftReadyForPayment(mailPiece: {
+  mailType?: string | null;
+  mailClass?: string | null;
+  mailSize?: string | null;
+  senderAddressId?: string | null;
+  recipientAddressId?: string | null;
+  fileId?: string | null;
+}): boolean {
+  return !!(
+    mailPiece.mailType &&
+    mailPiece.mailClass &&
+    mailPiece.mailSize &&
+    mailPiece.senderAddressId &&
+    mailPiece.recipientAddressId &&
+    mailPiece.fileId
+  );
+}
+

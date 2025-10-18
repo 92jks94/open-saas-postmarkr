@@ -301,9 +301,6 @@ export const validateAddress: ValidateAddress<ValidateAddressInput, { address: M
   }
 
   try {
-    // Import the validation service
-    const { validateAddress: validateAddressService } = await import('../server/lob/services');
-    
     // Call the Lob validation service with correct field names
     const validationResult = await validateAddressService({
       contactName: address.contactName,

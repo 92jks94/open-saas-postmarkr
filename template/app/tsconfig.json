@@ -24,7 +24,15 @@
     "skipLibCheck": true,
     "allowJs": true,
     "outDir": ".wasp/out/user",
-    "incremental": true
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/components/*": ["src/components/*"],
+      "@/components/ui/*": ["src/components/ui/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/hooks/*": ["src/hooks/*"]
+    }
   },
   "include": ["src"]
 }

@@ -1,126 +1,161 @@
-// IMPORTANT: Make sure to import `instrument.js` at the top of your file.
-// If you're using ECMAScript Modules (ESM) syntax, use `import "./instrument.js";`
-import "../instrument.js";
+/**
+ * Server Startup Validation
+ * 
+ * ✅ FIX #5: Validates critical configuration before the server starts accepting requests.
+ * This prevents runtime errors from misconfiguration and ensures production safety.
+ */
 
-import { validateServerStartup } from './startupValidation';
-import type { MiddlewareConfigFn } from 'wasp/server';
-import cors from 'cors';
-import express from 'express';
+import { getEnvVar } from './envValidation';
 
-// Validate CORS environment variables
-function validateCorsEnvironment(): void {
-  const clientUrl = process.env.WASP_WEB_CLIENT_URL;
-  const serverUrl = process.env.WASP_SERVER_URL;
+/**
+ * Validate production requirements
+ * 
+ * Ensures that all critical API keys and configuration are present
+ * in production environment. Fails startup if requirements not met.
+ */
+export function validateProductionRequirements(): void {
+  const nodeEnv = process.env.NODE_ENV;
   
-  console.log('🔧 CORS Environment Validation:');
-  console.log(`   WASP_WEB_CLIENT_URL: ${clientUrl || 'NOT SET'}`);
-  console.log(`   WASP_SERVER_URL: ${serverUrl || 'NOT SET'}`);
+  console.log(`🔍 Validating environment: ${nodeEnv}`);
   
-  if (!clientUrl) {
-    console.warn('⚠️  WARNING: WASP_WEB_CLIENT_URL not set. CORS may not work properly.');
-  }
-  
-  if (!serverUrl) {
-    console.warn('⚠️  WARNING: WASP_SERVER_URL not set. CORS may not work properly.');
+  // Only enforce strict validation in production
+  if (nodeEnv === 'production') {
+    console.log('🔒 Production mode - validating critical configuration');
+    
+    // Validate Lob API key
+    const lobKey = process.env.LOB_PROD_KEY || process.env.LOB_TEST_KEY;
+    
+    if (!lobKey) {
+      console.error('');
+      console.error('🔴 ==========================================');
+      console.error('🔴 CRITICAL ERROR: Lob API key not configured');
+      console.error('🔴 ==========================================');
+      console.error('🔴');
+      console.error('🔴 Production deployment requires Lob API configuration.');
+      console.error('🔴 Please set one of the following environment variables:');
+      console.error('🔴   - LOB_PROD_KEY (recommended for production)');
+      console.error('🔴   - LOB_TEST_KEY (fallback, for staging)');
+      console.error('🔴');
+      console.error('🔴 Application cannot start without Lob configuration.');
+      console.error('🔴 No mail will be sent without valid Lob API keys.');
+      console.error('🔴 ==========================================');
+      console.error('');
+      
+      // Exit process - don't start server
+      process.exit(1);
+    }
+    
+    // Validate Stripe keys
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    
+    if (!stripeKey) {
+      console.error('');
+      console.error('🔴 ==========================================');
+      console.error('🔴 CRITICAL ERROR: Stripe API key not configured');
+      console.error('🔴 ==========================================');
+      console.error('🔴');
+      console.error('🔴 Production deployment requires Stripe configuration.');
+      console.error('🔴 Please set STRIPE_SECRET_KEY environment variable.');
+      console.error('🔴 ==========================================');
+      console.error('');
+      
+      process.exit(1);
+    }
+    
+    // Validate S3 configuration
+    const s3Bucket = process.env.AWS_S3_FILES_BUCKET;
+    const awsRegion = process.env.AWS_S3_REGION;
+    
+    if (!s3Bucket || !awsRegion) {
+      console.error('');
+      console.error('🔴 ==========================================');
+      console.error('🔴 CRITICAL ERROR: S3 configuration missing');
+      console.error('🔴 ==========================================');
+      console.error('🔴');
+      console.error('🔴 Production deployment requires S3 configuration.');
+      console.error('🔴 Please set:');
+      console.error('🔴   - AWS_S3_FILES_BUCKET');
+      console.error('🔴   - AWS_S3_REGION');
+      console.error('🔴 ==========================================');
+      console.error('');
+      
+      process.exit(1);
+    }
+    
+    console.log('✅ Lob API key configured for production');
+    console.log('✅ Stripe API key configured');
+    console.log('✅ S3 configuration validated');
+    console.log('✅ All production requirements validated');
+  } else {
+    console.log('ℹ️  Development/test mode - skipping strict validation');
+    
+    // Warn about missing keys in development
+    const lobKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
+    if (!lobKey) {
+      console.warn('⚠️  Warning: Lob API key not configured');
+      console.warn('⚠️  Lob operations will fail without API key');
+      console.warn('⚠️  Set LOB_TEST_KEY or LOB_PROD_KEY in your .env.server file');
+    }
   }
 }
 
-// Server setup function called by Wasp on server startup
+/**
+ * Setup function called by Wasp on server startup
+ * Call this in main.wasp server.setupFn
+ */
 export async function setupServer(): Promise<void> {
-  // Sentry is already initialized via instrument.js import at the top of this file
+  console.log('🚀 Starting server setup...');
   
-  // Validate CORS environment
-  validateCorsEnvironment();
+  // Validate production requirements
+  validateProductionRequirements();
   
-  // Run comprehensive startup validation asynchronously
-  // This prevents blocking the server from responding to health checks
-  // which is critical for Fly.io deployments
-  setImmediate(async () => {
-    try {
-      await validateServerStartup();
-      console.log('✅ Server startup validation completed successfully');
-    } catch (error) {
-      console.error('❌ Startup validation failed:', error);
-      // Don't throw error - server is already running
+  console.log('✅ Server setup complete');
+}
+
+/**
+ * Server middleware configuration
+ * Required by main.wasp server.middlewareConfigFn
+ * 
+ * Implements:
+ * - Canonical host enforcement (www -> non-www)
+ * - HTTPS redirect in production
+ * - HSTS header for security
+ */
+export function serverMiddlewareConfigFn(middlewareConfig: Map<string, any>): Map<string, any> {
+  // Add canonical host redirect middleware
+  middlewareConfig.set('canonical-redirect', (req: any, res: any, next: any) => {
+    const host = req.headers.host || '';
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const path = req.path || req.url;
+    
+    // Skip redirect for health check endpoints (Fly.io internal checks)
+    if (path && (path.startsWith('/health') || path.startsWith('/api/webhooks/health'))) {
+      return next();
     }
+    
+    // Production only - enforce canonical host and HTTPS
+    if (process.env.NODE_ENV === 'production') {
+      // Add HSTS header for security (force HTTPS for 1 year)
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+      
+      // Redirect www to non-www, and http to https
+      const shouldRedirect = 
+        host === 'www.postmarkr.com' || 
+        host.startsWith('www.') || 
+        proto === 'http';
+      
+      if (shouldRedirect) {
+        // Build canonical URL
+        const canonicalHost = host.replace(/^www\./, '');
+        const canonicalUrl = `https://${canonicalHost}${req.originalUrl || req.url}`;
+        
+        console.log(`🔀 Redirecting ${proto}://${host}${req.url} -> ${canonicalUrl}`);
+        return res.redirect(301, canonicalUrl);
+      }
+    }
+    
+    next();
   });
   
-  console.log('🚀 Server is ready to accept requests');
-}
-
-// Server middleware configuration function
-export const serverMiddlewareConfigFn: MiddlewareConfigFn = (middlewareConfig) => {
-  // Increase JSON body size limit to handle large base64 thumbnails
-  // Base64 thumbnails can be several MB, default 100kb is too small
-  middlewareConfig.set('express.json', express.json({ 
-    limit: '50mb' 
-  }));
-  middlewareConfig.set('express.urlencoded', express.urlencoded({ 
-    limit: '50mb',
-    extended: true 
-  }));
-  
-  // Configure CORS to allow client-server communication
-  const corsOptions = {
-    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) {
-        console.log('🔍 CORS: Allowing request with no origin');
-        return callback(null, true);
-      }
-      
-      // Get allowed origins from environment variables
-      const clientUrl = process.env.WASP_WEB_CLIENT_URL;
-      const serverUrl = process.env.WASP_SERVER_URL;
-      
-      const allowedOrigins = [
-        'http://localhost:3000', // Development
-        'http://localhost:3001', // Development server
-        'https://postmarkr.com', // Production domain
-        'https://www.postmarkr.com', // Production domain with www
-      ];
-      
-      // Add environment-based URLs if they exist
-      if (clientUrl && !allowedOrigins.includes(clientUrl)) {
-        allowedOrigins.push(clientUrl);
-      }
-      if (serverUrl && !allowedOrigins.includes(serverUrl)) {
-        allowedOrigins.push(serverUrl);
-      }
-      
-      // Always log CORS checks in production for debugging
-      console.log(`🔍 CORS check: origin="${origin}", allowed=${allowedOrigins.includes(origin)}`);
-      console.log(`🔍 Allowed origins: ${allowedOrigins.join(', ')}`);
-      
-      if (allowedOrigins.includes(origin)) {
-        console.log(`✅ CORS: Allowing origin: ${origin}`);
-        callback(null, true);
-      } else {
-        console.warn(`❌ CORS blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    credentials: true, // Allow cookies and authorization headers
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: [
-      'Content-Type', 
-      'Authorization',
-      'X-Requested-With',
-      'Accept',
-      'Origin',
-      'Access-Control-Request-Method',
-      'Access-Control-Request-Headers'
-    ],
-    exposedHeaders: ['Access-Control-Allow-Origin', 'Access-Control-Allow-Credentials'],
-    optionsSuccessStatus: 200, // Some legacy browsers choke on 204
-  };
-  
-  middlewareConfig.set('cors', cors(corsOptions));
-  
-  // Note: Rate limiting is implemented at the operation level instead of middleware level
-  // This provides better control and is more compatible with Wasp's architecture
-  
-  // Sentry is already initialized above
-  // The integrations will automatically handle request tracking
   return middlewareConfig;
-};
+}

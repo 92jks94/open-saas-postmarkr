@@ -1,8 +1,15 @@
 import { PageHeader } from '../components/ui/page-header';
+import { Seo } from '../seo/Seo';
 
 export default function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <>
+      <Seo
+        title="Terms of Service - Postmarkr"
+        description="Terms and conditions for using Postmarkr's virtual mailbox and automated mail service. Learn about service usage, payment terms, and user responsibilities."
+        canonical="https://postmarkr.com/terms"
+      />
+      <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageHeader
           title="Terms of Service"
@@ -121,5 +128,6 @@ export default function TermsOfServicePage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

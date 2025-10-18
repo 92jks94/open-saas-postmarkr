@@ -6,7 +6,10 @@ import { stripe } from './stripeClient';
 import { getEnvVar } from '../../server/envValidation';
 
 // WASP_WEB_CLIENT_URL will be set up by Wasp when deploying to production: https://wasp.sh/docs/deploying
-const DOMAIN = getEnvVar('WASP_WEB_CLIENT_URL', 'http://localhost:3000');
+const DOMAIN = getEnvVar('WASP_WEB_CLIENT_URL');
+if (!DOMAIN) {
+  throw new Error('WASP_WEB_CLIENT_URL environment variable is required');
+}
 
 export async function fetchStripeCustomer(customerEmail: string) {
   let customer: Stripe.Customer;

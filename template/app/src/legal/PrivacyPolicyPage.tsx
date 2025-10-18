@@ -1,8 +1,15 @@
 import { PageHeader } from '../components/ui/page-header';
+import { Seo } from '../seo/Seo';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <>
+      <Seo
+        title="Privacy Policy - Postmarkr"
+        description="Learn how Postmarkr collects, uses, and protects your information. We implement bank-level encryption and secure handling of sensitive documents."
+        canonical="https://postmarkr.com/privacy"
+      />
+      <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <PageHeader
           title="Privacy Policy"
@@ -87,5 +94,6 @@ export default function PrivacyPolicyPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

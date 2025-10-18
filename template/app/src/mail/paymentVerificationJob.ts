@@ -1,6 +1,8 @@
 import { HttpError } from 'wasp/server';
-import { stripe } from '../payment/stripe/stripeClient';
-import { submitPaidMailToLob } from 'wasp/server/jobs';
+import { verifyStripePaymentStatus, markMailPieceAsPaid } from './helpers/paymentHelpers';
+import { scheduleLobSubmission } from './helpers/jobHelpers';
+import { getLobJobConfig } from '../server/lob/config';
+import { createLobLogger } from '../server/lob/logger';
 
 /**
  * Background job to verify payment status for stuck mail pieces
@@ -10,11 +12,16 @@ export async function verifyPaymentStatus(
   args: {},
   context: any
 ) {
+  const logger = createLobLogger('PaymentVerificationJob');
+  const config = getLobJobConfig('paymentVerification');
+  
   try {
-    console.log('🔍 Starting payment verification job...');
+    logger.info('Starting payment verification job');
     
     // Find mail pieces that are stuck in pending_payment status
     // but have a payment intent ID (indicating payment was attempted)
+    const lookbackTime = new Date(Date.now() - ('lookbackHours' in config ? config.lookbackHours : 24) * 60 * 60 * 1000);
+    
     const stuckMailPieces = await context.entities.MailPiece.findMany({
       where: {
         status: 'pending_payment',
@@ -23,8 +30,7 @@ export async function verifyPaymentStatus(
           not: null
         },
         createdAt: {
-          // Only check pieces created in the last 24 hours to avoid old stuck pieces
-          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+          gte: lookbackTime
         }
       },
       include: {
@@ -34,102 +40,82 @@ export async function verifyPaymentStatus(
       }
     });
 
-    console.log(`📊 Found ${stuckMailPieces.length} potentially stuck mail pieces`);
+    logger.info(`Found potentially stuck mail pieces`, {
+      count: stuckMailPieces.length,
+      lookbackHours: 'lookbackHours' in config ? config.lookbackHours : 24,
+    });
 
     let verifiedCount = 0;
     let errorCount = 0;
 
     for (const mailPiece of stuckMailPieces) {
       try {
-        console.log(`🔍 Verifying payment for mail piece ${mailPiece.id} (Payment ID: ${mailPiece.paymentIntentId})`);
+        logger.debug('Verifying payment for mail piece', {
+          mailPieceId: mailPiece.id,
+          paymentIntentId: mailPiece.paymentIntentId,
+        });
         
-        let isPaid = false;
-        let stripeStatus = 'unknown';
+        // Verify payment status using centralized helper
+        const paymentVerification = await verifyStripePaymentStatus(mailPiece.paymentIntentId!);
 
-        // Check if it's a checkout session or payment intent
-        try {
-          // First try as payment intent
-          const paymentIntent = await stripe.paymentIntents.retrieve(mailPiece.paymentIntentId!);
-          stripeStatus = paymentIntent.status;
-          isPaid = paymentIntent.status === 'succeeded';
-        } catch (paymentIntentError) {
-          // If that fails, try as checkout session
-          try {
-            const session = await stripe.checkout.sessions.retrieve(mailPiece.paymentIntentId!);
-            stripeStatus = session.payment_status;
-            isPaid = session.payment_status === 'paid';
-          } catch (sessionError) {
-            console.error(`❌ Failed to retrieve Stripe data for ${mailPiece.id}:`, sessionError);
-            errorCount++;
-            continue;
-          }
-        }
-
-        if (isPaid) {
-          console.log(`✅ Payment verified for mail piece ${mailPiece.id} (Stripe status: ${stripeStatus})`);
+        if (paymentVerification.isPaid) {
+          logger.paymentVerification(mailPiece.id, 'verified', {
+            stripeStatus: paymentVerification.status,
+            paymentType: paymentVerification.paymentType,
+          });
           
-          // Check if already processed to prevent duplicate processing
-          if (mailPiece.paymentStatus === 'paid' && mailPiece.status === 'paid') {
-            console.log(`ℹ️ Mail piece ${mailPiece.id} already processed, skipping`);
-            continue;
-          }
-
-          // Update mail piece to paid status using conditional update to prevent race conditions
-          const updateResult = await context.entities.MailPiece.updateMany({
-            where: { 
-              id: mailPiece.id,
-              paymentStatus: 'pending', // Only update if still pending
-              status: 'pending_payment' // Only update if still pending
-            },
-            data: {
-              paymentStatus: 'paid',
-              status: 'paid',
-            },
-          });
-
-          // Check if the update succeeded (count will be 0 if already processed)
-          if (updateResult.count === 0) {
-            console.log(`ℹ️ Mail piece ${mailPiece.id} was already processed by another process, skipping`);
-            continue;
-          }
-
-          // Create status history entry
-          await context.entities.MailPieceStatusHistory.create({
-            data: {
+          // Mark mail piece as paid using centralized helper
+          const updateResult = await markMailPieceAsPaid(
+            {
               mailPieceId: mailPiece.id,
-              status: 'paid',
-              previousStatus: 'pending_payment',
-              description: `Payment verified via background job (Stripe status: ${stripeStatus})`,
               source: 'system',
+              description: `Payment verified via background job (Stripe status: ${paymentVerification.status})`,
+              additionalData: {
+                stripeStatus: paymentVerification.status,
+                paymentType: paymentVerification.paymentType,
+                verificationJobRun: new Date().toISOString(),
+              },
             },
-          });
+            context
+          );
 
-          // Schedule Lob submission job
-          try {
-            await submitPaidMailToLob.submit(
-              { mailPieceId: mailPiece.id },
-              { 
-                retryLimit: 3,
-                retryDelay: 60,
-                retryBackoff: true
-              }
-            );
-            console.log(`📋 Scheduled Lob submission for mail piece ${mailPiece.id}`);
-          } catch (jobError) {
-            console.error(`❌ Error scheduling Lob submission for ${mailPiece.id}:`, jobError);
+          if (updateResult.updated) {
+            // Schedule Lob submission job using centralized helper
+            const jobResult = await scheduleLobSubmission(mailPiece.id, context);
+            
+            if (!jobResult.success) {
+              logger.nonCriticalError('Failed to schedule Lob submission', jobResult.error, {
+                mailPieceId: mailPiece.id,
+              });
+            }
+
+            verifiedCount++;
+          } else {
+            logger.info('Mail piece already processed', {
+              mailPieceId: mailPiece.id,
+              reason: updateResult.reason,
+            });
           }
-
-          verifiedCount++;
         } else {
-          console.log(`⏳ Payment not yet completed for mail piece ${mailPiece.id} (Stripe status: ${stripeStatus})`);
+          logger.paymentVerification(mailPiece.id, 'pending', {
+            stripeStatus: paymentVerification.status,
+            paymentType: paymentVerification.paymentType,
+          });
         }
       } catch (error) {
-        console.error(`❌ Error verifying payment for mail piece ${mailPiece.id}:`, error);
+        logger.error('Error verifying payment for mail piece', {
+          mailPieceId: mailPiece.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
         errorCount++;
       }
     }
 
-    console.log(`✅ Payment verification job completed: ${verifiedCount} verified, ${errorCount} errors`);
+    logger.info('Payment verification job completed', {
+      verifiedCount,
+      errorCount,
+      totalChecked: stuckMailPieces.length,
+    });
     
     return {
       verifiedCount,
@@ -137,7 +123,9 @@ export async function verifyPaymentStatus(
       totalChecked: stuckMailPieces.length
     };
   } catch (error) {
-    console.error('❌ Payment verification job failed:', error);
+    logger.error('Payment verification job failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 }

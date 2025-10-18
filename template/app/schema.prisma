@@ -185,7 +185,7 @@ model MailPiece {
   senderAddressId    String
   recipientAddressId String
   fileId             String?
-  lobId              String?
+  lobId              String?         @unique  // Prevents duplicate Lob submissions at database level
   lobStatus          String?
   lobTrackingNumber  String?
   paymentIntentId    String?

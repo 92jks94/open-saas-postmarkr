@@ -274,7 +274,8 @@ export const fixPaidOrders: FixPaidOrders<void, { fixedCount: number; errorCount
               status: 'submitted',
               cost: lobResponse.cost / 100,
               metadata: {
-                lobData: lobResponse.lobData,
+                // ✅ PHASE 2 #3: Remove JSON.parse overhead - Prisma handles JSON serialization automatically
+                lobData: (lobResponse.lobData || null) as any,
                 submittedAt: new Date().toISOString(),
               },
             },

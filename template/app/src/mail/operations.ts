@@ -37,8 +37,11 @@ import type {
 import type { MailPiece, MailAddress, File, MailPieceStatusHistory, User } from 'wasp/entities';
 import { generateMailReceipt } from '../server/receipts/pdfReceiptGenerator';
 import { AddressPlacement } from '@prisma/client';
+import { prisma } from 'wasp/server';
 import type { MailPieceWithRelations } from './types';
 import { hasFullAccess } from '../shared/accessHelpers';
+import { getCachedStatus, setCachedStatus, invalidateStatusCache } from '../server/lob/statusCache';
+import { sendReceiptEmailWithPDF } from '../server/email/mailNotifications';
 import { 
   createMailPieceSchema, 
   updateMailPieceSchema, 
@@ -72,6 +75,7 @@ import { stripe } from '../payment/stripe/stripeClient';
 import { checkOperationRateLimit } from '../server/rate-limiting/operationRateLimiter';
 import { mapLobStatus } from '../shared/statusMapping';
 import { sendMailSubmittedEmail, fetchMailPieceForEmail } from '../server/email/mailNotifications';
+import { handleError } from './helpers/errorHelpers';
 
 // ============================================================================
 // MAIL PIECE CRUD OPERATIONS
@@ -335,18 +339,7 @@ export const createMailPiece: CreateMailPiece<CreateMailPieceInput, MailPiece> =
 
     return mailPiece;
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Handle Zod validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
-      throw new HttpError(400, `Validation error: ${error.message}`);
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to create mail piece:', error);
-    throw new HttpError(500, 'Failed to create mail piece due to an internal error.');
+    handleError(error, 'createMailPiece');
   }
 };
 
@@ -414,6 +407,15 @@ export const updateMailPieceStatus: UpdateMailPieceStatus<UpdateMailPieceStatusI
       },
     });
 
+    // ✅ PHASE 3 #3: Invalidate cache since webhook provided new status
+    invalidateStatusCache(mailPiece.id);
+    
+    console.log('✅ Webhook updated status - cache invalidated', {
+      mailPieceId: mailPiece.id,
+      oldStatus: mailPiece.status,
+      newStatus: newStatus,
+    });
+
     // Create status history entry with enhanced tracking data
     await context.entities.MailPieceStatusHistory.create({
       data: {
@@ -433,18 +435,7 @@ export const updateMailPieceStatus: UpdateMailPieceStatus<UpdateMailPieceStatusI
 
     return updatedMailPiece;
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Handle Zod validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
-      throw new HttpError(400, `Validation error: ${error.message}`);
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to update mail piece status:', error);
-    throw new HttpError(500, 'Failed to update mail piece status due to an internal error.');
+    handleError(error, 'updateMailPieceStatus');
   }
 };
 
@@ -541,18 +532,7 @@ export const updateMailPiece: UpdateMailPiece<UpdateMailPieceInput, MailPiece> =
 
     return updatedMailPiece;
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Handle Zod validation errors
-    if (error instanceof Error && error.name === 'ZodError') {
-      throw new HttpError(400, `Validation error: ${error.message}`);
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to update mail piece:', error);
-    throw new HttpError(500, 'Failed to update mail piece due to an internal error.');
+    handleError(error, 'updateMailPiece');
   }
 };
 
@@ -591,13 +571,7 @@ export const deleteMailPiece: DeleteMailPiece<DeleteMailPieceInput, { success: b
 
     return { success: true };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to delete mail piece:', error);
-    throw new HttpError(500, 'Failed to delete mail piece due to an internal error.');
+    handleError(error, 'deleteMailPiece');
   }
 };
 
@@ -624,19 +598,14 @@ export const getMailPiece: GetMailPiece<GetMailPieceInput, MailPieceWithRelation
         file: true,
         statusHistory: {
           orderBy: { createdAt: 'desc' },
+          take: 20, // Limit to most recent 20 entries - sufficient for detailed timeline
         },
       },
     });
 
     return mailPiece;
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to get mail piece:', error);
-    throw new HttpError(500, 'Failed to get mail piece due to an internal error.');
+    handleError(error, 'getMailPiece');
   }
 };
 
@@ -767,13 +736,7 @@ export const createMailPaymentIntent: CreateMailPaymentIntent<CreateMailPaymentI
       clientSecret: paymentIntent.client_secret,
     };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to create mail payment intent:', error);
-    throw new HttpError(500, 'Failed to create payment intent due to an internal error.');
+    handleError(error, 'createMailPaymentIntent');
   }
 };
 
@@ -841,15 +804,44 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       throw new HttpError(400, 'Page count is required for pricing calculation');
     }
 
-    // Calculate cost using cost calculation service
-    const costData = await calculateCost({
-      mailType: mailPiece.mailType,
-      mailClass: mailPiece.mailClass,
-      mailSize: mailPiece.mailSize,
-      toAddress: mailPiece.recipientAddress,
-      fromAddress: mailPiece.senderAddress,
-      pageCount: mailPiece.pageCount,
-    });
+    // ✅ PHASE 3 #2: Use stored pricing from mail piece creation (eliminates wasteful API call)
+    // Pricing was already calculated and validated when mail piece was created
+    let costInCents: number;
+    let pricingBreakdown: any;
+
+    if (mailPiece.customerPrice && mailPiece.pricingTier) {
+      // Use pre-calculated pricing
+      costInCents = Math.round(mailPiece.customerPrice * 100); // Convert dollars to cents
+      pricingBreakdown = {
+        pricingTier: mailPiece.pricingTier,
+        envelopeType: mailPiece.envelopeType || 'standard',
+        description: `${mailPiece.pageCount} page${mailPiece.pageCount! > 1 ? 's' : ''} letter`,
+        pageBasedPricing: true,
+      };
+      
+      console.log('✅ Using stored pricing for checkout (no API call)', {
+        mailPieceId: args.mailPieceId,
+        customerPrice: mailPiece.customerPrice,
+        pricingTier: mailPiece.pricingTier,
+      });
+    } else {
+      // Fallback: Recalculate if pricing missing (shouldn't happen for valid mail pieces)
+      console.warn('⚠️ Pricing data missing from mail piece, recalculating', {
+        mailPieceId: args.mailPieceId,
+      });
+      
+      const costData = await calculateCost({
+        mailType: mailPiece.mailType,
+        mailClass: mailPiece.mailClass,
+        mailSize: mailPiece.mailSize,
+        toAddress: mailPiece.recipientAddress,
+        fromAddress: mailPiece.senderAddress,
+        pageCount: mailPiece.pageCount,
+      });
+      
+      costInCents = costData.cost;
+      pricingBreakdown = costData.breakdown;
+    }
 
     // Get thumbnail URL for Stripe product image (if available)
     let thumbnailUrl: string | undefined;
@@ -886,14 +878,18 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       `${addr.contactName}, ${addr.address_city}, ${addr.address_state}`;
 
     // Create Stripe Checkout Session
-    const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+    const DOMAIN = process.env.WASP_WEB_CLIENT_URL;
+    if (!DOMAIN) {
+      console.error('❌ WASP_WEB_CLIENT_URL not set - cannot generate checkout URLs');
+      throw new HttpError(500, 'Server configuration error: WASP_WEB_CLIENT_URL not set');
+    }
     
     // Log checkout session details (dev only)
     if (process.env.NODE_ENV === 'development') {
       console.log('Creating Stripe checkout session:', {
         mailPieceId: args.mailPieceId,
         pageCount: mailPiece.pageCount,
-        pricingTier: costData.breakdown.pricingTier,
+        pricingTier: pricingBreakdown.pricingTier,
         hasThumbnail: !!thumbnailUrl,
       });
     }
@@ -925,7 +921,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
     const productName = `Physical Mail Delivery to ${recipientName}`;
     
     // Build detailed description with all relevant order details
-    const productDescription = `Sending ${mailPiece.pageCount} page${mailPiece.pageCount > 1 ? 's' : ''} ("${displayFileName}") via ${getMailClassDisplay(mailPiece.mailClass)} | ${costData.breakdown.description}`;
+    const productDescription = `Sending ${mailPiece.pageCount} page${mailPiece.pageCount > 1 ? 's' : ''} ("${displayFileName}") via ${getMailClassDisplay(mailPiece.mailClass)} | ${pricingBreakdown.description}`;
     
     // Log Stripe checkout session creation details
     console.log('🛒 Creating Stripe checkout session with:', {
@@ -933,7 +929,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       productDescription: productDescription.substring(0, 100) + '...',
       hasThumbnail: !!thumbnailUrl,
       thumbnailUrlPreview: thumbnailUrl ? thumbnailUrl.substring(0, 100) + '...' : 'none',
-      amount: costData.cost,
+      amount: costInCents,
       mailPieceId: args.mailPieceId
     });
     
@@ -949,7 +945,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
               // Add thumbnail image of uploaded file if available
               ...(thumbnailUrl && { images: [thumbnailUrl] }),
             },
-            unit_amount: costData.cost,
+            unit_amount: costInCents,
           },
           quantity: 1,
         },
@@ -976,8 +972,8 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
         mailClass: mailPiece.mailClass,
         mailSize: mailPiece.mailSize,
         pageCount: mailPiece.pageCount?.toString() || '0',
-        pricingTier: costData.breakdown.pricingTier,
-        envelopeType: costData.breakdown.envelopeType,
+        pricingTier: pricingBreakdown.pricingTier,
+        envelopeType: pricingBreakdown.envelopeType,
         
         // File info (truncated to prevent metadata value limits)
         fileName: truncateMetadata(fileName, 200),
@@ -1006,8 +1002,8 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
         addressPlacement: mailPiece.addressPlacement,
         
         // Cost breakdown for reference
-        totalCost: (costData.cost / 100).toFixed(2),
-        pricePerPage: (costData.cost / 100 / mailPiece.pageCount).toFixed(2),
+        totalCost: (costInCents / 100).toFixed(2),
+        pricePerPage: (costInCents / 100 / mailPiece.pageCount).toFixed(2),
       },
       customer_email: context.user.identities?.email?.id ?? undefined,
     });
@@ -1066,13 +1062,7 @@ export const createMailCheckoutSession: CreateMailCheckoutSession<CreateMailChec
       sessionId: session.id,
     };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to create mail checkout session:', error);
-    throw new HttpError(500, 'Failed to create checkout session due to an internal error.');
+    handleError(error, 'createMailCheckoutSession');
   }
 };
 
@@ -1150,21 +1140,40 @@ export const createBulkMailCheckoutSession: CreateBulkMailCheckoutSession<Create
       throw new HttpError(400, 'All mail pieces must have page count for pricing calculation');
     }
 
-    // Calculate total cost for all mail pieces
+    // ✅ PHASE 3 #2: Calculate total cost for all mail pieces using stored pricing
     let totalCost = 0;
     const lineItems: any[] = [];
 
     for (const mailPiece of mailPieces) {
-      const costData = await calculateCost({
-        mailType: mailPiece.mailType,
-        mailClass: mailPiece.mailClass,
-        mailSize: mailPiece.mailSize,
-        toAddress: mailPiece.recipientAddress,
-        fromAddress: mailPiece.senderAddress,
-        pageCount: mailPiece.pageCount!,
-      });
-
-      totalCost += costData.cost;
+      let costInCents: number;
+      
+      if (mailPiece.customerPrice) {
+        // Use pre-calculated pricing (eliminates N API calls for N mail pieces)
+        costInCents = Math.round(mailPiece.customerPrice * 100);
+        
+        console.log('✅ Using stored pricing for bulk checkout item (no API call)', {
+          mailPieceId: mailPiece.id,
+          customerPrice: mailPiece.customerPrice,
+        });
+      } else {
+        // Fallback: Recalculate if pricing missing
+        console.warn('⚠️ Pricing data missing from mail piece in bulk checkout, recalculating', {
+          mailPieceId: mailPiece.id,
+        });
+        
+        const costData = await calculateCost({
+          mailType: mailPiece.mailType,
+          mailClass: mailPiece.mailClass,
+          mailSize: mailPiece.mailSize,
+          toAddress: mailPiece.recipientAddress,
+          fromAddress: mailPiece.senderAddress,
+          pageCount: mailPiece.pageCount!,
+        });
+        
+        costInCents = costData.cost;
+      }
+      
+      totalCost += costInCents;
       
       // Create line item for this mail piece
       const recipientName = mailPiece.recipientAddress.contactName || 'Recipient';
@@ -1178,14 +1187,18 @@ export const createBulkMailCheckoutSession: CreateBulkMailCheckoutSession<Create
             name: `Mail to ${recipientName}`,
             description: `${mailPiece.pageCount} page${mailPiece.pageCount! > 1 ? 's' : ''} (${displayFileName}) via ${getMailClassDisplay(mailPiece.mailClass)}`,
           },
-          unit_amount: costData.cost,
+          unit_amount: costInCents,
         },
         quantity: 1,
       });
     }
 
     // Create Stripe Checkout Session
-    const DOMAIN = process.env.WASP_WEB_CLIENT_URL || 'http://localhost:3000';
+    const DOMAIN = process.env.WASP_WEB_CLIENT_URL;
+    if (!DOMAIN) {
+      console.error('❌ WASP_WEB_CLIENT_URL not set - cannot generate checkout URLs');
+      throw new HttpError(500, 'Server configuration error: WASP_WEB_CLIENT_URL not set');
+    }
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -1239,13 +1252,7 @@ export const createBulkMailCheckoutSession: CreateBulkMailCheckoutSession<Create
       mailPieceCount: args.mailPieceIds.length,
     };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to create bulk mail checkout session:', error);
-    throw new HttpError(500, 'Failed to create bulk checkout session due to an internal error.');
+    handleError(error, 'createBulkMailCheckoutSession');
   }
 };
 
@@ -1283,13 +1290,7 @@ export const confirmMailPayment: ConfirmMailPayment<ConfirmMailPaymentInput, { s
 
     return { success };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to confirm mail payment:', error);
-    throw new HttpError(500, 'Failed to confirm payment due to an internal error.');
+    handleError(error, 'confirmMailPayment');
   }
 };
 
@@ -1331,13 +1332,7 @@ export const refundMailPayment: RefundMailPayment<RefundMailPaymentInput, { succ
 
     return { success };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to refund mail payment:', error);
-    throw new HttpError(500, 'Failed to process refund due to an internal error.');
+    handleError(error, 'refundMailPayment');
   }
 };
 
@@ -1371,18 +1366,24 @@ type SubmitMailPieceToLobInput = {
 
 export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInput, { success: boolean; lobId?: string }> = async (args, context) => {
   try {
-    // Authentication check
-    if (!context.user) {
-      throw new HttpError(401, validationErrors.UNAUTHORIZED);
+    // Allow both user-initiated and system-initiated (background job) calls
+    // For background jobs, userId is stored on the mail piece
+    // For user-initiated calls, context.user exists
+    const userId = context.user?.id;
+
+    // Rate limiting: Only apply to user-initiated calls
+    if (userId) {
+      checkOperationRateLimit('submitMailPieceToLob', 'mail', userId);
     }
 
+    // Find the mail piece - filter by user only if user context exists
+    const whereClause: any = { id: args.mailPieceId };
+    if (userId) {
+      whereClause.userId = userId; // Verify ownership for user-initiated calls
+    }
 
-    // Rate limiting: 10 Lob submissions per hour
-    checkOperationRateLimit('submitMailPieceToLob', 'mail', context.user.id);
-
-    // Find the mail piece and verify ownership
     const mailPiece = await context.entities.MailPiece.findFirst({
-      where: { id: args.mailPieceId, userId: context.user.id },
+      where: whereClause,
       include: {
         senderAddress: true,
         recipientAddress: true,
@@ -1404,14 +1405,20 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       throw new HttpError(400, 'Mail piece already submitted to Lob');
     }
 
+    // ✅ FIX #4: Generate download URL with 24-hour expiration for Lob
     // Prepare data for Lob API
     // Generate a download URL for the file (upload URLs are write-only and expire quickly)
     let fileUrl: string | undefined;
     if (mailPiece.file?.key) {
       try {
-        fileUrl = await getDownloadFileSignedURLFromS3({ key: mailPiece.file.key });
+        // Use 24-hour expiration to prevent URL from expiring before Lob processes it
+        // Lob may queue and process jobs hours after submission
+        fileUrl = await getDownloadFileSignedURLFromS3({ 
+          key: mailPiece.file.key,
+          expiresIn: 24 * 60 * 60 // 24 hours (86400 seconds)
+        });
         if (process.env.NODE_ENV === 'development') {
-          console.log('Generated download URL for file');
+          console.log('Generated download URL with 24-hour expiration for Lob');
         }
       } catch (error) {
         console.error('Failed to generate download URL for file:', error instanceof Error ? error.message : 'Unknown error');
@@ -1434,6 +1441,7 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
     };
 
     // Submit to Lob API
+    // ✅ FIX #5: No simulation mode check needed - Lob service will fail hard if not configured
     const lobResponse = await createLobMailPiece(lobMailData);
 
     // Extract preview URLs from Lob response
@@ -1447,50 +1455,59 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       });
     }
 
+    // ✅ FIX #3: Use transaction for atomic updates
     // Update mail piece with Lob information using conditional update to prevent race conditions
     // This will only update if paymentStatus is 'paid' and lobId is still null
-    const updateResult = await context.entities.MailPiece.updateMany({
-      where: { 
+    await prisma.$transaction(async (tx: any) => {
+      const updateWhere: any = {
         id: args.mailPieceId,
-        userId: context.user.id,
         paymentStatus: 'paid', // Only update if payment is confirmed
         lobId: null // Only update if not already submitted to Lob
-      },
-      data: {
-        lobId: lobResponse.id,
-        lobStatus: lobResponse.status,
-        lobTrackingNumber: lobResponse.trackingNumber,
-        status: 'submitted',
-        cost: lobResponse.cost / 100, // Convert to USD for display
-        lobThumbnails: thumbnails, // Store thumbnail URLs for preview
-        lobPreviewUrl: previewUrl, // Store direct preview URL
-        metadata: {
-          lobData: lobResponse.lobData,
-          submittedAt: new Date().toISOString(),
-        },
-      },
-    });
-
-    // Check if the update succeeded (count will be 0 if already submitted or payment status changed)
-    if (updateResult.count === 0) {
-      throw new HttpError(409, 'Mail piece was already submitted to Lob or payment status changed. Please refresh and try again.');
-    }
-
-    // Create status history entry
-    await context.entities.MailPieceStatusHistory.create({
-      data: {
-        mailPieceId: args.mailPieceId,
-        status: 'submitted',
-        previousStatus: 'paid',
-        description: `Submitted to Lob API - ID: ${lobResponse.id}`,
-        source: 'system',
-        lobData: {
+      };
+      
+      // Add user filter only if user context exists (user-initiated calls)
+      if (userId) {
+        updateWhere.userId = userId;
+      }
+      
+      const updateResult = await tx.MailPiece.updateMany({
+        where: updateWhere,
+        data: {
           lobId: lobResponse.id,
           lobStatus: lobResponse.status,
-          trackingNumber: lobResponse.trackingNumber,
-          submittedAt: new Date().toISOString(),
+          lobTrackingNumber: lobResponse.trackingNumber,
+          status: 'submitted',
+          cost: lobResponse.cost / 100, // Convert to USD for display
+          lobThumbnails: thumbnails || null, // Prisma handles JSON serialization
+          lobPreviewUrl: previewUrl, // Store direct preview URL
+          metadata: {
+            lobData: (lobResponse.lobData || null) as any, // Prisma handles JSON serialization
+            submittedAt: new Date().toISOString(),
+          },
         },
-      },
+      });
+
+      // Check if the update succeeded (count will be 0 if already submitted or payment status changed)
+      if (updateResult.count === 0) {
+        throw new Error('Race condition - mail piece already submitted or payment status changed');
+      }
+
+      // Create status history entry (same transaction - atomic)
+      await tx.MailPieceStatusHistory.create({
+        data: {
+          mailPieceId: args.mailPieceId,
+          status: 'submitted',
+          previousStatus: 'paid',
+          description: `Submitted to Lob API - ID: ${lobResponse.id}`,
+          source: 'system',
+          lobData: {
+            lobId: lobResponse.id,
+            lobStatus: lobResponse.status,
+            trackingNumber: lobResponse.trackingNumber,
+            submittedAt: new Date().toISOString(),
+          },
+        },
+      });
     });
 
     if (process.env.NODE_ENV === 'development') {
@@ -1513,13 +1530,7 @@ export const submitMailPieceToLob: SubmitMailPieceToLob<SubmitMailPieceToLobInpu
       lobId: lobResponse.id 
     };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to submit mail piece to Lob:', error);
-    throw new HttpError(500, 'Failed to submit mail piece to Lob due to an internal error.');
+    handleError(error, 'submitMailPieceToLob');
   }
 };
 
@@ -1530,7 +1541,7 @@ type SyncMailPieceStatusInput = {
   mailPieceId: string;
 };
 
-export const syncMailPieceStatus: SyncMailPieceStatus<SyncMailPieceStatusInput, { success: boolean; status?: string }> = async (args, context) => {
+export const syncMailPieceStatus: SyncMailPieceStatus<SyncMailPieceStatusInput, { success: boolean; status?: string; cached?: boolean }> = async (args, context) => {
   try {
     // Authentication check
     if (!context.user) {
@@ -1551,6 +1562,27 @@ export const syncMailPieceStatus: SyncMailPieceStatus<SyncMailPieceStatusInput, 
       throw new HttpError(400, 'Mail piece has not been submitted to Lob yet');
     }
 
+    // ✅ PHASE 3 #3: Check cache first to reduce API calls
+    const cachedStatus = getCachedStatus(args.mailPieceId);
+    if (cachedStatus) {
+      console.log(`✅ Status retrieved from cache (${Math.round((Date.now() - cachedStatus.cachedAt.getTime()) / 1000)}s old)`, {
+        mailPieceId: args.mailPieceId,
+        status: cachedStatus.status,
+      });
+      
+      return {
+        success: true,
+        status: cachedStatus.status,
+        cached: true,
+      };
+    }
+
+    // Cache miss - fetch from Lob API
+    console.log('Cache miss - fetching status from Lob API', {
+      mailPieceId: args.mailPieceId,
+      lobId: mailPiece.lobId,
+    });
+    
     // Get current status from Lob API
     const lobStatus = await getLobMailPieceStatus(mailPiece.lobId);
 
@@ -1591,19 +1623,22 @@ export const syncMailPieceStatus: SyncMailPieceStatus<SyncMailPieceStatusInput, 
 
       console.log(`Successfully synced mail piece ${args.mailPieceId} status: ${mailPiece.status} -> ${newStatus}`);
     }
+    
+    // Cache the status for future requests
+    setCachedStatus(
+      args.mailPieceId,
+      newStatus,
+      lobStatus.status,
+      lobStatus.trackingNumber
+    );
 
     return { 
       success: true, 
-      status: newStatus 
+      status: newStatus,
+      cached: false,
     };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to sync mail piece status from Lob:', error);
-    throw new HttpError(500, 'Failed to sync mail piece status from Lob due to an internal error.');
+    handleError(error, 'syncMailPieceStatus');
   }
 };
 
@@ -1668,13 +1703,7 @@ export const bulkDeleteMailPieces: BulkDeleteMailPieces<BulkDeleteMailPiecesInpu
       failedIds
     };
   } catch (error) {
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    
-    // Log unexpected errors
-    console.error('Failed to bulk delete mail pieces:', error);
-    throw new HttpError(500, 'Failed to bulk delete mail pieces due to an internal error.');
+    handleError(error, 'bulkDeleteMailPieces');
   }
 };
 
@@ -1732,11 +1761,7 @@ export const generateReceiptPDF: GenerateReceiptPDF<{ mailPieceId: string }, { s
     
     return result;
   } catch (error) {
-    console.error('Failed to generate receipt PDF:', error);
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    throw new HttpError(500, 'Failed to generate receipt PDF');
+    handleError(error, 'generateReceiptPDF');
   }
 };
 
@@ -1777,11 +1802,7 @@ export const getReceiptDownloadUrl: GetReceiptDownloadUrl<{ mailPieceId: string 
 
     return { downloadUrl: result.receiptUrl };
   } catch (error) {
-    console.error('Failed to get receipt download URL:', error);
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    throw new HttpError(500, 'Failed to get receipt download URL');
+    handleError(error, 'getReceiptDownloadUrl');
   }
 };
 
@@ -1816,8 +1837,6 @@ export const sendReceiptEmail: SendReceiptEmail<{ mailPieceId: string }, { succe
     }
 
     // Import receipt email sender
-    const { sendReceiptEmailWithPDF } = await import('../server/email/mailNotifications');
-    
     // Send receipt email
     await sendReceiptEmailWithPDF(mailPiece, context.user);
     
@@ -1826,10 +1845,6 @@ export const sendReceiptEmail: SendReceiptEmail<{ mailPieceId: string }, { succe
       message: 'Receipt email sent successfully' 
     };
   } catch (error) {
-    console.error('Failed to send receipt email:', error);
-    if (error instanceof HttpError) {
-      throw error;
-    }
-    throw new HttpError(500, 'Failed to send receipt email');
+    handleError(error, 'sendReceiptEmail');
   }
 };

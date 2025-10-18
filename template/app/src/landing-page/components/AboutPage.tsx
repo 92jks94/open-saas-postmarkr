@@ -1,10 +1,17 @@
 import { SPACING } from '../constants';
 import { Link as WaspRouterLink, routes } from 'wasp/client/router';
 import { Button } from '../../components/ui/button';
+import { Seo } from '../../seo/Seo';
 
 export default function AboutPage() {
   return (
-    <div className='bg-background text-foreground min-h-screen'>
+    <>
+      <Seo
+        title="About Postmarkr - Making Physical Mail Simple"
+        description="Making physical mail simple for remote businesses and modern professionals. Learn about our mission to provide professional mail services accessible from anywhere."
+        canonical="https://postmarkr.com/about"
+      />
+      <div className='bg-background text-foreground min-h-screen'>
       <main className={`${SPACING.SECTION_PADDING_LG}`}>
         <div className={`container mx-auto ${SPACING.CONTAINER_PADDING} max-w-4xl`}>
           {/* Header */}
@@ -160,6 +167,7 @@ export default function AboutPage() {
         </div>
       </main>
     </div>
+    </>
   );
 }
 

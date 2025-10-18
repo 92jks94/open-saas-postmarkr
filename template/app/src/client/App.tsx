@@ -17,6 +17,7 @@ import { initSentry } from './sentry';
 import './chromeExtensionErrorHandler'; // Import error handler
 import Footer from '../landing-page/components/Footer';
 import './react-init-fix'; // Import React initialization fix
+import { SeoProvider } from '../seo/SeoProvider';
 /**
  * Root application component that handles layout and navigation
  * 
@@ -71,7 +72,7 @@ export default function App() {
   }, [location]);
 
   return (
-    <>
+    <SeoProvider>
       <div className='min-h-screen bg-background text-foreground flex flex-col'>
         {shouldDisplayAppNavBar && <NavBar navigationItems={navigationItems} />}
         
@@ -89,6 +90,6 @@ export default function App() {
         </div>
       </div>
       {/* <CookieConsentBanner /> */} {/* COMMENTED OUT FOR TESTING */}
-    </>
+    </SeoProvider>
   );
 }

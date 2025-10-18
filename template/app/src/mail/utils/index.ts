@@ -44,6 +44,7 @@ export {
   formatAddressCompact,
   formatAddressFull,
   getCostBreakdown,
+  isDraftReadyForPayment,
 } from './formatting';
 
 // ============================================================================

@@ -19,23 +19,44 @@ import { HttpError } from 'wasp/server';
 import { calculatePricingTier } from '../pricing/pageBasedPricing';
 import { mapToLobAddress, normalizeAddress, validateLobAddress, getAddressValidationErrors } from './addressMapper';
 import { withRetry, RETRY_CONFIGS, CircuitBreaker, RateLimitHandler } from './retry';
+import type { LobLetterResponse, LobPostcardResponse, LobMailPieceResponse, NormalizedLobResponse } from './types';
+import { getLobRetryConfig, isLobSimulationMode, LOB_SIMULATION_CONFIG, LOB_API_CONFIG } from './config';
+import { createLobLogger } from './logger';
+import { LOB_ERRORS, getLobError, mapLobApiErrorToErrorCode } from './errors';
 
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-// Type definitions for Lob API responses
-interface LobPostcardResponse {
-  id: string;
-  price: string;
-  status: string;
-  [key: string]: any;
-}
+// Logger instance for this module
+const logger = createLobLogger('LobServices');
 
-interface LobLetterResponse {
-  id: string;
-  price: string;
-  status: string;
-  [key: string]: any;
+/**
+ * ✅ PHASE 2 #2: Extract Lob response mapper for reusability and maintainability
+ * 
+ * Maps Lob API response to normalized internal format
+ * Handles cost conversion, default values, and type safety
+ * 
+ * @param lobResponse - Raw Lob API response (letter or postcard)
+ * @returns Normalized response in internal format
+ */
+function mapLobResponseToNormalized(lobResponse: LobMailPieceResponse): NormalizedLobResponse {
+  // Parse cost from string to cents (Lob returns dollars as string like "0.60")
+  const costInDollars = parseFloat(lobResponse.price || '0.60');
+  const costInCents = Math.round(costInDollars * 100);
+  
+  // Parse expected delivery date with fallback to 3 days from now
+  const estimatedDeliveryDate = lobResponse.expected_delivery_date 
+    ? new Date(lobResponse.expected_delivery_date)
+    : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+  
+  // Generate tracking number with fallback
+  const trackingNumber = lobResponse.tracking_number || `TRK${lobResponse.id}`;
+  
+  return {
+    id: lobResponse.id,
+    status: lobResponse.status || 'submitted',
+    trackingNumber,
+    estimatedDeliveryDate,
+    cost: costInCents,
+    lobData: lobResponse,  // ✅ PHASE 2 #3: Store raw response directly (no serialization overhead)
+  };
 }
 
 /**
@@ -191,8 +212,16 @@ async function validateAddressInternal(addressData: {
       error,
     };
   } catch (error) {
-    console.error('Lob address validation error:', error);
-    throw new HttpError(500, 'Failed to validate address');
+    // Use error catalog for consistent error handling
+    const errorCode = mapLobApiErrorToErrorCode(error instanceof Error ? error.message : String(error));
+    const errorDef = getLobError(errorCode);
+    
+    logger.apiError(errorCode, {
+      originalError: error instanceof Error ? error.message : String(error),
+      operation: 'validateAddress',
+    });
+    
+    throw new HttpError(errorDef.httpStatus, errorDef.userMessage);
   }
 }
 
@@ -261,11 +290,20 @@ export async function calculateCost(mailSpecs: {
       }
     };
   } catch (error) {
-    console.error('Page-based cost calculation error:', error);
     if (error instanceof HttpError) {
       throw error;
     }
-    throw new HttpError(500, 'Failed to calculate mail cost');
+    
+    // Use error catalog for consistent error handling
+    const errorCode = mapLobApiErrorToErrorCode(error instanceof Error ? error.message : String(error));
+    const errorDef = getLobError(errorCode);
+    
+    logger.apiError(errorCode, {
+      originalError: error instanceof Error ? error.message : String(error),
+      operation: 'calculateCost',
+    });
+    
+    throw new HttpError(errorDef.httpStatus, errorDef.userMessage);
   }
 }
 
@@ -370,15 +408,14 @@ async function getLobPricing(mailSpecs: {
       }) as LobLetterResponse;
     }
 
-    // Extract pricing information from the response
-    const costInDollars = parseFloat(pricingResponse.price || '0.60');
-    const costInCents = Math.round(costInDollars * 100);
+    // ✅ PHASE 2 #2: Use extracted mapper for consistent cost calculation
+    const normalized = mapLobResponseToNormalized(pricingResponse);
 
     return {
-      cost: costInCents,
+      cost: normalized.cost,
       currency: 'USD',
       breakdown: {
-        baseCost: costInDollars,
+        baseCost: normalized.cost / 100,  // Convert back to dollars for breakdown
         multiplier: 1.0,
         mailType: mailSpecs.mailType,
         mailClass: mailSpecs.mailClass,
@@ -528,19 +565,19 @@ async function createMailPieceInternal(mailData: {
   addressPlacement?: 'top_first_page' | 'insert_blank_page';
 }) {
   try {
-    // Check if Lob API key is configured
-    const lobApiKey = process.env.LOB_TEST_KEY || process.env.LOB_PROD_KEY;
-    if (!lobApiKey || !lob) {
-      console.warn('Lob API key not configured, using simulation mode');
-      // Return simulated response for development
-      const mockLobId = `lob_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      return {
-        id: mockLobId,
-        status: 'submitted',
-        trackingNumber: `TRK${Date.now()}`,
-        estimatedDeliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-        cost: 60, // 60 cents
-      };
+    // ✅ FIX #5: Fail hard if Lob client not initialized - no simulation mode
+    // Server startup validation ensures this never happens in production
+    if (!lob) {
+      logger.critical('Lob client not initialized - API keys not configured', {
+        environment: process.env.NODE_ENV,
+        lobTestKey: !!process.env.LOB_TEST_KEY,
+        lobProdKey: !!process.env.LOB_PROD_KEY,
+      });
+      
+      throw new HttpError(
+        500, 
+        'Mail service not configured. Please contact support immediately.'
+      );
     }
 
     // Normalize addresses to ensure consistent field names
@@ -566,7 +603,7 @@ async function createMailPieceInternal(mailData: {
       description: mailData.description || 'Mail piece created via Postmarkr',
     };
 
-    let lobResponse: any;
+    let lobResponse: LobLetterResponse | LobPostcardResponse;
 
     // Create mail piece based on type
     if (mailData.mailType === 'postcard') {
@@ -607,7 +644,7 @@ async function createMailPieceInternal(mailData: {
         ...mailpieceData,
         file: fileContent,
         ...envelopeSpecs,
-        address_placement: mailData.addressPlacement || 'insert_blank_page',
+        address_placement: mailData.addressPlacement || LOB_API_CONFIG.defaultMailSettings.addressPlacement,
       });
     } else {
       // For other mail types, use letter as fallback
@@ -618,10 +655,10 @@ async function createMailPieceInternal(mailData: {
       lobResponse = await (lob as any).letters.create({
         ...mailpieceData,
         file: fileContent,
-        color: mailData.colorPrinting ?? false, // Default to black & white for MVP
-        double_sided: mailData.doubleSided ?? true, // Default to double-sided for MVP
-        use_type: 'operational', // Required by Lob API
-        address_placement: mailData.addressPlacement || 'insert_blank_page',
+        color: mailData.colorPrinting ?? LOB_API_CONFIG.defaultMailSettings.color,
+        double_sided: mailData.doubleSided ?? LOB_API_CONFIG.defaultMailSettings.doubleSided,
+        use_type: LOB_API_CONFIG.defaultMailSettings.useType,
+        address_placement: mailData.addressPlacement || LOB_API_CONFIG.defaultMailSettings.addressPlacement,
         extra_service: mailData.mailClass === 'usps_express' ? 'express' : 
                       mailData.mailClass === 'usps_priority' ? 'priority' : 
                       // Standard and first class don't need extra_service (default USPS service)
@@ -629,40 +666,27 @@ async function createMailPieceInternal(mailData: {
       });
     }
 
-    // Extract information from Lob response
-    const costInDollars = parseFloat(lobResponse.price || '0.60');
-    const costInCents = Math.round(costInDollars * 100);
-
-    return {
-      id: lobResponse.id,
-      status: lobResponse.status || 'submitted',
-      trackingNumber: lobResponse.tracking_number || `TRK${lobResponse.id}`,
-      estimatedDeliveryDate: lobResponse.expected_delivery_date 
-        ? new Date(lobResponse.expected_delivery_date)
-        : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // Default 3 days
-      cost: costInCents,
-      lobData: lobResponse, // Store full response for reference
-    };
+    // ✅ PHASE 2 #2: Use extracted mapper function
+    return mapLobResponseToNormalized(lobResponse);
   } catch (error) {
-    console.error('Lob mail creation error:', error);
+    logger.error('Lob mail creation error', {
+      error: error instanceof Error ? error.message : String(error),
+      mailType: mailData.mailType,
+      mailClass: mailData.mailClass,
+    });
     
-    // Enhanced error messages based on Lob API responses
+    // Map error to standardized error code
     if (error && typeof error === 'object' && 'message' in error) {
       const errorMessage = (error as any).message;
+      const errorCode = mapLobApiErrorToErrorCode(errorMessage);
+      const errorDef = getLobError(errorCode);
       
-      if (errorMessage.includes('address')) {
-        throw new HttpError(400, 'Invalid address format. Please check your address details.');
-      } else if (errorMessage.includes('file')) {
-        throw new HttpError(400, 'Invalid file format. Please ensure your file is compatible with mail processing.');
-      } else if (errorMessage.includes('rate limit')) {
-        throw new HttpError(429, 'Rate limit exceeded. Please try again later.');
-      } else if (errorMessage.includes('insufficient')) {
-        throw new HttpError(402, 'Insufficient Lob account balance. Please contact support.');
-      } else if (errorMessage.includes('invalid_request')) {
-        throw new HttpError(400, 'Invalid request parameters. Please verify your mail specifications.');
-      } else if (errorMessage.includes('authentication') || errorMessage.includes('unauthorized')) {
-        throw new HttpError(401, 'Lob API authentication failed. Please contact support.');
-      }
+      logger.apiError(errorCode, {
+        originalError: errorMessage,
+        mailType: mailData.mailType,
+      });
+      
+      throw new HttpError(errorDef.httpStatus, errorDef.userMessage);
     }
     
     throw new HttpError(500, 'Failed to create mail piece with Lob API');

@@ -37,12 +37,19 @@ export const getUploadFileSignedURLFromS3 = async ({ fileName, fileType, userId 
   return { s3UploadUrl, key, s3UploadFields };
 };
 
-export const getDownloadFileSignedURLFromS3 = async ({ key }: { key: string }) => {
+// ✅ FIX #4: Support configurable expiration for file URLs
+export const getDownloadFileSignedURLFromS3 = async ({ 
+  key,
+  expiresIn = 3600 // Default 1 hour, allow override for longer expiration
+}: { 
+  key: string;
+  expiresIn?: number;
+}) => {
   const command = new GetObjectCommand({
     Bucket: process.env.AWS_S3_FILES_BUCKET,
     Key: key,
   });
-  return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+  return await getSignedUrl(s3Client, command, { expiresIn });
 };
 
 export const deleteFileFromS3 = async ({ key }: { key: string }) => {

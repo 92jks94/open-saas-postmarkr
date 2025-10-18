@@ -6,32 +6,20 @@ app OpenSaaS {
   title: "Postmarkr - Simple Mail Service",
 
   head: [
+    // Favicons and manifest
     "<link rel='icon' href='/favicon.ico' />",
     "<link rel='icon' type='image/png' sizes='32x32' href='/favicon-32x32.png' />",
     "<link rel='icon' type='image/png' sizes='16x16' href='/favicon-16x16.png' />",
     "<link rel='apple-touch-icon' sizes='180x180' href='/apple-touch-icon.png' />",
     "<link rel='manifest' href='/site.webmanifest' />",
+    
+    // Essential meta tags
     "<meta charset='utf-8' />",
     "<meta name='viewport' content='width=device-width, initial-scale=1.0' />",
-    "<meta name='description' content='Send certified mail & manage business correspondence without visiting the post office. Virtual mailbox, automated mail sending, and secure digital mail management for remote teams.' />",
-    "<meta name='author' content='Postmarkr' />",
-    "<meta name='keywords' content='virtual mailbox, certified mail automation, digital mail service, remote business mail, virtual print room, USPS certified mail, mail without printer, business mail management, virtual address, mail forwarding service, secure mail handling, remote work mail solutions' />",
-    "<link rel='canonical' href='https://postmarkr.com' />",
     
-    "<meta property='og:type' content='website' />",
-    "<meta property='og:title' content='Postmarkr - Virtual Mailbox & Automated Mail Service' />",
-    "<meta property='og:site_name' content='Postmarkr' />",
-    "<meta property='og:url' content='https://postmarkr.com' />",
-    "<meta property='og:description' content='Send certified mail, receive mail digitally, and manage business correspondence without visiting the post office. Virtual mailbox and automated mail sending for remote businesses.' />",
-    "<meta property='og:image' content='https://postmarkr.com/public-banner.webp' />",
-    "<meta property='og:image:width' content='1200' />",
-    "<meta property='og:image:height' content='630' />",
-    "<meta property='og:image:alt' content='Postmarkr Virtual Mailbox and Digital Mail Service' />",
-    "<meta name='twitter:card' content='summary_large_image' />",
-    "<meta name='twitter:title' content='Postmarkr - Virtual Mailbox & Automated Mail Service' />",
-    "<meta name='twitter:description' content='Send certified mail & manage business correspondence from anywhere. Virtual mailbox with digital mail scanning and automated sending.' />",
-    "<meta name='twitter:image' content='https://postmarkr.com/public-banner.webp' />",
-    "<meta name='twitter:image:alt' content='Postmarkr Virtual Mailbox Service' />",
+    // Note: SEO meta tags (title, description, canonical, OpenGraph, Twitter)
+    // are now managed per-page via react-helmet-async in src/seo/Seo.tsx
+    // This prevents duplicate meta tags and allows per-page customization
     
     // Google Analytics - Script loads and initializes in head for proper detection
     "<script async src='https://www.googletagmanager.com/gtag/js?id=G-6H2SB3GJDW'></script>",

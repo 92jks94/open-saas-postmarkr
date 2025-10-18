@@ -26,6 +26,7 @@ import Pricing from './components/Pricing';
 import Testimonials from './components/Testimonials';
 import FinalCTA from './components/FinalCTA';
 import FAQ from './components/FAQ';
+import { Seo } from '../seo/Seo';
 
 export default function LandingPage() {
   const { data: user, isLoading } = useAuth();
@@ -36,7 +37,14 @@ export default function LandingPage() {
   }
 
   return (
-    <div className='bg-background text-foreground'>
+    <>
+      <Seo
+        title="Postmarkr - Virtual Mailbox & Automated Mail Service"
+        description="Send certified mail & manage business correspondence without visiting the post office. Virtual mailbox, automated mail sending, and secure digital mail management for remote teams."
+        canonical="https://postmarkr.com/"
+        keywords="virtual mailbox, certified mail automation, digital mail service, remote business mail, virtual print room, USPS certified mail, mail without printer, business mail management"
+      />
+      <div className='bg-background text-foreground'>
       <main className='isolate'>
         <section id='hero' aria-labelledby='hero-heading'>
           <Hero user={user} />
@@ -67,5 +75,6 @@ export default function LandingPage() {
         </section>
       </main>
     </div>
+    </>
   );
 }

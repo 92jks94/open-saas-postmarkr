@@ -1,7 +1,8 @@
 import { HttpError } from 'wasp/server';
 import type { ConfirmMailPayment } from 'wasp/server/operations';
-import { stripe } from '../payment/stripe/stripeClient';
-import { submitPaidMailToLob } from 'wasp/server/jobs';
+import { verifyStripePaymentStatus, markMailPieceAsPaid } from './helpers/paymentHelpers';
+import { scheduleLobSubmissionWithRetry } from './helpers/jobHelpers';
+import { createLobLogger } from '../server/lob/logger';
 
 /**
  * Client-side payment confirmation operation
@@ -12,11 +13,18 @@ type ConfirmMailPaymentInput = {
 };
 
 export const confirmMailPayment: ConfirmMailPayment<ConfirmMailPaymentInput, { success: boolean; message: string }> = async (args, context) => {
+  const logger = createLobLogger('PaymentConfirmation');
+  
   try {
     // Authentication check
     if (!context.user) {
       throw new HttpError(401, 'Not authorized');
     }
+
+    logger.info('Client-side payment confirmation requested', {
+      mailPieceId: args.mailPieceId,
+      userId: context.user.id,
+    });
 
     // Find the mail piece and verify ownership
     const mailPiece = await context.entities.MailPiece.findFirst({
@@ -27,98 +35,78 @@ export const confirmMailPayment: ConfirmMailPayment<ConfirmMailPaymentInput, { s
       throw new HttpError(404, 'Mail piece not found');
     }
 
-    // Check if already processed
-    if (mailPiece.paymentStatus === 'paid' && mailPiece.status === 'paid') {
-      return { 
-        success: true, 
-        message: 'Payment already confirmed and processed' 
-      };
-    }
-
-    // Check if already submitted to Lob
-    if (mailPiece.lobId) {
-      return { 
-        success: true, 
-        message: 'Mail piece already submitted to Lob' 
-      };
-    }
-
-    // Verify payment with Stripe
+    // Verify payment with Stripe using centralized helper
     if (!mailPiece.paymentIntentId) {
       throw new HttpError(400, 'No payment intent found for this mail piece');
     }
 
-    let isPaid = false;
-    let stripeStatus = 'unknown';
+    const paymentVerification = await verifyStripePaymentStatus(mailPiece.paymentIntentId);
 
-    try {
-      // First try as payment intent
-      const paymentIntent = await stripe.paymentIntents.retrieve(mailPiece.paymentIntentId);
-      stripeStatus = paymentIntent.status;
-      isPaid = paymentIntent.status === 'succeeded';
-    } catch (paymentIntentError) {
-      // If that fails, try as checkout session
-      try {
-        const session = await stripe.checkout.sessions.retrieve(mailPiece.paymentIntentId);
-        stripeStatus = session.payment_status;
-        isPaid = session.payment_status === 'paid';
-      } catch (sessionError) {
-        throw new HttpError(400, 'Could not verify payment status with Stripe');
+    if (!paymentVerification.isPaid) {
+      logger.warn('Payment not completed', {
+        mailPieceId: args.mailPieceId,
+        stripeStatus: paymentVerification.status,
+        paymentType: paymentVerification.paymentType,
+      });
+      throw new HttpError(400, `Payment not completed. Stripe status: ${paymentVerification.status}`);
+    }
+
+    logger.info('Payment verified with Stripe', {
+      mailPieceId: args.mailPieceId,
+      stripeStatus: paymentVerification.status,
+      paymentType: paymentVerification.paymentType,
+    });
+
+    // Mark mail piece as paid using centralized helper
+    const updateResult = await markMailPieceAsPaid(
+      {
+        mailPieceId: args.mailPieceId,
+        userId: context.user.id,
+        source: 'client',
+        description: 'Payment confirmed via client-side verification',
+        additionalData: {
+          stripeStatus: paymentVerification.status,
+          paymentType: paymentVerification.paymentType,
+        },
+      },
+      context
+    );
+
+    // Handle update results
+    if (!updateResult.updated) {
+      if (updateResult.reason === 'already_processed') {
+        logger.info('Mail piece already processed', { mailPieceId: args.mailPieceId });
+        return { 
+          success: true, 
+          message: 'Payment already confirmed and processed' 
+        };
+      } else if (updateResult.reason === 'race_condition') {
+        logger.info('Race condition - processed by another process', { mailPieceId: args.mailPieceId });
+        return { 
+          success: true, 
+          message: 'Mail piece was already processed by another process' 
+        };
       }
     }
 
-    if (!isPaid) {
-      throw new HttpError(400, `Payment not completed. Stripe status: ${stripeStatus}`);
-    }
-
-    // Update mail piece to paid status using conditional update to prevent race conditions
-    const updateResult = await context.entities.MailPiece.updateMany({
-      where: { 
-        id: args.mailPieceId,
-        userId: context.user.id,
-        paymentStatus: 'pending', // Only update if still pending
-        status: 'pending_payment', // Only update if still pending
-        lobId: null // Only update if not already submitted to Lob
-      },
-      data: {
-        paymentStatus: 'paid',
-        status: 'paid',
-      },
-    });
-
-    // Check if the update succeeded (count will be 0 if already processed)
-    if (updateResult.count === 0) {
-      return { 
-        success: true, 
-        message: 'Mail piece was already processed by another process' 
-      };
-    }
-
-    // Create status history entry
-    await context.entities.MailPieceStatusHistory.create({
-      data: {
+    // ✅ FIX #2: Use retry helper and throw error on failure for client operations
+    // Schedule Lob submission job with automatic retries
+    const jobResult = await scheduleLobSubmissionWithRetry(args.mailPieceId, context, 3);
+    
+    if (!jobResult.success) {
+      logger.critical('Failed to schedule Lob submission job after retries', {
         mailPieceId: args.mailPieceId,
-        status: 'paid',
-        previousStatus: mailPiece.status,
-        description: 'Payment confirmed via client-side verification',
-        source: 'client',
-      },
-    });
-
-    // Schedule Lob submission job
-    try {
-      await submitPaidMailToLob.submit(
-        { mailPieceId: args.mailPieceId },
-        { 
-          retryLimit: 3,
-          retryDelay: 60,
-          retryBackoff: true
-        }
+        error: jobResult.error,
+      });
+      
+      // For client operations, throw error immediately
+      throw new HttpError(
+        503, 
+        'Payment confirmed but unable to schedule mail processing. Our team has been notified and will process your order manually within 1 hour.'
       );
-    } catch (jobError) {
-      console.error(`Error scheduling Lob submission for ${args.mailPieceId}:`, jobError);
-      // Don't fail the operation - job will be retried by background job
     }
+
+    logger.info('Payment confirmation completed successfully', { mailPieceId: args.mailPieceId });
 
     return { 
       success: true, 
@@ -130,7 +118,10 @@ export const confirmMailPayment: ConfirmMailPayment<ConfirmMailPaymentInput, { s
       throw error;
     }
     
-    console.error('Failed to confirm mail payment:', error);
+    logger.error('Failed to confirm mail payment', {
+      mailPieceId: args.mailPieceId,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw new HttpError(500, 'Failed to confirm payment due to an internal error.');
   }
 };

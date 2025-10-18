@@ -8,6 +8,7 @@
 import { shouldSendNotification } from '../notifications/notificationService';
 import { emailSender } from 'wasp/server/email';
 import type { MailPiece, MailAddress, User } from 'wasp/entities';
+import { generateMailReceipt, generateTextReceipt } from '../receipts/pdfReceiptGenerator';
 import {
   getPaymentConfirmationEmail,
   getMailSubmittedEmail,
@@ -426,8 +427,6 @@ export async function sendReceiptEmailWithPDF(
     }
 
     // Generate PDF receipt
-    const { generateMailReceipt, generateTextReceipt } = await import('../receipts/pdfReceiptGenerator');
-    
     let pdfBuffer: Buffer | undefined;
     let textReceipt: string | undefined;
     
@@ -524,7 +523,6 @@ export async function sendPaymentConfirmationEmailWithReceipt(
     if (!userEmail) return;
 
     // Generate PDF receipt
-    const { generateMailReceipt } = await import('../receipts/pdfReceiptGenerator');
     let pdfBuffer: Buffer | undefined;
     
     try {

@@ -3,7 +3,6 @@
 
 User-agent: *
 Allow: /
-Allow: /pricing
 
 # Disallow authenticated user areas
 Disallow: /mail/*
@@ -18,7 +17,4 @@ Disallow: /request-password-reset
 
 # Sitemap location
 Sitemap: https://postmarkr.com/sitemap.xml
-
-# Crawl delay to be respectful of server resources
-Crawl-delay: 1
 

@@ -81,5 +81,56 @@ This inconsistency was confusing for users.
 
 ## Other TODOs
 
+### Server-Side Thumbnail Generation (Canvas)
+
+**Status**: ⚠️ Temporarily Disabled  
+**Priority**: Medium  
+**Date**: October 18, 2025
+
+#### Problem
+Server-side PDF thumbnail generation using the `canvas` package was causing deployment failures due to missing native system dependencies (pkg-config, Cairo, Pango libraries) in the WSL development environment.
+
+#### Current State
+- ✅ **Client-side thumbnails work perfectly** - PDF thumbnails generated in browser using `pdfjs-dist`
+- ⚠️ **Server-side thumbnails disabled** - Files uploaded via API don't get server-generated thumbnails
+- ✅ **Deployment works** - No more canvas compilation errors
+
+#### Files Modified
+- `package.json` - Removed `canvas: ^2.11.2` dependency
+- `src/file-upload/operations.ts` - Disabled `generateServerSideThumbnail()` function
+- `src/file-upload/s3ThumbnailUtils.ts` - Disabled `generateThumbnailFromPDF()` function
+
+#### Solutions to Implement Later
+
+**Option 1: Install System Dependencies**
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev pkg-config
+```
+Then re-enable canvas functionality.
+
+**Option 2: Alternative Canvas Package**
+- Research lighter alternatives like `skia-canvas` or `fabric.js`
+- Consider `pdf2pic` with Ghostscript for better PDF rendering
+- Evaluate `puppeteer` for high-quality server-side rendering
+
+**Option 3: Cloud-Based Solution**
+- Use AWS Lambda for thumbnail generation
+- Integrate with Cloudinary or similar service
+- Serverless approach eliminates dependency issues
+
+#### Impact Assessment
+- **Low Impact**: Client-side thumbnails provide excellent user experience
+- **Non-Critical**: Server-side thumbnails are fallback only
+- **Graceful Degradation**: Application works perfectly without server-side thumbnails
+
+#### Re-enabling Steps
+1. Choose and implement one of the solutions above
+2. Add canvas dependency back to `package.json`
+3. Uncomment canvas code in `src/file-upload/operations.ts` and `src/file-upload/s3ThumbnailUtils.ts`
+4. Test both local development and deployment
+
+---
+
 _Add additional file upload feature TODOs here as needed_
 

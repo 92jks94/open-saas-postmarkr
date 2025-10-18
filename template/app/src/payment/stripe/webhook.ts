@@ -21,6 +21,13 @@ import {
 } from './webhookPayload';
 import { UnhandledWebhookEventError } from '../errors';
 import { sendPaymentConfirmationEmailWithReceipt, fetchMailPieceForEmail, sendPaymentFailedEmail } from '../../server/email/mailNotifications';
+import { markMailPieceAsPaid } from '../../mail/helpers/paymentHelpers';
+import { scheduleLobSubmissionWithRetry } from '../../mail/helpers/jobHelpers';
+import { createLobLogger } from '../../server/lob/logger';
+import { getLobError } from '../../server/lob/errors';
+
+// ✅ PHASE 3 #1: Use structured logging for webhooks
+const logger = createLobLogger('StripeWebhook');
 
 export const stripeWebhook: PaymentsWebhook = async (request, response, context) => {
   try {
@@ -71,16 +78,28 @@ export const stripeWebhook: PaymentsWebhook = async (request, response, context)
     return response.json({ received: true }); // Stripe expects a 200 response to acknowledge receipt of the webhook
   } catch (err) {
     if (err instanceof UnhandledWebhookEventError) {
-      console.error(err.message);
+      logger.warn('Unhandled webhook event', {
+        error: err.message,
+      });
       return response.status(422).json({ error: err.message });
     }
 
-    console.error('Webhook error:', err);
     if (err instanceof HttpError) {
+      logger.error('Webhook processing error', {
+        error: err.message,
+        statusCode: err.statusCode,
+      });
       return response.status(err.statusCode).json({ error: err.message });
-    } else {
-      return response.status(400).json({ error: 'Error processing Stripe webhook event' });
     }
+
+    // Use error catalog for unexpected errors
+    const errorDef = getLobError('WEBHOOK_PROCESSING_ERROR');
+    logger.critical('Unexpected webhook error', {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
+    
+    return response.status(errorDef.httpStatus).json({ error: errorDef.message });
   }
 };
 
@@ -148,8 +167,10 @@ async function handleCheckoutSessionCompleted(
 }
 
 async function handleMailPaymentCompleted(session: SessionCompletedData, context: any) {
+  const logger = createLobLogger('StripeWebhook');
+  
   try {
-    console.log('💳 Processing mail payment completion:', {
+    logger.info('Processing mail payment completion', {
       sessionId: session.id,
       paymentStatus: session.payment_status,
       mode: session.mode,
@@ -158,74 +179,46 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
     
     const mailPieceId = session.metadata?.mailPieceId;
     if (!mailPieceId) {
-      console.error('❌ Mail payment completed but no mailPieceId in metadata');
+      logger.error('Mail payment completed but no mailPieceId in metadata', {
+        sessionId: session.id,
+      });
       return;
     }
 
-    console.log(`📬 Processing mail payment completion for mail piece: ${mailPieceId}`);
-
-    // Update mail piece status directly in the webhook
-    const mailPiece = await context.entities.MailPiece.findFirst({
-      where: { id: mailPieceId }
-    });
-
-    if (!mailPiece) {
-      console.error(`Mail piece not found: ${mailPieceId}`);
-      return;
-    }
-
-    // Check if already processed to prevent duplicate processing
-    if (mailPiece.paymentStatus === 'paid' && mailPiece.status === 'paid') {
-      console.log(`ℹ️ Mail piece ${mailPieceId} already processed, skipping`);
-      return;
-    }
-
-    // Check if already submitted to Lob
-    if (mailPiece.lobId) {
-      console.log(`ℹ️ Mail piece ${mailPieceId} already submitted to Lob (ID: ${mailPiece.lobId}), skipping`);
-      return;
-    }
-
-    // Update mail piece to paid status using conditional update to prevent race conditions
-    const updateResult = await context.entities.MailPiece.updateMany({
-      where: { 
-        id: mailPieceId,
-        paymentStatus: 'pending', // Only update if still pending
-        status: 'pending_payment', // Only update if still pending
-        lobId: null // Only update if not already submitted to Lob
-      },
-      data: {
-        paymentStatus: 'paid',
-        status: 'paid',
-        paymentIntentId: session.id,
-      },
-    });
-
-    // Check if the update succeeded (count will be 0 if already processed)
-    if (updateResult.count === 0) {
-      console.log(`ℹ️ Mail piece ${mailPieceId} was already processed by another process, skipping`);
-      return;
-    }
-
-    console.log('✅ Updated mail piece status:', {
-      mailPieceId,
-      oldStatus: mailPiece.status,
-      newStatus: 'paid',
-      paymentStatus: 'paid'
-    });
-
-    // Create status history entry
-    await context.entities.MailPieceStatusHistory.create({
-      data: {
-        mailPieceId: mailPieceId,
-        status: 'paid',
-        previousStatus: mailPiece.status,
-        description: 'Payment completed via Stripe Checkout',
+    // Mark mail piece as paid using centralized helper
+    // This handles all validation, race conditions, and status history
+    const updateResult = await markMailPieceAsPaid(
+      {
+        mailPieceId,
         source: 'webhook',
+        description: 'Payment completed via Stripe Checkout',
+        paymentIntentId: session.id,  // Link to Stripe session for audit trail
+        additionalData: {
+          sessionId: session.id,
+          paymentStatus: session.payment_status,
+        },
       },
-    });
+      context
+    );
 
-    console.log(`✅ Mail payment completed successfully for mail piece ${mailPieceId}`);
+    // Handle update results
+    if (!updateResult.updated) {
+      if (updateResult.reason === 'already_processed') {
+        logger.info('Mail piece already processed, skipping', {
+          mailPieceId,
+          lobId: updateResult.mailPiece?.lobId,
+        });
+      } else if (updateResult.reason === 'race_condition') {
+        logger.warn('Race condition detected - mail piece processed by another process', {
+          mailPieceId,
+        });
+      } else if (updateResult.reason === 'not_found') {
+        logger.error('Mail piece not found', { mailPieceId });
+      }
+      return;
+    }
+
+    logger.info('Mail payment completed successfully', { mailPieceId });
 
     // Send payment confirmation email
     try {
@@ -234,33 +227,54 @@ async function handleMailPaymentCompleted(session: SessionCompletedData, context
         await sendPaymentConfirmationEmailWithReceipt(mailPieceForEmail);
       }
     } catch (emailError) {
-      console.error(`❌ Error sending payment confirmation email for ${mailPieceId}:`, emailError);
-      // Don't fail the webhook - payment is confirmed
+      logger.nonCriticalError('Failed to send payment confirmation email', emailError, {
+        mailPieceId,
+      });
     }
 
-    // Schedule background job to submit to Lob after payment confirmation
-    try {
-      console.log(`📋 Scheduling Lob submission job for mail piece ${mailPieceId}...`);
+    // ✅ FIX #2: Use retry helper and handle failures critically
+    // Schedule background job to submit to Lob with automatic retries
+    const jobResult = await scheduleLobSubmissionWithRetry(mailPieceId, context, 3);
+    
+    if (!jobResult.success) {
+      // CRITICAL: Job scheduling failed after retries
+      logger.critical('Failed to schedule Lob submission after retries', {
+        mailPieceId,
+        error: jobResult.error,
+        action: 'REQUIRES_MANUAL_REVIEW',
+      });
       
-      // Schedule job for immediate execution with retries
-      await submitPaidMailToLob.submit(
-        { mailPieceId },
-        { 
-          retryLimit: 3,           // Retry up to 3 times if it fails
-          retryDelay: 60,          // Wait 60 seconds between retries
-          retryBackoff: true       // Use exponential backoff
-        }
-      );
+      // Mark for manual review
+      try {
+        await context.entities.MailPiece.update({
+          where: { id: mailPieceId },
+          data: { 
+            metadata: {
+              jobSchedulingFailed: true,
+              jobSchedulingError: jobResult.error,
+              jobSchedulingFailedAt: new Date().toISOString(),
+              requiresManualReview: true,
+            }
+          }
+        });
+      } catch (metadataError) {
+        logger.error('Failed to update metadata for job scheduling failure', {
+          mailPieceId,
+          error: metadataError,
+        });
+      }
       
-      console.log(`✅ Lob submission job scheduled for mail piece ${mailPieceId}`);
-    } catch (jobError) {
-      console.error(`❌ Error scheduling Lob submission job for ${mailPieceId}:`, jobError);
-      // Don't fail the webhook - payment is confirmed
-      // Job system will handle retries
+      // Don't throw - webhook must return 200 to prevent Stripe retries
+      // The verification job will pick it up
+    } else {
+      logger.info('Lob submission job scheduled successfully', { mailPieceId });
     }
     
   } catch (error) {
-    console.error('❌ Failed to handle mail payment completion:', error);
+    logger.error('Failed to handle mail payment completion', {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
   }
 }
 

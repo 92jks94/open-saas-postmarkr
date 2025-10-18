@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from 'wasp/client/auth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'wasp/client/operations';
-import { getMailPiece, deleteMailPiece, getDownloadFileSignedURL, createMailCheckoutSession } from 'wasp/client/operations';
+import { getMailPiece, deleteMailPiece, getDownloadFileSignedURL, createMailCheckoutSession, getReceiptDownloadUrl, sendReceiptEmail } from 'wasp/client/operations';
 import type { MailPieceWithRelations } from './types';
 import { 
   ArrowLeft, 
   AlertCircle, 
   Clock,
-  RefreshCw,
   Download,
   Edit,
   Trash2,
   MoreHorizontal,
-  ExternalLink,
-  FileText
+  FileText,
+  CreditCard,
+  Printer,
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -28,11 +30,14 @@ import {
 import { MailPreview } from './components/MailPreview';
 import { PDFViewer } from './components/PDFViewer';
 import { OrderReceipt } from './components/OrderReceipt';
+import { StatusTimeline } from './components/StatusTimeline';
 import { 
   generateOrderNumber, 
   formatDate,
-  getStatusIcon
+  getStatusIcon,
+  isDraftReadyForPayment
 } from './utils';
+import { toast } from 'react-hot-toast';
 
 /**
  * Detailed view component for individual mail pieces (Receipt-Focused Layout)
@@ -56,11 +61,12 @@ export default function MailDetailsPage() {
   const { data: user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isDownloadingReceipt, setIsDownloadingReceipt] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const { data: mailPiece, isLoading, error, refetch } = useQuery(getMailPiece, { id: id! }) as {
     data: MailPieceWithRelations | undefined;
@@ -70,12 +76,6 @@ export default function MailDetailsPage() {
   };
 
   // Manual refresh only - no auto-refresh for simplified testing
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await refetch();
-    setIsRefreshing(false);
-  };
 
   const handleDeleteMailPiece = async () => {
     if (!mailPiece) return;
@@ -129,14 +129,6 @@ export default function MailDetailsPage() {
     navigate(`/mail/create?edit=${mailPiece.id}`);
   };
 
-  const handleViewInLobDashboard = () => {
-    if (!mailPiece?.lobId) return;
-    
-    // Open Lob dashboard in new tab (this would be the actual Lob dashboard URL)
-    const lobDashboardUrl = `https://dashboard.lob.com/mail/${mailPiece.lobId}`;
-    window.open(lobDashboardUrl, '_blank');
-  };
-
   const handlePayNow = async () => {
     if (!mailPiece) return;
     
@@ -156,6 +148,65 @@ export default function MailDetailsPage() {
       setActionError(error.message || 'Failed to start payment process. Please try again.');
       setIsProcessingPayment(false);
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!mailPiece || isDownloadingReceipt) return;
+    
+    try {
+      setIsDownloadingReceipt(true);
+      toast.loading('Generating receipt...', { id: 'download-receipt' });
+      
+      const result = await getReceiptDownloadUrl({ mailPieceId: mailPiece.id });
+      
+      // Open download URL in new tab
+      window.open(result.downloadUrl, '_blank');
+      
+      toast.success('Receipt downloaded successfully!', { id: 'download-receipt' });
+    } catch (error) {
+      console.error('Failed to download receipt:', error);
+      toast.error('Failed to download receipt. Please try again.', { id: 'download-receipt' });
+    } finally {
+      setIsDownloadingReceipt(false);
+    }
+  };
+
+  const handleSendReceiptEmail = async () => {
+    if (!mailPiece || isSendingEmail) return;
+    
+    try {
+      setIsSendingEmail(true);
+      toast.loading('Sending receipt email...', { id: 'send-email' });
+      
+      await sendReceiptEmail({ mailPieceId: mailPiece.id });
+      
+      toast.success('Receipt email sent successfully!', { id: 'send-email' });
+    } catch (error) {
+      console.error('Failed to send receipt email:', error);
+      toast.error('Failed to send receipt email. Please try again.', { id: 'send-email' });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+
+  // Debug logging for draft payment readiness
+  const debugDraftReadiness = (mailPiece: MailPieceWithRelations) => {
+    const isReady = isDraftReadyForPayment(mailPiece);
+    console.log('🔍 Draft payment readiness check:', {
+      mailType: mailPiece.mailType,
+      mailClass: mailPiece.mailClass,
+      mailSize: mailPiece.mailSize,
+      senderAddressId: mailPiece.senderAddressId,
+      recipientAddressId: mailPiece.recipientAddressId,
+      fileId: mailPiece.fileId,
+      isReady
+    });
+    return isReady;
   };
 
   if (isLoading) {
@@ -194,6 +245,34 @@ export default function MailDetailsPage() {
 
   const orderNumber = generateOrderNumber(mailPiece.paymentIntentId, mailPiece.id);
 
+  // Debug logging
+  console.log('🔍 MailDetailsPage - mailPiece data:', {
+    id: mailPiece.id,
+    status: mailPiece.status,
+    paymentStatus: mailPiece.paymentStatus,
+    mailType: mailPiece.mailType,
+    mailClass: mailPiece.mailClass,
+    mailSize: mailPiece.mailSize,
+    senderAddressId: mailPiece.senderAddressId,
+    recipientAddressId: mailPiece.recipientAddressId,
+    fileId: mailPiece.fileId,
+    lobId: mailPiece.lobId,
+    hasFile: !!mailPiece.file,
+    fileKey: mailPiece.file?.key
+  });
+
+  // Debug menu conditions
+  console.log('🔍 Menu conditions check:', {
+    isDraft: mailPiece.status === 'draft',
+    isDraftReadyForPayment: mailPiece.status === 'draft' ? debugDraftReadiness(mailPiece) : false,
+    hasFile: !!mailPiece.file,
+    hasLobId: !!mailPiece.lobId,
+    showEditDraft: mailPiece.status === 'draft',
+    showPayNow: mailPiece.status === 'draft' && debugDraftReadiness(mailPiece),
+    showDownloadFile: !!mailPiece.file,
+    showDelete: mailPiece.status === 'draft' || (!mailPiece.file && !mailPiece.lobId)
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -222,27 +301,27 @@ export default function MailDetailsPage() {
             </div>
             
             <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="outline" size="sm">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {/* Draft Actions */}
                   {mailPiece.status === 'draft' && (
                     <DropdownMenuItem onClick={handleEditMailPiece}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Draft
+                    </DropdownMenuItem>
+                  )}
+                  {mailPiece.status === 'draft' && debugDraftReadiness(mailPiece) && (
+                    <DropdownMenuItem 
+                      onClick={handlePayNow}
+                      disabled={isProcessingPayment}
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
+                      {isProcessingPayment ? 'Processing...' : 'Pay Now'}
                     </DropdownMenuItem>
                   )}
                   {mailPiece.file && (
@@ -250,24 +329,53 @@ export default function MailDetailsPage() {
                       onClick={handleDownloadFile}
                       disabled={isDownloading}
                     >
-                      <Download className="h-4 w-4 mr-2" />
+                      <FileText className="h-4 w-4 mr-2" />
                       {isDownloading ? 'Downloading...' : 'Download PDF'}
                     </DropdownMenuItem>
                   )}
-                  {mailPiece.lobId && (
-                    <DropdownMenuItem onClick={handleViewInLobDashboard}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      View in Lob Dashboard
-                    </DropdownMenuItem>
+                  
+                  {/* Receipt Actions - Only show for paid orders */}
+                  {mailPiece.paymentStatus === 'paid' && (
+                    <>
+                      {/* Print Receipt - Commented out per request */}
+                      {/* <DropdownMenuItem onClick={handlePrint}>
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print Receipt
+                      </DropdownMenuItem> */}
+                      <DropdownMenuItem 
+                        onClick={handleDownloadReceipt}
+                        disabled={isDownloadingReceipt}
+                      >
+                        {isDownloadingReceipt ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
+                        {isDownloadingReceipt ? 'Generating...' : 'Download Receipt PDF'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={handleSendReceiptEmail}
+                        disabled={isSendingEmail}
+                      >
+                        {isSendingEmail ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4 mr-2" />
+                        )}
+                        {isSendingEmail ? 'Sending...' : 'Email Receipt'}
+                      </DropdownMenuItem>
+                    </>
                   )}
-                  {mailPiece.status === 'draft' && (
+                  
+                  {/* Always show cancel option for drafts, or if no other actions are available */}
+                  {(mailPiece.status === 'draft' || (!mailPiece.file && !mailPiece.lobId)) && (
                     <DropdownMenuItem 
                       className="text-red-600"
                       onClick={handleDeleteMailPiece}
                       disabled={isDeleting}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      {isDeleting ? 'Deleting...' : 'Delete Draft'}
+                      {isDeleting ? 'Canceling...' : mailPiece.status === 'draft' ? 'Cancel Draft' : 'Cancel Mail Piece'}
                     </DropdownMenuItem>
                   )}
                 </DropdownMenuContent>
@@ -319,46 +427,12 @@ export default function MailDetailsPage() {
             <OrderReceipt 
               mailPiece={mailPiece}
               onPayNow={mailPiece.status === 'pending_payment' ? handlePayNow : undefined}
+              onEditDraft={mailPiece.status === 'draft' ? handleEditMailPiece : undefined}
               isProcessingPayment={isProcessingPayment}
             />
 
             {/* Status Timeline */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center text-base">
-                  <Clock className="h-5 w-5 mr-2" />
-                  Status Timeline
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {mailPiece.statusHistory && mailPiece.statusHistory.length > 0 ? (
-                    <div className="space-y-3">
-                      {mailPiece.statusHistory.map((history, index) => (
-                        <div key={index} className="flex items-start space-x-3">
-                          <div className="flex-shrink-0">
-                            {getStatusIcon(history.status)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900">
-                              {history.status.replace('_', ' ').toUpperCase()}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {history.description}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {formatDate(history.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">No status history available</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <StatusTimeline mailPiece={mailPiece} />
           </div>
         </div>
       </div>
